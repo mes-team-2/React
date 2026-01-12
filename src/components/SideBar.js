@@ -67,8 +67,8 @@ const Sidebar = styled.aside`
   position: sticky;
   top: 0;
   height: 100vh;
-  background: #111827;
-  color: #e5e7eb;
+  background: #ffffff;
+  color: #000000;
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
@@ -112,7 +112,7 @@ const Divider = styled.div`
 `;
 
 const MenuLink = styled(NavLink)`
-  color: #e5e7eb;
+  color: #000000;
   text-decoration: none;
   padding: 10px 10px;
   border-radius: 10px;
@@ -122,7 +122,7 @@ const MenuLink = styled(NavLink)`
   gap: 10px;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: #aed6f2;
   }
 
   &.active {
