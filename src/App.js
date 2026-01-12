@@ -1,24 +1,38 @@
-import logo from './logo.svg';
-import './App.css';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import ScrollToTop from "./components/ScrollToTop";
+
+import Login from "./pages/Login";
+import DashBoard from "./pages/DashBoard";
+import SideBar from "./components/SideBar";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <ScrollToTop />
+
+      <Routes>
+        {/* 로그인 (레이아웃 없음) */}
+        <Route path="/login" element={<Login />} />
+
+        {/* MES 레이아웃 */}
+        <Route path="/mes" element={<SideBar />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashBoard />} />
+
+          {/* 아래는 나중에 추가 */}
+          {/* <Route path="workorders" element={<WorkOrders />} /> */}
+          {/* <Route path="lot" element={<Lot />} /> */}
+        </Route>
+
+        {/* 루트 접근 시 MES로 */}
+        <Route path="/" element={<Navigate to="/mes/dashboard" replace />} />
+      </Routes>
+    </Router>
   );
 }
 
