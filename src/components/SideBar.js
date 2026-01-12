@@ -7,7 +7,7 @@ export default function SideBar() {
       <Sidebar>
         <Brand>
           <div className="logo">MES</div>
-          <div className="sub">Display Module</div>
+          <div className="sub">Battery</div>
         </Brand>
 
         <Nav>
