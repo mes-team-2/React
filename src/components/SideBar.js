@@ -19,15 +19,15 @@ export default function SideBar() {
           <Divider />
 
           <SectionTitle>생산/품질</SectionTitle>
-          <MenuLink to="/mes/process">공정 로그</MenuLink>
+          <MenuLink to="/mes/process-log">공정 로그</MenuLink>
           <MenuLink to="/mes/quality">품질/불량</MenuLink>
 
           <Divider />
 
           <SectionTitle>기준정보</SectionTitle>
-          <MenuLink to="/mes/materials">자재</MenuLink>
-          <MenuLink to="/mes/bom">BOM</MenuLink>
-          <MenuLink to="/mes/machines">설비</MenuLink>
+          <MenuLink to="/mes/material">자재</MenuLink>
+          <MenuLink to="/mes/BOM">BOM</MenuLink>
+          <MenuLink to="/mes/machine">설비</MenuLink>
           <MenuLink to="/mes/inventory">재고</MenuLink>
         </Nav>
 

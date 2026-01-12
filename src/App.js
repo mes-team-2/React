@@ -11,6 +11,12 @@ import DashBoard from "./pages/DashBoard";
 import SideBar from "./components/SideBar";
 import WorkOrders from "./pages/WorkOrders";
 import LOT from "./pages/LOT";
+import BOM from "./pages/BOM";
+import QualityDefectLog from "./pages/QualityDefectLog";
+import Inventory from "./pages/Inventory";
+import Machine from "./pages/Machine";
+import Material from "./pages/Material";
+import ProcessLog from "./pages/ProcessLog";
 
 function App() {
   return (
@@ -25,10 +31,15 @@ function App() {
         <Route path="/mes" element={<SideBar />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashBoard />} />
-
-          {/* 아래는 나중에 추가 */}
           <Route path="workorders" element={<WorkOrders />} />
           <Route path="lot" element={<LOT />} />
+          <Route path="machine" element={<Machine />} />
+          <Route path="process-log" element={<ProcessLog />} />
+          <Route path="material" element={<Material />} />
+          <Route path="inventory" element={<Inventory />} />
+          {/* 품질/불량 */}
+          <Route path="quality" element={<QualityDefectLog />} />
+          <Route path="bom" element={<BOM />} />
         </Route>
 
         {/* 루트 접근 시 MES로 */}
