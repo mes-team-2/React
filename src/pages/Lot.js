@@ -1,4 +1,4 @@
-const LOT = () => {
+const Lot = () => {
   return (
     <>
       <p>Lot</p>
@@ -6,4 +6,4 @@ const LOT = () => {
   );
 };
 
-export default LOT;
+export default Lot;

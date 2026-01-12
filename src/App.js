@@ -10,7 +10,7 @@ import Login from "./pages/Login";
 import DashBoard from "./pages/DashBoard";
 import SideBar from "./components/SideBar";
 import WorkOrders from "./pages/WorkOrders";
-import LOT from "./pages/LOT";
+import Lot from "./pages/Lot";
 import BOM from "./pages/BOM";
 import QualityDefectLog from "./pages/QualityDefectLog";
 import Inventory from "./pages/Inventory";
@@ -32,13 +32,14 @@ function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashBoard />} />
           <Route path="workorders" element={<WorkOrders />} />
-          <Route path="lot" element={<LOT />} />
+          <Route path="lot" element={<Lot />} />
           <Route path="machine" element={<Machine />} />
           <Route path="process-log" element={<ProcessLog />} />
           <Route path="material" element={<Material />} />
           <Route path="inventory" element={<Inventory />} />
           {/* 품질/불량 */}
           <Route path="quality" element={<QualityDefectLog />} />
+
           <Route path="bom" element={<BOM />} />
         </Route>
 
