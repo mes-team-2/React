@@ -60,15 +60,15 @@ const Shell = styled.div`
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
-  background: #f6f7fb;
+  background: var(--background2);
 `;
 
 const Sidebar = styled.aside`
   position: sticky;
   top: 0;
   height: 100vh;
-  background: #ffffff;
-  color: #000000;
+  background: var(--background);
+  color: var(--font);
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
@@ -112,7 +112,7 @@ const Divider = styled.div`
 `;
 
 const MenuLink = styled(NavLink)`
-  color: #000000;
+  color: var(--font);
   text-decoration: none;
   padding: 10px 10px;
   border-radius: 10px;
@@ -122,7 +122,7 @@ const MenuLink = styled(NavLink)`
   gap: 10px;
 
   &:hover {
-    background: #aed6f2;
+    background: var(--main2);
   }
 
   &.active {
@@ -149,7 +149,7 @@ const TopBar = styled.header`
   z-index: 5;
   background: rgba(246, 247, 251, 0.9);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid #e8eaf2;
+  border-bottom: 1px solid var(--border);
 
   display: flex;
   align-items: center;
@@ -160,7 +160,7 @@ const TopBar = styled.header`
     margin: 0;
     font-size: 18px;
     letter-spacing: 0.2px;
-    color: #111827;
+    color: var(--font);
   }
 
   .right {
@@ -174,11 +174,11 @@ const Search = styled.input`
   width: min(480px, 48vw);
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   outline: none;
 
   &:focus {
-    border-color: #6366f1;
+    border-color: var(--main);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
   }
 `;

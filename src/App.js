@@ -5,6 +5,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop";
+import GlobalStyle from "./components/GlobalStyle";
 
 import Login from "./pages/Login";
 import DashBoard from "./pages/DashBoard";
@@ -21,6 +22,7 @@ import ProcessLog from "./pages/ProcessLog";
 function App() {
   return (
     <Router>
+      <GlobalStyle />
       <ScrollToTop />
 
       <Routes>
@@ -39,7 +41,6 @@ function App() {
           <Route path="inventory" element={<Inventory />} />
           {/* 품질/불량 */}
           <Route path="quality" element={<QualityDefectLog />} />
-
           <Route path="bom" element={<BOM />} />
         </Route>
 
