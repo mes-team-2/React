@@ -76,7 +76,7 @@ export default function SideBar() {
     <Shell>
       <Sidebar>
         <Brand>
-          <div className="logo">MES</div>
+          <div className="logo">Z-Zone</div>
           <div className="sub">Battery</div>
         </Brand>
 

@@ -45,6 +45,13 @@ const GlobalStyle = createGlobalStyle`
     max-width: 100%; // 부모 너비를 넘지 않도록 설정
     display: block;  
   }
+  svg:focus {
+  outline: none;  // 포커스 외곽선 제거
+  }
+
+  svg *:focus {
+  outline: none; // 포커스 외곽선 제거
+  }
 `;
 
 export default GlobalStyle;
