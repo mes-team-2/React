@@ -17,6 +17,7 @@ const TableStyle = ({
   onSort = () => {},
   selectedIds = [],
   onSelectChange,
+  onRowClick,
 }) => {
   const [widths, setWidths] = useState(
     columns.reduce(
@@ -134,8 +135,8 @@ const TableStyle = ({
         <tbody>
           {data.length > 0 ? (
             data.map((item) => (
-              <tr key={item.id}>
-                <td>
+              <tr key={item.id} onClick={() => onRowClick?.(item)}>
+                <td onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(item.id)}

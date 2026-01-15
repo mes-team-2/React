@@ -10,7 +10,7 @@ import GlobalStyle from "./components/GlobalStyle";
 import Login from "./pages/Login";
 import DashBoard from "./pages/DashBoard";
 import SideBar from "./components/SideBar";
-import WorkOrders from "./pages/WorkOrders";
+import WorkOrders from "./pages/WorkOrder";
 import Lot from "./pages/Lot";
 import BOM from "./pages/BOM";
 import QualityDefectLog from "./pages/QualityDefectLog";
