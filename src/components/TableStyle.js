@@ -18,6 +18,7 @@ const TableStyle = ({
   selectedIds = [],
   onSelectChange,
   onRowClick,
+  selectable = true,
 }) => {
   const [widths, setWidths] = useState(
     columns.reduce(
@@ -105,21 +106,25 @@ const TableStyle = ({
         style={{ width: Object.values(widths).reduce((a, b) => a + b, 0) }}
       >
         <colgroup>
-          <col style={{ width: widths.check }} />
+          {selectable && <col style={{ width: widths.check }} />}
+
           {columns.map((col) => (
             <col key={col.key} style={{ width: widths[col.key] }} />
           ))}
         </colgroup>
         <thead>
           <tr>
-            <th>
-              <input
-                type="checkbox"
-                onChange={handleAllCheck}
-                checked={data.length > 0 && selectedIds.length === data.length}
-              />
-              <Resizer onMouseDown={(e) => onMouseDown(e, "check")} />
-            </th>
+            {selectable && (
+              <th>
+                <input
+                  type="checkbox"
+                  onChange={handleAllCheck}
+                  checked={
+                    data.length > 0 && selectedIds.length === data.length
+                  }
+                />
+              </th>
+            )}
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -136,13 +141,15 @@ const TableStyle = ({
           {data.length > 0 ? (
             data.map((item) => (
               <tr key={item.id} onClick={() => onRowClick?.(item)}>
-                <td onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(item.id)}
-                    onChange={() => handleSingleCheck(item.id)}
-                  />
-                </td>
+                {selectable && (
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(item.id)}
+                      onChange={() => handleSingleCheck(item.id)}
+                    />
+                  </td>
+                )}
                 {columns.map((col) => (
                   <td key={`${item.id}-${col.key}`}>{item[col.key]}</td>
                 ))}

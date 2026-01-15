@@ -3,9 +3,6 @@ import { useMemo } from "react";
 import Table from "../components/TableStyle";
 
 export default function WorkOrderDetail({ workOrder }) {
-  /* =========================
-     Hooks (❗ 조건 없이 최상단)
-  ========================= */
   const lotData = useMemo(() => {
     if (!workOrder) return [];
     return [
@@ -130,19 +127,23 @@ export default function WorkOrderDetail({ workOrder }) {
       {/* ===== LOT ===== */}
       <Card>
         <SectionTitle>LOT 현황</SectionTitle>
-        <Table columns={lotColumns} data={lotData} />
+        <Table columns={lotColumns} data={lotData} selectable={false} />
       </Card>
 
       {/* ===== 공정 ===== */}
       <Card>
         <SectionTitle>공정 진행</SectionTitle>
-        <Table columns={processColumns} data={processData} />
+        <Table columns={processColumns} data={processData} selectable={false} />
       </Card>
 
       {/* ===== 자재 ===== */}
       <Card>
         <SectionTitle>자재 투입</SectionTitle>
-        <Table columns={materialColumns} data={materialData} />
+        <Table
+          columns={materialColumns}
+          data={materialData}
+          selectable={false}
+        />
       </Card>
     </Wrapper>
   );
