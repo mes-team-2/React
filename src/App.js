@@ -18,6 +18,7 @@ import Inventory from "./pages/Inventory";
 import Machine from "./pages/Machine";
 import Material from "./pages/Material";
 import ProcessLog from "./pages/ProcessLog";
+import Text from "./pages/Text";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
           {/* 품질/불량 */}
           <Route path="quality" element={<QualityDefectLog />} />
           <Route path="bom" element={<BOM />} />
+          <Route path="text" element={<Text />} />
         </Route>
 
         {/* 루트 접근 시 MES로 */}
