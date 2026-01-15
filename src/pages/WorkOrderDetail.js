@@ -1,8 +1,24 @@
 import styled from "styled-components";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Table from "../components/TableStyle";
 
 export default function WorkOrderDetail({ workOrder }) {
+  /* =========================
+     정렬 상태 (테이블별)
+  ========================= */
+  const [lotSort, setLotSort] = useState({ key: null, direction: "asc" });
+  const [processSort, setProcessSort] = useState({
+    key: null,
+    direction: "asc",
+  });
+  const [materialSort, setMaterialSort] = useState({
+    key: null,
+    direction: "asc",
+  });
+
+  /* =========================
+     데이터
+  ========================= */
   const lotData = useMemo(() => {
     if (!workOrder) return [];
     return [
@@ -29,7 +45,7 @@ export default function WorkOrderDetail({ workOrder }) {
       {
         id: 1,
         step: "조립",
-        machine: "설비-A",
+        machine: "설비-2",
         status: "DONE",
         startedAt: "09:30",
         endedAt: "11:00",
@@ -37,7 +53,7 @@ export default function WorkOrderDetail({ workOrder }) {
       {
         id: 2,
         step: "충전",
-        machine: "설비-B",
+        machine: "설비-10",
         status: "IN_PROGRESS",
         startedAt: "11:10",
         endedAt: "-",
@@ -50,20 +66,57 @@ export default function WorkOrderDetail({ workOrder }) {
     return [
       {
         id: 1,
-        material: "납판",
+        material: "배터리 자재 2",
         qty: 1000,
         unit: "EA",
         time: "2026-01-05 09:20",
       },
       {
         id: 2,
-        material: "전해액",
+        material: "배터리 자재 10",
         qty: 1000,
         unit: "EA",
         time: "2026-01-05 09:25",
       },
     ];
   }, [workOrder]);
+
+  /* =========================
+     정렬 유틸
+  ========================= */
+  const sortData = (data, sortConfig) => {
+    if (!sortConfig.key) return data;
+
+    return [...data].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortConfig.direction === "asc"
+          ? aVal.localeCompare(bVal, "ko", { numeric: true })
+          : bVal.localeCompare(aVal, "ko", { numeric: true });
+      }
+
+      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+      return 0;
+    });
+  };
+
+  const sortedLotData = useMemo(
+    () => sortData(lotData, lotSort),
+    [lotData, lotSort]
+  );
+
+  const sortedProcessData = useMemo(
+    () => sortData(processData, processSort),
+    [processData, processSort]
+  );
+
+  const sortedMaterialData = useMemo(
+    () => sortData(materialData, materialSort),
+    [materialData, materialSort]
+  );
 
   /* =========================
      선택 안 됐을 때
@@ -108,7 +161,7 @@ export default function WorkOrderDetail({ workOrder }) {
         <StatusBadge>{workOrder.status}</StatusBadge>
       </Header>
 
-      {/* ===== 요약 카드 ===== */}
+      {/* ===== 요약 ===== */}
       <SummaryGrid>
         <SummaryItem>
           <label>제품</label>
@@ -127,13 +180,37 @@ export default function WorkOrderDetail({ workOrder }) {
       {/* ===== LOT ===== */}
       <Card>
         <SectionTitle>LOT 현황</SectionTitle>
-        <Table columns={lotColumns} data={lotData} selectable={false} />
+        <Table
+          columns={lotColumns}
+          data={sortedLotData}
+          sortConfig={lotSort}
+          onSort={(key) =>
+            setLotSort((p) => ({
+              key,
+              direction:
+                p.key === key && p.direction === "asc" ? "desc" : "asc",
+            }))
+          }
+          selectable={false}
+        />
       </Card>
 
       {/* ===== 공정 ===== */}
       <Card>
         <SectionTitle>공정 진행</SectionTitle>
-        <Table columns={processColumns} data={processData} selectable={false} />
+        <Table
+          columns={processColumns}
+          data={sortedProcessData}
+          sortConfig={processSort}
+          onSort={(key) =>
+            setProcessSort((p) => ({
+              key,
+              direction:
+                p.key === key && p.direction === "asc" ? "desc" : "asc",
+            }))
+          }
+          selectable={false}
+        />
       </Card>
 
       {/* ===== 자재 ===== */}
@@ -141,7 +218,15 @@ export default function WorkOrderDetail({ workOrder }) {
         <SectionTitle>자재 투입</SectionTitle>
         <Table
           columns={materialColumns}
-          data={materialData}
+          data={sortedMaterialData}
+          sortConfig={materialSort}
+          onSort={(key) =>
+            setMaterialSort((p) => ({
+              key,
+              direction:
+                p.key === key && p.direction === "asc" ? "desc" : "asc",
+            }))
+          }
           selectable={false}
         />
       </Card>

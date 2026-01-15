@@ -15,6 +15,10 @@ const summaryData = [
 
 export default function Machine() {
   const [selectedIds, setSelectedIds] = useState([]);
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
 
   /* =========================
      에러 로그 (상단)
@@ -51,15 +55,56 @@ export default function Machine() {
       Array.from({ length: 15 }).map((_, i) => ({
         id: i + 1,
         machineId: i + 1,
-        machineCode: "asdf-1234",
-        machineName: "설비이름 12345678",
-        processCode: "step-1313131",
-        status: "RUN",
-        active: "yes",
-        errorLog: "아무거나 넣어보자 이자식!",
+        machineCode: `MC-${100 + i}`,
+        machineName: `설비 ${i + 1}`,
+        processCode: `PROC-${(i % 5) + 1}`,
+        status: i % 3 === 0 ? "RUN" : i % 3 === 1 ? "WAIT" : "ERROR",
+        active: i % 4 === 0 ? "NO" : "YES",
+        errorLog: i % 3 === 2 ? "센서 응답 없음" : "-",
       })),
     []
   );
+
+  /* =========================
+     정렬 핸들러
+  ========================= */
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      return { key, direction: "asc" };
+    });
+  };
+
+  /* =========================
+     정렬 데이터 (⭐ 자연 정렬)
+  ========================= */
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key) return tableData;
+
+    const sorted = [...tableData].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      // 문자열 → 자연 정렬
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortConfig.direction === "asc"
+          ? aVal.localeCompare(bVal, "ko", { numeric: true })
+          : bVal.localeCompare(aVal, "ko", { numeric: true });
+      }
+
+      // 숫자
+      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+      return 0;
+    });
+
+    return sorted;
+  }, [tableData, sortConfig]);
 
   return (
     <Wrapper>
@@ -90,12 +135,14 @@ export default function Machine() {
         ))}
       </ErrorSection>
 
-      {/* ===== 실시간 설비 상태 ===== */}
+      {/* ===== 테이블 ===== */}
       <SectionTitle>실시간 설비 상태</SectionTitle>
 
       <Table
         columns={columns}
-        data={tableData}
+        data={sortedData}
+        sortConfig={sortConfig}
+        onSort={handleSort}
         selectedIds={selectedIds}
         onSelectChange={setSelectedIds}
       />

@@ -1,6 +1,5 @@
 import styled from "styled-components";
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Table from "../components/TableStyle";
 import SearchBar from "../components/SearchBar";
 import SideDrawer from "../components/SideDrawer";
@@ -14,6 +13,10 @@ export default function WorkOrder() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [open, setOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
 
   /* =========================
      컬럼 정의
@@ -74,6 +77,38 @@ export default function WorkOrder() {
     setOpen(true);
   };
 
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        // 같은 컬럼 → 방향 토글
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      // 다른 컬럼 → asc부터
+      return { key, direction: "asc" };
+    });
+  };
+
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key) return filteredData;
+
+    const sorted = [...filteredData].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      if (aVal === bVal) return 0;
+
+      if (aVal > bVal) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      return sortConfig.direction === "asc" ? -1 : 1;
+    });
+
+    return sorted;
+  }, [filteredData, sortConfig]);
+
   return (
     <Wrapper>
       <Header>
@@ -90,15 +125,12 @@ export default function WorkOrder() {
       </FilterBar>
 
       {/* ===== 테이블 ===== */}
-      <ClickableTable
-        onClick={(e) => {
-          const tr = e.target.closest("tr");
-          if (!tr) return;
-        }}
-      >
+      <ClickableTable>
         <Table
           columns={columns}
-          data={filteredData}
+          data={sortedData}
+          sortConfig={sortConfig}
+          onSort={handleSort}
           selectedIds={selectedIds}
           onSelectChange={setSelectedIds}
           onRowClick={handleRowClick}

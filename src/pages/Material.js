@@ -27,6 +27,10 @@ export default function Material() {
   ========================= */
   const [keyword, setKeyword] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
 
   /* =========================
      차트 더미 데이터
@@ -98,6 +102,51 @@ export default function Material() {
   useEffect(() => {
     setSelectedIds([]);
   }, [keyword]);
+
+  /* =========================
+     정렬 핸들러
+  ========================= */
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      return { key, direction: "asc" };
+    });
+  };
+
+  /* =========================
+     정렬 데이터 (⭐ 자연 정렬)
+  ========================= */
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key) return filteredData;
+
+    const sorted = [...filteredData].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      // 문자열 + 숫자 섞인 경우 → 자연 정렬
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortConfig.direction === "asc"
+          ? aVal.localeCompare(bVal, "ko", { numeric: true })
+          : bVal.localeCompare(aVal, "ko", { numeric: true });
+      }
+
+      // 숫자 / 기타
+      if (aVal > bVal) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      if (aVal < bVal) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      return 0;
+    });
+
+    return sorted;
+  }, [filteredData, sortConfig]);
 
   return (
     <Wrapper>
@@ -184,7 +233,9 @@ export default function Material() {
       {/* ===== 테이블 ===== */}
       <Table
         columns={columns}
-        data={filteredData}
+        data={sortedData}
+        sortConfig={sortConfig}
+        onSort={handleSort}
         selectedIds={selectedIds}
         onSelectChange={setSelectedIds}
       />
