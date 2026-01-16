@@ -12,7 +12,7 @@ import DashBoard from "./pages/DashBoard";
 import SideBar from "./components/SideBar";
 import WorkOrders from "./pages/WorkOrder";
 import Lot from "./pages/Lot";
-import Bom from "./pages/Bom";
+import BOM from "./pages/BOM";
 import QualityDefectLog from "./pages/QualityDefectLog";
 import Inventory from "./pages/Inventory";
 import Machine from "./pages/Machine";
@@ -41,7 +41,7 @@ function App() {
           <Route path="inventory" element={<Inventory />} />
           {/* 품질/불량 */}
           <Route path="quality" element={<QualityDefectLog />} />
-          <Route path="bom" element={<Bom />} />
+          <Route path="bom" element={<BOM />} />
         </Route>
 
         {/* 루트 접근 시 MES로 */}

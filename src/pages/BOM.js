@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import Table from "../components/TableStyle";
 import SearchBar from "../components/SearchBar";
 import SideDrawer from "../components/SideDrawer";
-import BomDetail from "./BomDetail";
+import BOMDetail from "./BOMDetail";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 /* =========================
@@ -148,7 +148,7 @@ export default function Bom() {
       />
 
       <SideDrawer open={open} onClose={() => setOpen(false)}>
-        <BomDetail bom={selectedBom} />
+        <BOMDetail bom={selectedBom} />
       </SideDrawer>
     </Wrapper>
   );
