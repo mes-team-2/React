@@ -1,6 +1,15 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
 import Table from "../components/TableStyle";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ReferenceLine,
+} from "recharts";
 
 export default function LotDetail({ lot }) {
   /* =========================
@@ -16,7 +25,7 @@ export default function LotDetail({ lot }) {
   });
 
   /* =========================
-     데이터
+     더미 데이터
   ========================= */
   const processLogs = useMemo(() => {
     if (!lot) return [];
@@ -33,9 +42,9 @@ export default function LotDetail({ lot }) {
         id: 2,
         step: "충전",
         machine: "설비-10",
-        status: "IN_PROCESS",
+        status: "DONE",
         startedAt: "10:30",
-        endedAt: "-",
+        endedAt: "11:40",
       },
     ];
   }, [lot]);
@@ -43,20 +52,24 @@ export default function LotDetail({ lot }) {
   const qualityLogs = useMemo(() => {
     if (!lot) return [];
     return [
-      {
-        id: 1,
-        type: "전압 검사",
-        result: "PASS",
-        checkedAt: "11:40",
-      },
-      {
-        id: 2,
-        type: "내부 저항",
-        result: "PASS",
-        checkedAt: "11:45",
-      },
+      { id: 1, type: "전압 검사", pass: 480, fail: 20 },
+      { id: 2, type: "내부 저항", pass: 490, fail: 10 },
+      { id: 3, type: "외관 검사", pass: 495, fail: 5 },
     ];
   }, [lot]);
+
+  /* =========================
+     불량률 차트 데이터
+  ========================= */
+  const defectRateData = useMemo(() => {
+    return qualityLogs.map((q) => {
+      const total = q.pass + q.fail;
+      return {
+        name: q.type,
+        defectRate: Number(((q.fail / total) * 100).toFixed(2)),
+      };
+    });
+  }, [qualityLogs]);
 
   /* =========================
      정렬 유틸
@@ -68,15 +81,13 @@ export default function LotDetail({ lot }) {
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
 
-      if (typeof aVal === "string" && typeof bVal === "string") {
+      if (typeof aVal === "string") {
         return sortConfig.direction === "asc"
           ? aVal.localeCompare(bVal, "ko", { numeric: true })
           : bVal.localeCompare(aVal, "ko", { numeric: true });
       }
 
-      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-      return 0;
+      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
     });
   };
 
@@ -107,8 +118,8 @@ export default function LotDetail({ lot }) {
 
   const qualityColumns = [
     { key: "type", label: "검사 항목", width: 160 },
-    { key: "result", label: "결과", width: 100 },
-    { key: "checkedAt", label: "검사 시각", width: 140 },
+    { key: "pass", label: "합격", width: 100 },
+    { key: "fail", label: "불량", width: 100 },
   ];
 
   return (
@@ -138,6 +149,27 @@ export default function LotDetail({ lot }) {
           <strong>{lot.workOrderNo}</strong>
         </Item>
       </Summary>
+
+      {/* ===== 불량률 차트 ===== */}
+      <ChartCard>
+        <h4>LOT 불량률 (%)</h4>
+        <ChartBox>
+          <ResponsiveContainer>
+            <BarChart data={defectRateData}>
+              <XAxis dataKey="name" />
+              <YAxis unit="%" />
+              <Tooltip formatter={(v) => `${v}%`} />
+              <ReferenceLine
+                y={2}
+                stroke="#ef4444"
+                strokeDasharray="4 4"
+                label="허용 기준 2%"
+              />
+              <Bar dataKey="defectRate" fill="#6366f1" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      </ChartCard>
 
       {/* ===== 공정 ===== */}
       <Section>
@@ -185,7 +217,7 @@ export default function LotDetail({ lot }) {
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 `;
 
 const Header = styled.div`
@@ -239,6 +271,28 @@ const Item = styled.div`
     display: block;
     margin-top: 4px;
     font-size: 14px;
+  }
+`;
+
+const ChartCard = styled.div`
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+
+  h4 {
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+`;
+
+const ChartBox = styled.div`
+  height: 220px;
+
+  svg:focus,
+  svg *:focus {
+    outline: none;
   }
 `;
 
