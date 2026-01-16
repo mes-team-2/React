@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#14b8a6"];
 
-export default function BomDetail({ bom }) {
+export default function BOMDetail({ bom }) {
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
