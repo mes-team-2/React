@@ -106,9 +106,7 @@ const MENU = [
   {
     key: "test",
     title: "test",
-    items: [
-      { to: "/mes/test", label: "test" },
-    ],
+    items: [{ to: "/mes/test", label: "test" }],
   },
 ];
 
