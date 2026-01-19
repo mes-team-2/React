@@ -69,6 +69,13 @@ const MENU = [
       { to: "/mes/report/trace", label: "Traceability 조회" },
     ],
   },
+  {
+    key: "test",
+    title: "test",
+    items: [
+      { to: "/mes/test", label: "test" },
+    ],
+  },
 ];
 
 export default function SideBar() {
