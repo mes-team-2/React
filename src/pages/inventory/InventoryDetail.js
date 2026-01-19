@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import Table from "../components/TableStyle";
+import Table from "../../components/TableStyle";
 
 export default function InventoryDetail({ inventory }) {
   const [sortConfig, setSortConfig] = useState({

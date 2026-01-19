@@ -27,10 +27,10 @@ const MENU = [
     key: "master",
     title: "기준 정보 관리",
     items: [
-      { to: "/mes/machine", label: "설비 관리" },
-      { to: "/mes/process", label: "공정 관리" },
-      { to: "/mes/bom", label: "BOM 관리" },
-      { to: "/mes/worker", label: "작업자 관리" },
+      { to: "/mes/master/machine", label: "설비 관리" },
+      { to: "/mes/master/process", label: "공정 관리" },
+      { to: "/mes/master/bom", label: "BOM 관리" },
+      { to: "/mes/master/worker", label: "작업자 관리" },
     ],
   },
   {
@@ -38,6 +38,7 @@ const MENU = [
     title: "생산 관리",
     items: [
       { to: "/mes/workorders", label: "작업지시 관리" },
+      { to: "/mes/process-log", label: "공정 로그" },
       { to: "/mes/lot", label: "LOT 관리" },
     ],
   },
@@ -45,8 +46,8 @@ const MENU = [
     key: "quality",
     title: "품질 관리",
     items: [
-      { to: "/mes/quality-test", label: "검사 이력" },
-      { to: "/mes/quality-defect", label: "불량 관리" },
+      { to: "/mes/quality/test", label: "검사 이력" },
+      { to: "/mes/quality/defect", label: "불량 관리" },
     ],
   },
   {

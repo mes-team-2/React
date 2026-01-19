@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import Table from "../components/TableStyle";
+import Table from "../../components/TableStyle";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#14b8a6"];

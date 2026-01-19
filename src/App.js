@@ -11,14 +11,14 @@ import Login from "./pages/Login";
 import DashBoard from "./pages/DashBoard";
 import SideBar from "./components/SideBar";
 
-import WorkOrders from "./pages/WorkOrder";
-import Lot from "./pages/Lot";
-import BOM from "./pages/BOM";
-import QualityDefectLog from "./pages/QualityDefectLog";
-import Inventory from "./pages/Inventory";
-import Machine from "./pages/Machine";
-import Material from "./pages/Material";
-import ProcessLog from "./pages/ProcessLog";
+import WorkOrders from "./pages/production/WorkOrder";
+import Lot from "./pages/production/Lot";
+import Bom from "./pages/master/BOM";
+import DefectLog from "./pages/quality/DefectLog";
+import Inventory from "./pages/inventory/Inventory";
+import Machine from "./pages/master/Machine";
+import Material from "./pages/master/Material";
+import ProcessLog from "./pages/production/ProcessLog";
 
 /* 아직 안 만든 페이지는 임시 */
 const Empty = ({ title }) => <div>{title}</div>;
@@ -44,7 +44,7 @@ function App() {
             <Route path="product" element={<Empty title="제품 관리" />} />
             <Route path="process" element={<Empty title="공정 관리" />} />
             <Route path="machine" element={<Machine />} />
-            <Route path="bom" element={<BOM />} />
+            <Route path="bom" element={<Bom />} />
           </Route>
 
           {/* ================= 생산 관리 ================= */}
@@ -55,7 +55,7 @@ function App() {
           {/* ================= 품질 관리 ================= */}
           <Route path="quality">
             <Route path="test" element={<Empty title="검사 이력" />} />
-            <Route path="defect" element={<QualityDefectLog />} />
+            <Route path="defect" element={<DefectLog />} />
           </Route>
 
           {/* ================= 자재 / 재고 ================= */}

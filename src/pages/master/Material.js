@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import { useMemo, useState, useEffect } from "react";
-import Table from "../components/TableStyle";
-import SearchBar from "../components/SearchBar";
+import Table from "../../components/TableStyle";
+import SearchBar from "../../components/SearchBar";
 import {
   PieChart,
   Pie,

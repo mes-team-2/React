@@ -1,19 +1,29 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import Table from "../components/TableStyle";
-import SearchBar from "../components/SearchBar";
-import SideDrawer from "../components/SideDrawer";
-import BOMDetail from "./BOMDetail";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import Table from "../../components/TableStyle";
+import SearchBar from "../../components/SearchBar";
+import SideDrawer from "../../components/SideDrawer";
+import InventoryDetail from "./InventoryDetail";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 /* =========================
    색상
 ========================= */
-const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#14b8a6"];
+const COLORS = ["#22c55e", "#f59e0b", "#ef4444"];
 
-export default function Bom() {
+export default function Inventory() {
   const [keyword, setKeyword] = useState("");
-  const [selectedBom, setSelectedBom] = useState(null);
+  const [selectedInventory, setSelectedInventory] = useState(null);
   const [open, setOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -21,22 +31,25 @@ export default function Bom() {
   });
 
   /* =========================
-     BOM 데이터 (제품 기준)
+     재고 데이터
   ========================= */
   const tableData = useMemo(
     () =>
-      Array.from({ length: 6 }).map((_, i) => ({
+      Array.from({ length: 15 }).map((_, i) => ({
         id: i + 1,
-        productCode: `PROD-12V-${i + 1}`,
-        productName:
-          i % 3 === 0
-            ? "12V 배터리 소형"
-            : i % 3 === 1
-            ? "12V 배터리 중형"
-            : "12V 배터리 대형",
-        materialCount: 5 + i,
-        totalRequiredQty: 1200 + i * 80,
-        updatedAt: "2026-01-06 10:00",
+        productCode: `FG-12V-${i + 1}`,
+        productName: `12V 배터리 ${
+          i % 3 === 0 ? "소형" : i % 3 === 1 ? "중형" : "대형"
+        }`,
+        stockQty: 800 - i * 20,
+        safeQty: 300,
+        status:
+          800 - i * 20 > 400
+            ? "SAFE"
+            : 800 - i * 20 > 200
+            ? "WARNING"
+            : "DANGER",
+        updatedAt: "2026-01-05 16:00",
       })),
     []
   );
@@ -47,6 +60,7 @@ export default function Bom() {
   const filteredData = useMemo(() => {
     if (!keyword.trim()) return tableData;
     const lower = keyword.toLowerCase();
+
     return tableData.filter(
       (row) =>
         row.productCode.toLowerCase().includes(lower) ||
@@ -69,6 +83,7 @@ export default function Bom() {
           ? aVal.localeCompare(bVal, "ko", { numeric: true })
           : bVal.localeCompare(aVal, "ko", { numeric: true });
       }
+
       return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
     });
   }, [filteredData, sortConfig]);
@@ -81,14 +96,21 @@ export default function Bom() {
   };
 
   /* =========================
-     차트 (자재 수 비율)
+     차트 데이터
   ========================= */
-  const chartData = useMemo(() => {
+  const statusChart = useMemo(() => {
     const map = {};
-    tableData.forEach((b) => {
-      map[b.productName] = b.materialCount;
+    tableData.forEach((row) => {
+      map[row.status] = (map[row.status] || 0) + 1;
     });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [tableData]);
+
+  const stockChart = useMemo(() => {
+    return tableData.map((row) => ({
+      name: row.productName,
+      stock: row.stockQty,
+    }));
   }, [tableData]);
 
   /* =========================
@@ -96,34 +118,51 @@ export default function Bom() {
   ========================= */
   const columns = [
     { key: "productCode", label: "제품 코드", width: 160 },
-    { key: "productName", label: "제품명", width: 220 },
-    { key: "materialCount", label: "자재 수", width: 120 },
-    { key: "totalRequiredQty", label: "총 소요량", width: 140 },
+    { key: "productName", label: "제품명", width: 200 },
+    { key: "stockQty", label: "재고 수량", width: 120 },
+    { key: "safeQty", label: "안전 재고", width: 120 },
+    { key: "status", label: "상태", width: 120 },
     { key: "updatedAt", label: "갱신 시각", width: 160 },
   ];
 
   return (
     <Wrapper>
       <Header>
-        <h2>BOM 관리</h2>
+        <h2>완제품 재고</h2>
       </Header>
 
       {/* ===== 차트 ===== */}
-      <Card>
-        <h4>제품별 BOM 구성 규모</h4>
-        <ChartBox>
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie data={chartData} dataKey="value" outerRadius={90}>
-                {chartData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartBox>
-      </Card>
+      <ChartGrid>
+        <Card>
+          <h4>재고 상태 분포</h4>
+          <ChartBox>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={statusChart} dataKey="value" outerRadius={80}>
+                  {statusChart.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartBox>
+        </Card>
+
+        <Card>
+          <h4>제품별 재고 수량</h4>
+          <ChartBox>
+            <ResponsiveContainer>
+              <BarChart data={stockChart}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="stock" fill="#6366f1" />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartBox>
+        </Card>
+      </ChartGrid>
 
       {/* ===== 검색 ===== */}
       <FilterBar>
@@ -142,13 +181,13 @@ export default function Bom() {
         onSort={handleSort}
         selectable={false}
         onRowClick={(row) => {
-          setSelectedBom(row);
+          setSelectedInventory(row);
           setOpen(true);
         }}
       />
 
       <SideDrawer open={open} onClose={() => setOpen(false)}>
-        <BOMDetail bom={selectedBom} />
+        <InventoryDetail inventory={selectedInventory} />
       </SideDrawer>
     </Wrapper>
   );
@@ -171,6 +210,16 @@ const Header = styled.div`
   }
 `;
 
+const ChartGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
 const Card = styled.div`
   background: white;
   border-radius: 16px;
@@ -184,7 +233,7 @@ const Card = styled.div`
 `;
 
 const ChartBox = styled.div`
-  height: 240px;
+  height: 220px;
 
   svg:focus,
   svg *:focus {

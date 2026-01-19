@@ -1,8 +1,8 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import Table from "../components/TableStyle";
-import SideDrawer from "../components/SideDrawer";
-import QualityDefectLogDetail from "./QualityDefectLogDetail";
+import Table from "../../components/TableStyle";
+import SideDrawer from "../../components/SideDrawer";
+import DefectLogDetail from "./DefectLogDetail";
 import {
   BarChart,
   Bar,
@@ -140,7 +140,7 @@ export default function QualityDefectLog() {
       <Hint>※ 행을 클릭하면 불량 상세 정보를 확인할 수 있습니다.</Hint>
 
       <SideDrawer open={open} onClose={() => setOpen(false)}>
-        <QualityDefectLogDetail log={selectedLog} />
+        <DefectLogDetail log={selectedLog} />
       </SideDrawer>
     </Wrapper>
   );

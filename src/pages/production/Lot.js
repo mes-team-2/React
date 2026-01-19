@@ -1,8 +1,8 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import Table from "../components/TableStyle";
-import SearchBar from "../components/SearchBar";
-import SideDrawer from "../components/SideDrawer";
+import Table from "../../components/TableStyle";
+import SearchBar from "../../components/SearchBar";
+import SideDrawer from "../../components/SideDrawer";
 import LotDetail from "./LotDetail";
 import {
   PieChart,

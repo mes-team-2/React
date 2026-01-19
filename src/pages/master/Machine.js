@@ -1,8 +1,8 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import Table from "../components/TableStyle";
+import Table from "../../components/TableStyle";
 import { AlertTriangle, PlayCircle, PauseCircle, Power } from "lucide-react";
-import SummaryCard from "../components/SummaryCard";
+import SummaryCard from "../../components/SummaryCard";
 
 /* =========================
    상태 카드 데이터
