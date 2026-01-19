@@ -22,6 +22,7 @@ import ProcessLog from "./pages/production/ProcessLog";
 import Product from "./pages/master/Product";
 import Trace from "./pages/report/Trace";
 import ProductReport from "./pages/report/ProductReport";
+import Test from "./pages/Test";
 
 /* 아직 안 만든 페이지는 임시 */
 const Empty = ({ title }) => <div>{title}</div>;
@@ -75,6 +76,9 @@ function App() {
 
           {/* ================= 공정 로그 ================= */}
           <Route path="process-log" element={<ProcessLog />} />
+
+          {/* 하린이의 TEST 링크 */}
+          <Route path="test" element={<Test />} />
         </Route>
 
         {/* 루트 접근 */}
