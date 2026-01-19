@@ -2,15 +2,36 @@ import styled from "styled-components";
 import { useMemo, useState } from "react";
 import Table from "../components/TableStyle";
 import { AlertTriangle, PlayCircle, PauseCircle, Power } from "lucide-react";
+import SummaryCard from "../components/SummaryCard";
 
 /* =========================
    상태 카드 데이터
 ========================= */
 const summaryData = [
-  { label: "WAITING", value: 178, color: "#facc15", icon: <PauseCircle /> },
-  { label: "RUN", value: 300, color: "#22c55e", icon: <PlayCircle /> },
-  { label: "ERROR", value: 3, color: "#ef4444", icon: <AlertTriangle /> },
-  { label: "STOP", value: 30, color: "#9ca3af", icon: <Power /> },
+  {
+    label: "WAITING",
+    value: 178,
+    color: "#facc15",
+    icon: <PauseCircle />,
+  },
+  {
+    label: "RUN",
+    value: 300,
+    color: "#22c55e",
+    icon: <PlayCircle />,
+  },
+  {
+    label: "ERROR",
+    value: 3,
+    color: "#ef4444",
+    icon: <AlertTriangle />,
+  },
+  {
+    label: "STOP",
+    value: 30,
+    color: "#9ca3af",
+    icon: <Power />,
+  },
 ];
 
 export default function Machine() {
@@ -21,7 +42,7 @@ export default function Machine() {
   });
 
   /* =========================
-     에러 로그 (상단)
+     에러 로그
   ========================= */
   const errorLogs = [
     {
@@ -81,29 +102,25 @@ export default function Machine() {
   };
 
   /* =========================
-     정렬 데이터 (⭐ 자연 정렬)
+     정렬 데이터 (자연 정렬)
   ========================= */
   const sortedData = useMemo(() => {
     if (!sortConfig.key) return tableData;
 
-    const sorted = [...tableData].sort((a, b) => {
+    return [...tableData].sort((a, b) => {
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
 
-      // 문자열 → 자연 정렬
       if (typeof aVal === "string" && typeof bVal === "string") {
         return sortConfig.direction === "asc"
           ? aVal.localeCompare(bVal, "ko", { numeric: true })
           : bVal.localeCompare(aVal, "ko", { numeric: true });
       }
 
-      // 숫자
       if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
       if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
       return 0;
     });
-
-    return sorted;
   }, [tableData, sortConfig]);
 
   return (
@@ -115,13 +132,13 @@ export default function Machine() {
       {/* ===== 상태 요약 카드 ===== */}
       <SummaryGrid>
         {summaryData.map((item) => (
-          <SummaryCard key={item.label}>
-            <IconBox color={item.color}>{item.icon}</IconBox>
-            <div>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-            </div>
-          </SummaryCard>
+          <SummaryCard
+            key={item.label}
+            icon={item.icon}
+            label={item.label}
+            value={item.value}
+            color={item.color}
+          />
         ))}
       </SummaryGrid>
 
@@ -175,38 +192,6 @@ const SummaryGrid = styled.div`
   @media (max-width: 1200px) {
     grid-template-columns: repeat(2, 1fr);
   }
-`;
-
-const SummaryCard = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
-
-  span {
-    font-size: 12px;
-    opacity: 0.7;
-  }
-
-  strong {
-    font-size: 20px;
-    display: block;
-    margin-top: 4px;
-  }
-`;
-
-const IconBox = styled.div`
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: ${(props) => props.color}22;
-  color: ${(props) => props.color};
-  display: flex;
-  align-items: center;
-  justify-content: center;
 `;
 
 const ErrorSection = styled.div`
