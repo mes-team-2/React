@@ -7,14 +7,35 @@ import styled from "styled-components";
 ========================= */
 const PAGE_LABEL = {
   "/mes/dashboard": "대시보드",
-  "/mes/workorders": "작업지시",
-  "/mes/lot": "LOT/이력",
+
+  // 기준 정보
+  "/mes/master/machine": "설비 관리",
+  "/mes/master/process": "공정 관리",
+  "/mes/master/bom": "BOM 관리",
+  "/mes/master/worker": "작업자 관리",
+
+  // 생산
+  "/mes/workorders": "작업지시 관리",
   "/mes/process-log": "공정 로그",
-  "/mes/quality": "품질/불량",
-  "/mes/material": "자재",
-  "/mes/bom": "BOM",
-  "/mes/machine": "설비",
-  "/mes/inventory": "재고",
+  "/mes/lot": "LOT 관리",
+
+  // 품질
+  "/mes/quality/test": "검사 이력",
+  "/mes/quality/defect": "불량 관리",
+
+  // 자재
+  "/mes/material": "자재 관리",
+  "/mes/material-stock": "자재 재고 관리",
+  "/mes/material-tx": "자재 이력 조회",
+
+  // 제품
+  "/mes/product": "제품 관리",
+  "/mes/inventory": "제품 재고 관리",
+  "/mes/shipment": "제품 출하 관리",
+
+  // 리포트
+  "/mes/report/product-report": "생산 리포트",
+  "/mes/report/trace": "Traceability 조회",
 };
 
 const STORAGE_KEY = "mes_recent_pages";
@@ -52,13 +73,26 @@ const MENU = [
   },
   {
     key: "inventory",
-    title: "자재 / 제품 관리",
-    items: [
-      { to: "/mes/material", label: "자재 관리" },
-      { to: "/mes/material-tx", label: "자재 이력" },
-      { to: "/mes/product", label: "제품 관리" },
-      { to: "/mes/inventory", label: "제품 재고 관리" },
-      { to: "/mes/shipment", label: "제품 출하 관리" },
+    title: "자재/제품 관리",
+    groups: [
+      {
+        key: "material",
+        title: "자재 관리",
+        items: [
+          { to: "/mes/material", label: "자재 관리" },
+          { to: "/mes/material-stock", label: "자재 재고 관리" },
+          { to: "/mes/material-tx", label: "자재 이력 조회" },
+        ],
+      },
+      {
+        key: "product",
+        title: "제품 관리",
+        items: [
+          { to: "/mes/product", label: "제품 관리" },
+          { to: "/mes/inventory", label: "제품 재고 관리" },
+          { to: "/mes/shipment", label: "제품 출하 관리" },
+        ],
+      },
     ],
   },
   {
@@ -114,20 +148,43 @@ export default function SideBar() {
   };
 
   /* =========================
-     🔹 대분류 열림 상태 (복수)
+     🔹 대분류/중분류 열림 상태
   ========================= */
   const [openKeys, setOpenKeys] = useState([]);
 
+  // 현재 경로에 해당하는 대분류 자동 오픈
   useEffect(() => {
-    const current = MENU.find((group) =>
-      group.items.some((item) => location.pathname.startsWith(item.to))
-    );
-    if (current && !openKeys.includes(current.key)) {
-      setOpenKeys((prev) => [...prev, current.key]);
+    const currentGroup = MENU.find((group) => {
+      if (group.items?.some((it) => location.pathname.startsWith(it.to)))
+        return true;
+      if (
+        group.groups?.some((g) =>
+          g.items.some((it) => location.pathname.startsWith(it.to))
+        )
+      )
+        return true;
+      return false;
+    });
+
+    if (currentGroup && !openKeys.includes(currentGroup.key)) {
+      setOpenKeys((prev) => [...prev, currentGroup.key]);
     }
   }, [location.pathname]);
 
-  const toggleGroup = (key) => {
+  // inventory 안의 중분류 자동 오픈 (material/product)
+  useEffect(() => {
+    const inv = MENU.find((g) => g.key === "inventory");
+    if (!inv?.groups) return;
+
+    const mid = inv.groups.find((mg) =>
+      mg.items.some((it) => location.pathname.startsWith(it.to))
+    );
+    if (mid && !openKeys.includes(mid.key)) {
+      setOpenKeys((prev) => [...prev, mid.key]);
+    }
+  }, [location.pathname]);
+
+  const toggleKey = (key) => {
     setOpenKeys((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
@@ -147,19 +204,48 @@ export default function SideBar() {
             const open = openKeys.includes(group.key);
             return (
               <div key={group.key}>
-                <GroupTitle onClick={() => toggleGroup(group.key)}>
+                <GroupTitle onClick={() => toggleKey(group.key)}>
                   {group.title}
                   <Arrow $open={open}>▾</Arrow>
                 </GroupTitle>
 
                 {open && (
-                  <GroupItems>
-                    {group.items.map((item) => (
-                      <MenuLink key={item.to} to={item.to}>
-                        {item.label}
-                      </MenuLink>
-                    ))}
-                  </GroupItems>
+                  <GroupBody>
+                    {/* 2단: 일반 메뉴 */}
+                    {group.items && (
+                      <GroupItems>
+                        {group.items.map((item) => (
+                          <MenuLink key={item.to} to={item.to}>
+                            {item.label}
+                          </MenuLink>
+                        ))}
+                      </GroupItems>
+                    )}
+
+                    {/* 3단: 중분류 + 소분류 */}
+                    {group.groups &&
+                      group.groups.map((mid) => {
+                        const midOpen = openKeys.includes(mid.key);
+                        return (
+                          <MidWrap key={mid.key}>
+                            <MidTitle onClick={() => toggleKey(mid.key)}>
+                              {mid.title}
+                              <Arrow $open={midOpen}>▾</Arrow>
+                            </MidTitle>
+
+                            {midOpen && (
+                              <MidItems>
+                                {mid.items.map((item) => (
+                                  <MenuLink key={item.to} to={item.to}>
+                                    {item.label}
+                                  </MenuLink>
+                                ))}
+                              </MidItems>
+                            )}
+                          </MidWrap>
+                        );
+                      })}
+                  </GroupBody>
                 )}
               </div>
             );
@@ -172,7 +258,7 @@ export default function SideBar() {
       </Sidebar>
 
       {/* =========================
-         메인 영역 (탭바 완전 복구)
+         메인 영역 (탭바 완전 유지)
       ========================= */}
       <Main>
         <TopBar>
@@ -213,7 +299,7 @@ export default function SideBar() {
 }
 
 /* =========================
-   styled (탭바 원본 스타일)
+   styled (원래 테마 변수 기반 유지)
 ========================= */
 
 const Shell = styled.div`
@@ -241,26 +327,78 @@ const Nav = styled.nav`
 `;
 
 const GroupTitle = styled.div`
-  margin-top: 12px;
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0.7;
+  margin-top: 16px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  opacity: 0.9;
   cursor: pointer;
+
   display: flex;
+  align-items: center;
   justify-content: space-between;
+
+  /* 원래 톤 유지하면서 강조 */
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.14);
+  }
 `;
 
 const Arrow = styled.span`
+  font-size: 11px;
+  opacity: 0.7;
   transform: ${({ $open }) => ($open ? "rotate(180deg)" : "rotate(0deg)")};
-  transition: 0.2s;
+  transition: transform 0.2s ease;
+`;
+
+const GroupBody = styled.div`
+  margin-top: 8px;
 `;
 
 const GroupItems = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-bottom: 10px;
+`;
+
+const MidWrap = styled.div`
+  margin-top: 10px;
+`;
+
+const MidTitle = styled.div`
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.85;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+`;
+
+const MidItems = styled.div`
   margin-top: 6px;
+  margin-left: 8px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(99, 102, 241, 0.25);
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 `;
 
 const MenuLink = styled(NavLink)`
@@ -274,7 +412,7 @@ const MenuLink = styled(NavLink)`
 
   &.active {
     background: rgba(99, 102, 241, 0.25);
-    font-weight: 600;
+    font-weight: 700;
   }
 `;
 
