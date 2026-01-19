@@ -25,7 +25,6 @@ const PAGE_LABEL = {
 
   // 자재
   "/mes/material": "자재 관리",
-  "/mes/material-stock": "자재 재고 관리",
   "/mes/material-tx": "자재 이력 조회",
 
   // 제품
@@ -80,7 +79,6 @@ const MENU = [
         title: "자재 관리",
         items: [
           { to: "/mes/material", label: "자재 관리" },
-          { to: "/mes/material-stock", label: "자재 재고 관리" },
           { to: "/mes/material-tx", label: "자재 이력 조회" },
         ],
       },

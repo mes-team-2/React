@@ -24,7 +24,7 @@ import Trace from "./pages/report/Trace";
 import ProductReport from "./pages/report/ProductReport";
 import Test from "./pages/Test";
 import Worker from "./pages/master/Worker";
-import MaterialStock from "./pages/MaterialStock";
+import Process from "./pages/master/Process";
 
 /* 아직 안 만든 페이지는 임시 */
 const Empty = ({ title }) => <div>{title}</div>;
@@ -46,9 +46,8 @@ function App() {
 
           {/* ================= 기준정보 (Master) ================= */}
           <Route path="master">
-            <Route path="member" element={<Empty title="작업자 관리" />} />
-            <Route path="product" element={<Empty title="제품 관리" />} />
-            <Route path="process" element={<Empty title="공정 관리" />} />
+            <Route path="product" element={<Product />} />
+            <Route path="process" element={<Process />} />
             <Route path="worker" element={<Worker />} />
             <Route path="machine" element={<Machine />} />
             <Route path="bom" element={<Bom />} />
@@ -67,7 +66,6 @@ function App() {
 
           {/* ================= 자재 / 재고 ================= */}
           <Route path="material" element={<Material />} />
-          <Route path="material-stock" element={<MaterialStock />} />
           <Route path="material-tx" element={<Empty title="자재 이력" />} />
           <Route path="product" element={<Product />} />
           <Route path="inventory" element={<Inventory />} />
