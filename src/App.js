@@ -19,6 +19,9 @@ import Inventory from "./pages/inventory/Inventory";
 import Machine from "./pages/master/Machine";
 import Material from "./pages/master/Material";
 import ProcessLog from "./pages/production/ProcessLog";
+import Product from "./pages/master/Product";
+import Trace from "./pages/report/Trace";
+import ProductReport from "./pages/report/ProductReport";
 
 /* 아직 안 만든 페이지는 임시 */
 const Empty = ({ title }) => <div>{title}</div>;
@@ -61,12 +64,13 @@ function App() {
           {/* ================= 자재 / 재고 ================= */}
           <Route path="material" element={<Material />} />
           <Route path="material-tx" element={<Empty title="자재 이력" />} />
+          <Route path="product" element={<Product />} />
           <Route path="inventory" element={<Inventory />} />
 
           {/* ================= 리포트 ================= */}
           <Route path="report">
-            <Route path="production" element={<Empty title="생산 리포트" />} />
-            <Route path="trace" element={<Empty title="Traceability 조회" />} />
+            <Route path="product-report" element={<ProductReport />} />
+            <Route path="trace" element={<Trace />} />
           </Route>
 
           {/* ================= 공정 로그 ================= */}

@@ -65,8 +65,8 @@ const MENU = [
     key: "report",
     title: "리포트 / 조회",
     items: [
-      { to: "/mes/report", label: "생산 리포트" },
-      { to: "/mes/trace", label: "Traceability 조회" },
+      { to: "/mes/report/product-report", label: "생산 리포트" },
+      { to: "/mes/report/trace", label: "Traceability 조회" },
     ],
   },
 ];
