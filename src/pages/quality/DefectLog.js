@@ -54,7 +54,7 @@ export default function QualityDefectLog() {
         lotNo: `LOT-202601-${String(i + 1).padStart(3, "0")}`,
         workOrderNo: `WO-202601-${String(Math.floor(i / 2) + 1).padStart(
           3,
-          "0"
+          "0",
         )}`,
         process: i % 3 === 0 ? "조립" : i % 3 === 1 ? "활성화" : "검사",
         machine: `설비-${(i % 4) + 1}`,
@@ -62,7 +62,7 @@ export default function QualityDefectLog() {
         defectQty: 1 + (i % 4),
         occurredAt: "2026-01-06 14:30",
       })),
-    []
+    [],
   );
 
   /* =========================

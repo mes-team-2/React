@@ -4,6 +4,8 @@ import Table from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
 import MaterialDetail from "./MaterialDetail";
 import SideDrawer from "../../components/SideDrawer";
+import MaterialCreate from "./MaterialCreate";
+
 import {
   PieChart,
   Pie,
@@ -33,6 +35,7 @@ export default function Material() {
 
   const [open, setOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   /* =========================
      차트 더미 데이터
@@ -234,6 +237,10 @@ export default function Material() {
           onChange={setKeyword}
           placeholder="자재명 / 자재코드 검색"
         />
+
+        <CreateButton onClick={() => setCreateOpen(true)}>
+          신규 자재 등록
+        </CreateButton>
       </FilterBar>
 
       {/* ===== 테이블 (밀림 방지) ===== */}
@@ -253,6 +260,9 @@ export default function Material() {
       <SideDrawer open={open} onClose={() => setOpen(false)}>
         <MaterialDetail material={selectedMaterial} />
       </SideDrawer>
+      <SideDrawer open={createOpen} onClose={() => setCreateOpen(false)}>
+        <MaterialCreate onClose={() => setCreateOpen(false)} />
+      </SideDrawer>
     </Wrapper>
   );
 }
@@ -260,6 +270,14 @@ export default function Material() {
 /* =========================
    styled
 ========================= */
+const CreateButton = styled.button`
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: var(--main);
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+`;
 
 const Wrapper = styled.div`
   display: flex;
