@@ -57,7 +57,6 @@ export default function Worker() {
     { key: "workerNo", label: "작업자 번호", width: 140 },
     { key: "name", label: "이름", width: 120 },
     { key: "process", label: "공정", width: 160 },
-    { key: "line", label: "라인", width: 100 },
     { key: "position", label: "직급", width: 100 },
     { key: "status", label: "근무 상태", width: 120 },
     { key: "joinedAt", label: "입사일", width: 120 },
