@@ -40,7 +40,6 @@ export default function MaterialDetail({ material, onClose }) {
       {/* ===== 헤더 ===== */}
       <Header>
         <h3>자재 재고 상세 조회</h3>
-        <CloseButton onClick={onClose}>✕</CloseButton>
       </Header>
 
       {/* ===== 기본 정보 ===== */}
@@ -127,11 +126,6 @@ const Header = styled.div`
     font-size: 18px;
     font-weight: 700;
   }
-`;
-
-const CloseButton = styled.button`
-  font-size: 18px;
-  opacity: 0.6;
 `;
 
 const FormGrid = styled.div`
