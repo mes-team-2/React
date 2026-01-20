@@ -48,7 +48,7 @@ export default function Lot() {
         workOrderNo: `WO-202601-00${(i % 5) + 1}`,
         createdAt: `2026-01-${String((i % 5) + 1).padStart(2, "0")} 09:00`,
       })),
-    []
+    [],
   );
 
   /* =========================
@@ -61,7 +61,7 @@ export default function Lot() {
     return tableData.filter(
       (row) =>
         row.lotNo.toLowerCase().includes(lower) ||
-        row.workOrderNo.toLowerCase().includes(lower)
+        row.workOrderNo.toLowerCase().includes(lower),
     );
   }, [keyword, tableData]);
 

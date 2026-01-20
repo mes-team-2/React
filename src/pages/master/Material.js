@@ -2,6 +2,8 @@ import styled from "styled-components";
 import { useMemo, useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
+import MaterialDetail from "./MaterialDetail";
+import SideDrawer from "../../components/SideDrawer";
 import {
   PieChart,
   Pie,
@@ -27,10 +29,10 @@ export default function Material() {
   ========================= */
   const [keyword, setKeyword] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
-  });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const [open, setOpen] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   /* =========================
      차트 더미 데이터
@@ -62,11 +64,14 @@ export default function Material() {
   ========================= */
   const columns = [
     { key: "no", label: "No", width: 60 },
-    { key: "materialCode", label: "Material Code", width: 140 },
-    { key: "materialName", label: "Material Name", width: 200 },
-    { key: "unit", label: "Unit", width: 80 },
-    { key: "stock", label: "Stock", width: 100 },
-    { key: "updatedAt", label: "재고갱신일자", width: 160 },
+    { key: "materialCode", label: "자재 코드", width: 180 },
+    { key: "materialName", label: "자재명", width: 220 },
+    { key: "stockQty", label: "재고", width: 120 },
+    { key: "safeQty", label: "안전재고", width: 120 },
+    { key: "unit", label: "단위", width: 80 },
+    { key: "stockStatus", label: "재고상태", width: 120 },
+    { key: "createdAt", label: "자재등록일자", width: 180 },
+    { key: "inboundAt", label: "입고일자", width: 180 },
   ];
 
   /* =========================
@@ -74,20 +79,32 @@ export default function Material() {
   ========================= */
   const tableData = useMemo(
     () =>
-      Array.from({ length: 20 }).map((_, i) => ({
-        id: i + 1,
-        no: i + 1,
-        materialCode: `MAT-10${i}`,
-        materialName: `배터리 자재 ${i + 1}`,
-        unit: "EA",
-        stock: 1200 - i * 45,
-        updatedAt: "2026-01-05 14:22",
-      })),
-    []
+      Array.from({ length: 20 }).map((_, i) => {
+        const stock = 12345 - i * 300;
+        const safe = 5000;
+
+        let status = "안전";
+        if (stock < safe) status = "주의";
+        if (stock < safe * 0.6) status = "위험";
+
+        return {
+          id: i + 1,
+          no: i + 1,
+          materialCode: "MAT-260111-143522",
+          materialName: "배터리 케이스 (L3)",
+          stockQty: stock,
+          safeQty: safe,
+          unit: "EA",
+          stockStatus: status,
+          createdAt: "2026/01/01 12:23",
+          inboundAt: "2026/01/05 14:22",
+        };
+      }),
+    [],
   );
 
   /* =========================
-     실시간 검색
+     검색
   ========================= */
   const filteredData = useMemo(() => {
     if (!keyword.trim()) return tableData;
@@ -95,7 +112,7 @@ export default function Material() {
     return tableData.filter(
       (row) =>
         row.materialCode.toLowerCase().includes(lower) ||
-        row.materialName.toLowerCase().includes(lower)
+        row.materialName.toLowerCase().includes(lower),
     );
   }, [keyword, tableData]);
 
@@ -104,49 +121,42 @@ export default function Material() {
   }, [keyword]);
 
   /* =========================
-     정렬 핸들러
+     정렬
   ========================= */
   const handleSort = (key) => {
-    setSortConfig((prev) => {
-      if (prev.key === key) {
-        return {
-          key,
-          direction: prev.direction === "asc" ? "desc" : "asc",
-        };
-      }
-      return { key, direction: "asc" };
-    });
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" },
+    );
   };
 
-  /* =========================
-     정렬 데이터 (⭐ 자연 정렬)
-  ========================= */
   const sortedData = useMemo(() => {
     if (!sortConfig.key) return filteredData;
 
-    const sorted = [...filteredData].sort((a, b) => {
+    return [...filteredData].sort((a, b) => {
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
 
-      // 문자열 + 숫자 섞인 경우 → 자연 정렬
       if (typeof aVal === "string" && typeof bVal === "string") {
         return sortConfig.direction === "asc"
           ? aVal.localeCompare(bVal, "ko", { numeric: true })
           : bVal.localeCompare(aVal, "ko", { numeric: true });
       }
 
-      // 숫자 / 기타
-      if (aVal > bVal) {
-        return sortConfig.direction === "asc" ? 1 : -1;
-      }
-      if (aVal < bVal) {
-        return sortConfig.direction === "asc" ? -1 : 1;
-      }
+      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
       return 0;
     });
-
-    return sorted;
   }, [filteredData, sortConfig]);
+
+  /* =========================
+     Row 클릭 → 상세
+  ========================= */
+  const handleRowClick = (row) => {
+    setSelectedMaterial(row);
+    setOpen(true);
+  };
 
   return (
     <Wrapper>
@@ -154,7 +164,7 @@ export default function Material() {
         <h2>자재 / 재고관리</h2>
       </Header>
 
-      {/* ===== 차트 영역 ===== */}
+      {/* ===== 차트 ===== */}
       <ChartGrid>
         <Card>
           <h4>자재 재고 상태</h4>
@@ -166,8 +176,6 @@ export default function Material() {
                   dataKey="value"
                   innerRadius={55}
                   outerRadius={80}
-                  focusable={false}
-                  activeShape={null}
                 >
                   {inventoryStatus.map((_, i) => (
                     <Cell key={i} fill={COLORS[i]} />
@@ -187,7 +195,7 @@ export default function Material() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="stock" fill="#6366f1" focusable={false} />
+                <Bar dataKey="stock" fill="#6366f1" />
               </BarChart>
             </ResponsiveContainer>
           </ChartBox>
@@ -206,14 +214,12 @@ export default function Material() {
                   stroke="#3b82f6"
                   strokeWidth={2}
                   dot={false}
-                  activeDot={false}
                 />
                 <Line
                   dataKey="outbound"
                   stroke="#ef4444"
                   strokeWidth={2}
                   dot={false}
-                  activeDot={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -230,15 +236,23 @@ export default function Material() {
         />
       </FilterBar>
 
-      {/* ===== 테이블 ===== */}
-      <Table
-        columns={columns}
-        data={sortedData}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        selectedIds={selectedIds}
-        onSelectChange={setSelectedIds}
-      />
+      {/* ===== 테이블 (밀림 방지) ===== */}
+      <TableContainer>
+        <Table
+          columns={columns}
+          data={sortedData}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          selectedIds={selectedIds}
+          onSelectChange={setSelectedIds}
+          onRowClick={handleRowClick}
+        />
+      </TableContainer>
+
+      {/* ===== 상세 Drawer ===== */}
+      <SideDrawer open={open} onClose={() => setOpen(false)}>
+        <MaterialDetail material={selectedMaterial} />
+      </SideDrawer>
     </Wrapper>
   );
 }
@@ -295,4 +309,9 @@ const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+`;
+
+const TableContainer = styled.div`
+  width: 100%;
+  overflow-x: auto;
 `;
