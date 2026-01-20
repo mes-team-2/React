@@ -9,7 +9,6 @@ export default function WorkerDetail({ worker, onClose }) {
   ========================= */
   const workHistoryColumns = [
     { key: "process", label: "공정", width: 160 },
-    { key: "line", label: "라인", width: 120 },
     { key: "startTime", label: "시작 시각", width: 160 },
     { key: "endTime", label: "종료 시각", width: 160 },
     { key: "defect", label: "불량 여부", width: 120 },
@@ -19,7 +18,6 @@ export default function WorkerDetail({ worker, onClose }) {
     {
       id: 1,
       process: "극판 적층",
-      line: "라인-1",
       startTime: "2026/01/10 09:00",
       endTime: "2026/01/10 11:30",
       defect: "없음",
@@ -27,7 +25,6 @@ export default function WorkerDetail({ worker, onClose }) {
     {
       id: 2,
       process: "COS 용접",
-      line: "라인-2",
       startTime: "2026/01/10 13:00",
       endTime: "2026/01/10 15:20",
       defect: "전압 미달",
@@ -35,7 +32,6 @@ export default function WorkerDetail({ worker, onClose }) {
     {
       id: 3,
       process: "화성",
-      line: "라인-3",
       startTime: "2026/01/11 08:40",
       endTime: "2026/01/11 12:10",
       defect: "없음",
@@ -63,10 +59,7 @@ export default function WorkerDetail({ worker, onClose }) {
           <label>공정</label>
           <strong>{worker.process}</strong>
         </InfoItem>
-        <InfoItem>
-          <label>라인</label>
-          <strong>{worker.line}</strong>
-        </InfoItem>
+
         <InfoItem>
           <label>직급</label>
           <strong>{worker.position}</strong>
