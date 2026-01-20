@@ -22,6 +22,12 @@ const GlobalStyle = createGlobalStyle`
     --stop : #64748b; // 정지
     --waiting : #f59e0b; // 대기 (기본값)
     --error : #ef4444; // 에러
+    --complete : #004dfc; // 무언가의 완료상태
+    --bgWaiting : #FEF6E7;
+    --bgRun : #E9FAEF;
+    --bgComplete : #E6EEFF;
+    --bgError : #FEEDED;
+    --bgStop : #D1D6DD;
   }
   button {
     background: none;
