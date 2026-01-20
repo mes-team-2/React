@@ -21,7 +21,7 @@ AxiosApi.login = async (email, pwd) => {
   return await AxiosApi.post(
     "/api/members/login",
     { email, pwd },
-    { withCredentials: true }
+    { withCredentials: true },
   );
 };
 
@@ -56,7 +56,7 @@ AxiosApi.verifyEmailCode = async (code) => {
     { code },
     {
       headers: { Authorization: `Bearer ${token}` },
-    }
+    },
   );
 };
 
@@ -102,7 +102,7 @@ AxiosApi.approveAuction = async (id, startTime) => {
   return await AxiosApi.post(
     "/api/admin/approve",
     { id, startTime },
-    getAdminConfig()
+    getAdminConfig(),
   );
 };
 
@@ -110,7 +110,7 @@ AxiosApi.suspendMember = async (id) => {
   return await AxiosApi.patch(
     `/api/admin/${id}/suspend`,
     null,
-    getAdminConfig()
+    getAdminConfig(),
   );
 };
 
@@ -118,7 +118,7 @@ AxiosApi.activateMember = async (id) => {
   return await AxiosApi.patch(
     `/api/admin/${id}/activate`,
     null,
-    getAdminConfig()
+    getAdminConfig(),
   );
 };
 
@@ -173,7 +173,7 @@ export const createAuction = async (auctionFormData) => {
 AxiosApi.createBid = async (auctionId, bidCreateDto) => {
   const res = await AxiosApi.post(
     `/api/auctions/${auctionId}/bids`,
-    bidCreateDto
+    bidCreateDto,
   );
   return res.status === 200 || res.status === 201;
 };
