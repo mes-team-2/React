@@ -8,12 +8,11 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
 } from "recharts";
 
 export default function LotDetail({ lot }) {
   /* =========================
-     정렬 상태
+     ✅ Hook은 항상 최상단에서
   ========================= */
   const [processSort, setProcessSort] = useState({
     key: null,
@@ -25,26 +24,42 @@ export default function LotDetail({ lot }) {
   });
 
   /* =========================
-     더미 데이터
+     데이터(더미) - lot 없으면 빈 배열로
   ========================= */
   const processLogs = useMemo(() => {
     if (!lot) return [];
     return [
       {
         id: 1,
-        step: "조립",
-        machine: "설비-2",
+        process: "극판 적층",
+        machine: "STACK-02",
         status: "DONE",
-        startedAt: "09:00",
-        endedAt: "10:20",
+        startAt: "09:00",
+        endAt: "09:35",
       },
       {
         id: 2,
-        step: "충전",
-        machine: "설비-10",
+        process: "COS 용접",
+        machine: "COS-01",
         status: "DONE",
-        startedAt: "10:30",
-        endedAt: "11:40",
+        startAt: "09:40",
+        endAt: "10:10",
+      },
+      {
+        id: 3,
+        process: "화성(충전)",
+        machine: "FORM-10",
+        status: "DONE",
+        startAt: "10:20",
+        endAt: "11:40",
+      },
+      {
+        id: 4,
+        process: "최종 성능 검사",
+        machine: "TEST-03",
+        status: "DONE",
+        startAt: "11:50",
+        endAt: "12:10",
       },
     ];
   }, [lot]);
@@ -52,159 +67,166 @@ export default function LotDetail({ lot }) {
   const qualityLogs = useMemo(() => {
     if (!lot) return [];
     return [
-      { id: 1, type: "전압 검사", pass: 480, fail: 20 },
-      { id: 2, type: "내부 저항", pass: 490, fail: 10 },
-      { id: 3, type: "외관 검사", pass: 495, fail: 5 },
+      { id: 1, item: "OCV(개방회로전압)", pass: 490, fail: 10 },
+      { id: 2, item: "내압", pass: 495, fail: 5 },
+      { id: 3, item: "누액", pass: 498, fail: 2 },
     ];
   }, [lot]);
 
   /* =========================
-     불량률 차트 데이터
-  ========================= */
-  const defectRateData = useMemo(() => {
-    return qualityLogs.map((q) => {
-      const total = q.pass + q.fail;
-      return {
-        name: q.type,
-        defectRate: Number(((q.fail / total) * 100).toFixed(2)),
-      };
-    });
-  }, [qualityLogs]);
-
-  /* =========================
      정렬 유틸
   ========================= */
-  const sortData = (data, sortConfig) => {
-    if (!sortConfig.key) return data;
+  const sortData = (data, config) => {
+    if (!config.key) return data;
 
     return [...data].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
+      const aVal = a?.[config.key];
+      const bVal = b?.[config.key];
 
-      if (typeof aVal === "string") {
-        return sortConfig.direction === "asc"
+      if (aVal === undefined && bVal === undefined) return 0;
+      if (aVal === undefined) return 1;
+      if (bVal === undefined) return -1;
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return config.direction === "asc"
           ? aVal.localeCompare(bVal, "ko", { numeric: true })
           : bVal.localeCompare(aVal, "ko", { numeric: true });
       }
-
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+      return config.direction === "asc" ? aVal - bVal : bVal - aVal;
     });
   };
 
   const sortedProcessLogs = useMemo(
     () => sortData(processLogs, processSort),
-    [processLogs, processSort]
+    [processLogs, processSort],
   );
 
   const sortedQualityLogs = useMemo(
     () => sortData(qualityLogs, qualitySort),
-    [qualityLogs, qualitySort]
+    [qualityLogs, qualitySort],
   );
 
-  if (!lot) {
-    return <Empty>LOT를 선택하세요.</Empty>;
-  }
+  /* =========================
+     불량률 차트
+  ========================= */
+  const defectRateData = useMemo(() => {
+    return qualityLogs.map((q) => {
+      const total = q.pass + q.fail;
+      return {
+        name: q.item,
+        rate: total === 0 ? 0 : Number(((q.fail / total) * 100).toFixed(2)),
+      };
+    });
+  }, [qualityLogs]);
 
   /* =========================
      컬럼
   ========================= */
   const processColumns = [
-    { key: "step", label: "공정", width: 140 },
+    { key: "process", label: "공정", width: 160 },
     { key: "machine", label: "설비", width: 140 },
-    { key: "status", label: "상태", width: 120 },
-    { key: "startedAt", label: "시작", width: 120 },
-    { key: "endedAt", label: "종료", width: 120 },
+    { key: "status", label: "상태", width: 100 },
+    { key: "startAt", label: "시작", width: 110 },
+    { key: "endAt", label: "종료", width: 110 },
   ];
 
   const qualityColumns = [
-    { key: "type", label: "검사 항목", width: 160 },
-    { key: "pass", label: "합격", width: 100 },
-    { key: "fail", label: "불량", width: 100 },
+    { key: "item", label: "검사 항목", width: 200 },
+    { key: "pass", label: "합격", width: 110 },
+    { key: "fail", label: "불합격", width: 110 },
   ];
+
+  const handleSortProcess = (key) => {
+    setProcessSort((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" },
+    );
+  };
+
+  const handleSortQuality = (key) => {
+    setQualitySort((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" },
+    );
+  };
+
+  /* =========================
+     ✅ 여기서 조건부 렌더링
+     (Hook 호출 이후)
+  ========================= */
+  if (!lot) {
+    return <Empty>LOT를 선택하세요.</Empty>;
+  }
 
   return (
     <Wrapper>
-      {/* ===== Header ===== */}
       <Header>
-        <h3>LOT 상세</h3>
-        <StatusBadge status={lot.status}>{lot.status}</StatusBadge>
+        <div>
+          <h3>LOT 상세</h3>
+          <LotNo>{lot.lotNo}</LotNo>
+        </div>
+        <Badge>{lot.status}</Badge>
       </Header>
 
-      {/* ===== Summary ===== */}
       <Summary>
-        <Item>
-          <label>LOT No</label>
-          <strong>{lot.lotNo}</strong>
-        </Item>
-        <Item>
-          <label>제품</label>
-          <strong>{lot.product}</strong>
-        </Item>
-        <Item>
-          <label>수량</label>
-          <strong>{lot.qty}</strong>
-        </Item>
-        <Item>
+        <SumItem>
+          <label>자재</label>
+          <strong>
+            {lot.materialName} ({lot.materialCode})
+          </strong>
+        </SumItem>
+        <SumItem>
+          <label>입고일</label>
+          <strong>{lot.inboundAt}</strong>
+        </SumItem>
+        <SumItem>
+          <label>잔량</label>
+          <strong>{Number(lot.remainQty ?? 0).toLocaleString()}</strong>
+        </SumItem>
+        <SumItem>
           <label>작업지시</label>
           <strong>{lot.workOrderNo}</strong>
-        </Item>
+        </SumItem>
       </Summary>
 
-      {/* ===== 불량률 차트 ===== */}
-      <ChartCard>
-        <h4>LOT 불량률 (%)</h4>
-        <ChartBox>
-          <ResponsiveContainer>
-            <BarChart data={defectRateData}>
-              <XAxis dataKey="name" />
-              <YAxis unit="%" />
-              <Tooltip formatter={(v) => `${v}%`} />
-              <ReferenceLine
-                y={2}
-                stroke="#ef4444"
-                strokeDasharray="4 4"
-                label="허용 기준 2%"
-              />
-              <Bar dataKey="defectRate" fill="#6366f1" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartBox>
-      </ChartCard>
-
-      {/* ===== 공정 ===== */}
       <Section>
-        <h4>공정 이력</h4>
+        <SectionTitle>공정 이력</SectionTitle>
         <Table
           columns={processColumns}
           data={sortedProcessLogs}
           sortConfig={processSort}
-          onSort={(key) =>
-            setProcessSort((p) => ({
-              key,
-              direction:
-                p.key === key && p.direction === "asc" ? "desc" : "asc",
-            }))
-          }
+          onSort={handleSortProcess}
           selectable={false}
         />
       </Section>
 
-      {/* ===== 품질 ===== */}
       <Section>
-        <h4>품질 검사</h4>
+        <SectionTitle>검사 결과</SectionTitle>
         <Table
           columns={qualityColumns}
           data={sortedQualityLogs}
           sortConfig={qualitySort}
-          onSort={(key) =>
-            setQualitySort((p) => ({
-              key,
-              direction:
-                p.key === key && p.direction === "asc" ? "desc" : "asc",
-            }))
-          }
+          onSort={handleSortQuality}
           selectable={false}
         />
+      </Section>
+
+      <Section>
+        <SectionTitle>검사 항목별 불량률 (%)</SectionTitle>
+        <ChartCard>
+          <ChartBox>
+            <ResponsiveContainer>
+              <BarChart data={defectRateData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="rate" fill="#ef4444" />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartBox>
+        </ChartCard>
       </Section>
     </Wrapper>
   );
@@ -215,39 +237,42 @@ export default function LotDetail({ lot }) {
 ========================= */
 
 const Wrapper = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
+`;
+
+const Empty = styled.div`
+  padding: 40px 20px;
+  color: var(--font2);
+  text-align: center;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
 
   h3 {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
   }
 `;
 
-const StatusBadge = styled.div`
-  padding: 6px 14px;
+const LotNo = styled.div`
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--main);
+`;
+
+const Badge = styled.div`
+  padding: 8px 14px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
-  background: ${({ status }) =>
-    status === "DONE"
-      ? "#dcfce7"
-      : status === "IN_PROCESS"
-      ? "#dbeafe"
-      : "#fef3c7"};
-  color: ${({ status }) =>
-    status === "DONE"
-      ? "#15803d"
-      : status === "IN_PROCESS"
-      ? "#1d4ed8"
-      : "#b45309"};
+  font-weight: 700;
+  background: #f3f4f6;
 `;
 
 const Summary = styled.div`
@@ -256,35 +281,36 @@ const Summary = styled.div`
   gap: 12px;
 `;
 
-const Item = styled.div`
+const SumItem = styled.div`
   background: white;
   border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  padding: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
 
   label {
     font-size: 11px;
     opacity: 0.6;
   }
-
   strong {
     display: block;
-    margin-top: 4px;
+    margin-top: 6px;
     font-size: 14px;
   }
+`;
+
+const Section = styled.div``;
+
+const SectionTitle = styled.h4`
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
 `;
 
 const ChartCard = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-
-  h4 {
-    margin-bottom: 10px;
-    font-size: 14px;
-    font-weight: 600;
-  }
+  padding: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 `;
 
 const ChartBox = styled.div`
@@ -294,18 +320,4 @@ const ChartBox = styled.div`
   svg *:focus {
     outline: none;
   }
-`;
-
-const Section = styled.div`
-  h4 {
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 600;
-  }
-`;
-
-const Empty = styled.div`
-  padding: 60px 20px;
-  text-align: center;
-  opacity: 0.6;
 `;
