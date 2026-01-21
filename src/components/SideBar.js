@@ -106,6 +106,11 @@ const MENU = [
     title: "test",
     items: [{ to: "/mes/test", label: "test" }],
   },
+  {
+    key: "barcode",
+    title: "바코드",
+    items: [{ to: "barcode", label: "바코드" }],
+  },
 ];
 
 export default function SideBar() {
@@ -162,7 +167,7 @@ export default function SideBar() {
         return true;
       if (
         group.groups?.some((g) =>
-          g.items.some((it) => location.pathname.startsWith(it.to))
+          g.items.some((it) => location.pathname.startsWith(it.to)),
         )
       )
         return true;
@@ -180,7 +185,7 @@ export default function SideBar() {
     if (!inv?.groups) return;
 
     const mid = inv.groups.find((mg) =>
-      mg.items.some((it) => location.pathname.startsWith(it.to))
+      mg.items.some((it) => location.pathname.startsWith(it.to)),
     );
     if (mid && !openKeys.includes(mid.key)) {
       setOpenKeys((prev) => [...prev, mid.key]);
@@ -189,7 +194,7 @@ export default function SideBar() {
 
   const toggleKey = (key) => {
     setOpenKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
   };
 
