@@ -1,6 +1,11 @@
 import styled from "styled-components";
-import { useState } from "react";
+import { useState, useContext } from "react"; // useContext 추가
+import AxiosAPI from "../api/AxiosAPI"; // 만들어둔 Axios 인스턴스 import
+import { AuthContext } from "../context/AuthContext"; // Context import
 
+/* =========================
+   스타일 컴포넌트 (기존 동일)
+========================= */
 const LoginWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -72,18 +77,45 @@ const LoginButton = styled.button`
   }
 `;
 
+/* =========================
+   메인 컴포넌트
+========================= */
 const Login = () => {
-  const [id, setId] = useState("");
+  const { login } = useContext(AuthContext); // Global 로그인 함수 가져오기
+  const [id, setId] = useState(""); // UI에서는 id지만 백엔드는 workerCode
   const [pwd, setPwd] = useState("");
 
   const isDisabled = !id || !pwd;
 
-  const handleLogin = (e) => {
-    e.preventDefault(); // 🔑 엔터/버튼 공통 처리
+  const handleLogin = async (e) => {
+    e.preventDefault();
     if (isDisabled) return;
 
-    console.log("로그인 시도:", { id, pwd });
-    // TODO: 로그인 API 연동
+    try {
+      // 1. AxiosAPI를 사용해 백엔드로 요청 (baseURL 설정 덕분에 /auth/login만 쓰면 됨)
+      const response = await AxiosAPI.post("/auth/login", {
+        workerCode: id, // 백엔드 DTO 필드명에 맞춤
+        password: pwd,
+      });
+
+      // 2. 성공 시 처리 (200 OK)
+      if (response.status === 200) {
+        const { accessToken } = response.data;
+
+        // 3. AuthContext의 login 함수 호출 -> 토큰 저장 및 페이지 이동 자동 처리
+        login(accessToken, id);
+
+        console.log("로그인 성공!");
+      }
+    } catch (error) {
+      console.error("로그인 실패:", error);
+      // 에러 상황별 알림 (401: 비번 틀림, 그 외: 서버 오류)
+      if (error.response && error.response.status === 401) {
+        alert("사원번호 또는 비밀번호가 일치하지 않습니다.");
+      } else {
+        alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      }
+    }
   };
 
   return (
@@ -91,7 +123,6 @@ const Login = () => {
       <LoginCard>
         <h2>LOGIN</h2>
 
-        {/* ✅ form 사용 → Enter 키 자동 로그인 */}
         <form onSubmit={handleLogin}>
           <InputGroup>
             <input

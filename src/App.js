@@ -26,6 +26,7 @@ import Test from "./pages/Test";
 import Worker from "./pages/master/Worker";
 import Process from "./pages/master/Process";
 import Barcode from "./pages/production/Barcode";
+import { AuthProvider } from "./context/AuthContext";
 
 /* 아직 안 만든 페이지는 임시 */
 const Empty = ({ title }) => <div>{title}</div>;
@@ -33,61 +34,63 @@ const Empty = ({ title }) => <div>{title}</div>;
 function App() {
   return (
     <Router>
-      <GlobalStyle />
-      <ScrollToTop />
+      <AuthProvider>
+        <GlobalStyle />
+        <ScrollToTop />
 
-      <Routes>
-        {/* 로그인 */}
-        <Route path="/login" element={<Login />} />
+        <Routes>
+          {/* 로그인 */}
+          <Route path="/login" element={<Login />} />
 
-        {/* MES 레이아웃 */}
-        <Route path="/mes" element={<SideBar />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<DashBoard />} />
+          {/* MES 레이아웃 */}
+          <Route path="/mes" element={<SideBar />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashBoard />} />
 
-          {/* ================= 기준정보 (Master) ================= */}
-          <Route path="master">
+            {/* ================= 기준정보 (Master) ================= */}
+            <Route path="master">
+              <Route path="product" element={<Product />} />
+              <Route path="process" element={<Process />} />
+              <Route path="worker" element={<Worker />} />
+              <Route path="machine" element={<Machine />} />
+              <Route path="bom" element={<Bom />} />
+            </Route>
+
+            {/* ================= 생산 관리 ================= */}
+            <Route path="workorders" element={<WorkOrders />} />
+            <Route path="lot" element={<Lot />} />
+            <Route path="shipment" element={<Empty title="출하 관리" />} />
+            <Route path="barcode" element={<Barcode />} />
+
+            {/* ================= 품질 관리 ================= */}
+            <Route path="quality">
+              <Route path="test" element={<Empty title="검사 이력" />} />
+              <Route path="defect" element={<DefectLog />} />
+            </Route>
+
+            {/* ================= 자재 / 재고 ================= */}
+            <Route path="material" element={<Material />} />
+            <Route path="material-tx" element={<Empty title="자재 이력" />} />
             <Route path="product" element={<Product />} />
-            <Route path="process" element={<Process />} />
-            <Route path="worker" element={<Worker />} />
-            <Route path="machine" element={<Machine />} />
-            <Route path="bom" element={<Bom />} />
+            <Route path="inventory" element={<Inventory />} />
+
+            {/* ================= 리포트 ================= */}
+            <Route path="report">
+              <Route path="product-report" element={<ProductReport />} />
+              <Route path="trace" element={<Trace />} />
+            </Route>
+
+            {/* ================= 공정 로그 ================= */}
+            <Route path="process-log" element={<ProcessLog />} />
+
+            {/* 하린이의 TEST 링크 */}
+            <Route path="test" element={<Test />} />
           </Route>
 
-          {/* ================= 생산 관리 ================= */}
-          <Route path="workorders" element={<WorkOrders />} />
-          <Route path="lot" element={<Lot />} />
-          <Route path="shipment" element={<Empty title="출하 관리" />} />
-          <Route path="barcode" element={<Barcode />} />
-
-          {/* ================= 품질 관리 ================= */}
-          <Route path="quality">
-            <Route path="test" element={<Empty title="검사 이력" />} />
-            <Route path="defect" element={<DefectLog />} />
-          </Route>
-
-          {/* ================= 자재 / 재고 ================= */}
-          <Route path="material" element={<Material />} />
-          <Route path="material-tx" element={<Empty title="자재 이력" />} />
-          <Route path="product" element={<Product />} />
-          <Route path="inventory" element={<Inventory />} />
-
-          {/* ================= 리포트 ================= */}
-          <Route path="report">
-            <Route path="product-report" element={<ProductReport />} />
-            <Route path="trace" element={<Trace />} />
-          </Route>
-
-          {/* ================= 공정 로그 ================= */}
-          <Route path="process-log" element={<ProcessLog />} />
-
-          {/* 하린이의 TEST 링크 */}
-          <Route path="test" element={<Test />} />
-        </Route>
-
-        {/* 루트 접근 */}
-        <Route path="/" element={<Navigate to="/mes/dashboard" replace />} />
-      </Routes>
+          {/* 루트 접근 */}
+          <Route path="/" element={<Navigate to="/mes/dashboard" replace />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }
