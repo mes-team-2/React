@@ -25,6 +25,7 @@ import ProductReport from "./pages/report/ProductReport";
 import Test from "./pages/Test";
 import Worker from "./pages/master/Worker";
 import Process from "./pages/master/Process";
+import Barcode from "./pages/production/Barcode";
 
 /* 아직 안 만든 페이지는 임시 */
 const Empty = ({ title }) => <div>{title}</div>;
@@ -57,6 +58,7 @@ function App() {
           <Route path="workorders" element={<WorkOrders />} />
           <Route path="lot" element={<Lot />} />
           <Route path="shipment" element={<Empty title="출하 관리" />} />
+          <Route path="barcode" element={<Barcode />} />
 
           {/* ================= 품질 관리 ================= */}
           <Route path="quality">
