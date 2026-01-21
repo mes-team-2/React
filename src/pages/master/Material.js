@@ -5,6 +5,7 @@ import SearchBar from "../../components/SearchBar";
 import MaterialDetail from "./MaterialDetail";
 import SideDrawer from "../../components/SideDrawer";
 import MaterialCreate from "./MaterialCreate";
+import Status from "../../components/Status";
 
 import {
   PieChart,
@@ -66,13 +67,13 @@ export default function Material() {
      테이블 컬럼
   ========================= */
   const columns = [
-    { key: "no", label: "No", width: 60 },
+    { key: "no", label: "No", width: 50 },
     { key: "materialCode", label: "자재 코드", width: 180 },
-    { key: "materialName", label: "자재명", width: 220 },
-    { key: "stockQty", label: "재고", width: 120 },
-    { key: "safeQty", label: "안전재고", width: 120 },
+    { key: "materialName", label: "자재명", width: 180 },
+    { key: "stockQty", label: "재고", width: 100 },
+    { key: "safeQty", label: "안전재고", width: 100 },
     { key: "unit", label: "단위", width: 80 },
-    { key: "stockStatus", label: "재고상태", width: 120 },
+    { key: "stockStatus", label: "재고상태",  width: 150, render: (value) => <Status status={value} /> },
     { key: "createdAt", label: "자재등록일자", width: 180 },
     { key: "inboundAt", label: "입고일자", width: 180 },
   ];
@@ -86,9 +87,9 @@ export default function Material() {
         const stock = 12345 - i * 300;
         const safe = 5000;
 
-        let status = "안전";
-        if (stock < safe) status = "주의";
-        if (stock < safe * 0.6) status = "위험";
+        let status = "SAFE"; // 안전
+        if (stock < safe) status = "CAUTION"; // 주의
+        if (stock < safe * 0.6) status = "DANGER"; // 위험
 
         return {
           id: i + 1,

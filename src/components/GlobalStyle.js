@@ -1,5 +1,5 @@
 import { createGlobalStyle } from "styled-components";
-import reset from "styled-reset"; // 기존 브라우저 스타일 리셋함
+import reset from "styled-reset"; 
 
 const GlobalStyle = createGlobalStyle`
   ${reset}
@@ -18,11 +18,11 @@ const GlobalStyle = createGlobalStyle`
     --font : #000000;
     --font2 : #828282;
     --font3 : #ffffff;
-    --run : #22c55e; // 가동 (작업 지시 받고 설비/공정이 가동된 상태)
-    --stop : #64748b; // 정지
-    --waiting : #f59e0b; // 대기 (기본값)
-    --error : #ef4444; // 에러
-    --complete : #004dfc; // 무언가의 완료상태
+    --run : #22c55e; 
+    --stop : #64748b; 
+    --waiting : #f59e0b; 
+    --error : #ef4444; 
+    --complete : #004dfc;
     --bgWaiting : #FEF6E7;
     --bgRun : #E9FAEF;
     --bgComplete : #E6EEFF;
@@ -33,30 +33,30 @@ const GlobalStyle = createGlobalStyle`
     background: none;
     border: none;
     padding: 0;
-    cursor: pointer; // 모든 버튼에 포인터 적용 (누르고 싶게)
+    cursor: pointer; 
   }
   input, textarea {
-    outline: none; // 클릭 시 생기는 파란 테두리 제거
+    outline: none; 
     border: none;
-    font-family: inherit; // 부모의 폰트를 그대로 상속
+    font-family: inherit; 
   }
   a {
-    text-decoration: none; // 링크 밑줄 제거
-    color: inherit;       // 부모 글자색 상속
+    text-decoration: none;
+    color: inherit;   
   }
   ul, li {
-    list-style: none;     // 리스트 앞의 점(dot) 제거
+    list-style: none;  
   }
   img {
-    max-width: 100%; // 부모 너비를 넘지 않도록 설정
+    max-width: 100%;
     display: block;  
   }
   svg:focus {
-  outline: none;  // 포커스 외곽선 제거
+  outline: none; 
   }
 
   svg *:focus {
-  outline: none; // 포커스 외곽선 제거
+  outline: none; 
   }
 `;
 

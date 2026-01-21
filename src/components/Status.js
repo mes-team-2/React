@@ -2,6 +2,7 @@ import React from 'react';
 import { FiAlertTriangle, FiRefreshCw, FiCheckCircle, FiShield } from 'react-icons/fi';
 import styled from 'styled-components';
 import { LuHourglass } from 'react-icons/lu';
+import { AiFillSafetyCertificate } from "react-icons/ai";
 
 // 텍스트 색상(color), 배경색(bg), 아이콘(icon), 라벨(label)
 const STATUS_CONFIG = {
@@ -52,7 +53,7 @@ const STATUS_CONFIG = {
     iconColor: 'var(--run)',
     textColor: 'var(--font)',
     bg: 'var(--bgRun)',
-    icon: <FiShield />,
+    icon: <AiFillSafetyCertificate />,
   },
   CAUTION: { //주의
     label: '주의',

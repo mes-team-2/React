@@ -86,6 +86,13 @@ const TableStyle = ({
     );
   };
 
+  const formatValue = (value) => {
+    if (typeof value === "number") {
+      return value.toLocaleString(); // 1000 -> 1,000
+    }
+    return value;
+  };
+
   return (
     <TableWrapper>
       <StyledTable>
@@ -133,7 +140,12 @@ const TableStyle = ({
                   </td>
                 )}
                 {columns.map((col) => (
-                  <td key={`${row.id}-${col.key}`}>{row[col.key]}</td>
+                  <td key={`${row.id}-${col.key}`}>
+                    {col.render
+                      ? col.render(row[col.key], row)
+                      : formatValue(row[col.key])
+                    }
+                  </td>
                 ))}
               </tr>
             ))
