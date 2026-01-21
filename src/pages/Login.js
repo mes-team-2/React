@@ -26,27 +26,27 @@ const LoginCard = styled.div`
     font-family: "dnf bitbit v2", sans-serif;
     font-size: 26px;
     margin-bottom: 30px;
-    text-align: left;
     color: #000;
   }
 `;
+
 const InputGroup = styled.div`
-  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+
   input {
     width: 100%;
     padding: 15px;
     border-radius: 12px;
     border: 1px solid #ddd;
-    box-sizing: border-box;
     font-size: 15px;
     outline: none;
-    transition: all 0.2s ease-in-out;
+
     &:focus {
       border-color: #000;
       background-color: #fcfcfc;
-    }
-    &::placeholder {
-      color: #bbb;
     }
   }
 `;
@@ -61,10 +61,14 @@ const LoginButton = styled.button`
   font-family: "dnf bitbit v2", sans-serif;
   font-size: 18px;
   cursor: pointer;
-  margin-top: 15px;
-  transition: background-color 0.2s ease;
+
   &:hover {
     background-color: #333;
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
   }
 `;
 
@@ -72,29 +76,43 @@ const Login = () => {
   const [id, setId] = useState("");
   const [pwd, setPwd] = useState("");
 
+  const isDisabled = !id || !pwd;
+
+  const handleLogin = (e) => {
+    e.preventDefault(); // 🔑 엔터/버튼 공통 처리
+    if (isDisabled) return;
+
+    console.log("로그인 시도:", { id, pwd });
+    // TODO: 로그인 API 연동
+  };
+
   return (
     <LoginWrapper>
       <LoginCard>
-        <InputGroup>
-          <input
-            type="text"
-            placeholder="사원번호"
-            value={id}
-            onChange={(e) => {
-              setId(e.target.value);
-            }}
-          />
+        <h2>LOGIN</h2>
+
+        {/* ✅ form 사용 → Enter 키 자동 로그인 */}
+        <form onSubmit={handleLogin}>
           <InputGroup>
+            <input
+              type="text"
+              placeholder="사원번호"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+            />
+
             <input
               type="password"
               placeholder="비밀번호"
               value={pwd}
-              onChange={(e) => {
-                setPwd(e.target.value);
-              }}
+              onChange={(e) => setPwd(e.target.value)}
             />
           </InputGroup>
-        </InputGroup>
+
+          <LoginButton type="submit" disabled={isDisabled}>
+            로그인
+          </LoginButton>
+        </form>
       </LoginCard>
     </LoginWrapper>
   );

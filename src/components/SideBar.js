@@ -310,6 +310,39 @@ export default function SideBar() {
    styled (원래 테마 변수 기반 유지)
 ========================= */
 
+const SidebarWrapper = styled.div`
+  width: 240px;
+  height: 100vh;
+  background: #1f2937;
+  color: white;
+  display: flex;
+  flex-direction: column;
+`;
+
+const MenuArea = styled.div`
+  flex: 1;
+`;
+
+const BottomArea = styled.div`
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+`;
+
+const LoginBtn = styled.button`
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #374151;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    background: #4b5563;
+  }
+`;
+
 const Shell = styled.div`
   display: grid;
   grid-template-columns: 260px 1fr;
