@@ -1,7 +1,15 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
+import logo from "../images/logo.png";
 
+
+const IconHome = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>;
+const IconStar = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+const IconChevronLeft = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>;
+const IconChevronRight = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>;
+const IconSearch = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+const IconUser = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
 /* =========================
    최근 페이지 라벨
 ========================= */
@@ -118,9 +126,7 @@ export default function SideBar() {
   const navigate = useNavigate();
   const tabsRef = useRef(null);
 
-  /* =========================
-     🔹 상단 탭 (원래 그대로)
-  ========================= */
+
   const [recentPages, setRecentPages] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
@@ -156,7 +162,7 @@ export default function SideBar() {
   };
 
   /* =========================
-     🔹 대분류/중분류 열림 상태
+     대분류/중분류 열림 상태
   ========================= */
   const [openKeys, setOpenKeys] = useState([]);
 
@@ -198,104 +204,135 @@ export default function SideBar() {
     );
   };
 
+  /* =========================
+      탭 스크롤 핸들러 (좌우 이동)
+  ========================= */
+  const scrollTabs = (direction) => {
+    if (tabsRef.current) {
+      const scrollAmount = 200; // 스크롤 이동 거리
+      tabsRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
   return (
     <Shell>
       <Sidebar>
-        <Brand>
-          <div className="logo">Z-Zone</div>
-          <div className="sub">Battery MES</div>
+        <Brand >
+          <Logo src={logo} alt="logo" onClick={() => navigate("/")} />
         </Brand>
 
         {/* ===== 사이드 메뉴 ===== */}
-        <Nav>
-          {MENU.map((group) => {
-            const open = openKeys.includes(group.key);
-            return (
-              <div key={group.key}>
-                <GroupTitle onClick={() => toggleKey(group.key)}>
-                  {group.title}
-                  <Arrow $open={open}>▾</Arrow>
-                </GroupTitle>
-
-                {open && (
-                  <GroupBody>
-                    {/* 2단: 일반 메뉴 */}
-                    {group.items && (
-                      <GroupItems>
-                        {group.items.map((item) => (
-                          <MenuLink key={item.to} to={item.to}>
-                            {item.label}
-                          </MenuLink>
-                        ))}
-                      </GroupItems>
-                    )}
-
-                    {/* 3단: 중분류 + 소분류 */}
-                    {group.groups &&
-                      group.groups.map((mid) => {
-                        const midOpen = openKeys.includes(mid.key);
-                        return (
-                          <MidWrap key={mid.key}>
-                            <MidTitle onClick={() => toggleKey(mid.key)}>
-                              {mid.title}
-                              <Arrow $open={midOpen}>▾</Arrow>
-                            </MidTitle>
-
-                            {midOpen && (
-                              <MidItems>
-                                {mid.items.map((item) => (
-                                  <MenuLink key={item.to} to={item.to}>
-                                    {item.label}
-                                  </MenuLink>
-                                ))}
-                              </MidItems>
-                            )}
-                          </MidWrap>
-                        );
-                      })}
-                  </GroupBody>
-                )}
-              </div>
-            );
-          })}
-        </Nav>
-
-        <SidebarFooter>
-          <small>© {new Date().getFullYear()} MES</small>
-        </SidebarFooter>
-      </Sidebar>
-
-      {/* =========================
-         메인 영역 (탭바 완전 유지)
-      ========================= */}
-      <Main>
-        <TopBar>
-          <TopLeft ref={tabsRef}>
-            {recentPages.map((p) => {
-              const active = location.pathname === p.path;
+        <ScrollContainer>
+          <Nav>
+            {MENU.map((group) => {
+              const open = openKeys.includes(group.key);
               return (
-                <Tab
-                  key={p.path}
-                  $active={active}
-                  onClick={() => navigate(p.path)}
-                >
-                  <span>{p.label}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeTab(p.path);
-                    }}
-                  >
-                    ✕
-                  </button>
-                </Tab>
+                <NavGroup key={group.key} $isOpen={open}>
+                  <div key={group.key}>
+                    <GroupTitle onClick={() => toggleKey(group.key)}>
+                      {group.title}
+                      <Arrow $open={open}>▾</Arrow>
+                    </GroupTitle>
+
+                    {open && (
+                      <GroupBody>
+                        {/* 2단: 일반 메뉴 */}
+                        {group.items && (
+                          <GroupItems>
+                            {group.items.map((item) => (
+                              <MenuLink key={item.to} to={item.to}>
+                                {item.label}
+                              </MenuLink>
+                            ))}
+                          </GroupItems>
+                        )}
+
+                        {/* 3단: 중분류 + 소분류 */}
+                        {group.groups &&
+                          group.groups.map((mid) => {
+                            const midOpen = openKeys.includes(mid.key);
+                            return (
+                              <MidWrap key={mid.key}>
+                                <MidTitle onClick={() => toggleKey(mid.key)}>
+                                  {mid.title}
+                                  <Arrow $open={midOpen}>▾</Arrow>
+                                </MidTitle>
+
+                                {midOpen && (
+                                  <MidItems>
+                                    {mid.items.map((item) => (
+                                      <MenuLink key={item.to} to={item.to}>
+                                        {item.label}
+                                      </MenuLink>
+                                    ))}
+                                  </MidItems>
+                                )}
+                              </MidWrap>
+                            );
+                          })}
+                      </GroupBody>
+                    )}
+                  </div>
+                </NavGroup>
               );
             })}
-          </TopLeft>
+          </Nav>
+          <UserProfile>
+            <UserAvatar>
+              <IconUser />
+            </UserAvatar>
+            <UserInfo>
+              <UserName>Kim Harin</UserName>
+              <UserId>Z20180355</UserId>
+            </UserInfo>
+          </UserProfile>
+        </ScrollContainer>
+      </Sidebar>
 
-          <div className="right">
-            <Search placeholder="검색 (예: LOT, 작업지시번호)" />
-          </div>
+      <Main>
+        <TopBar>
+          <TopBarLeft>
+            <PaddedIconBtn><IconStar /></PaddedIconBtn>
+            <Divider />
+            <PaddedIconBtn onClick={() => navigate("/")}><IconHome /></PaddedIconBtn>
+            <Divider />
+            <BorderedChevronBtn onClick={() => scrollTabs("left")}><IconChevronLeft /></BorderedChevronBtn>
+
+            <TabsContainer ref={tabsRef}>
+              {recentPages.map((p) => {
+                const active = location.pathname === p.path;
+                return (
+                  <Tab
+                    key={p.path}
+                    $active={active}
+                    onClick={() => navigate(p.path)}
+                  >
+                    <span>{p.label}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTab(p.path);
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </Tab>
+                );
+              })}
+            </TabsContainer>
+
+            <IconBtn onClick={() => scrollTabs("right")}><IconChevronRight /></IconBtn>
+          </TopBarLeft>
+
+          <TopBarRight>
+            <SearchWrapper>
+              <SearchIcon><IconSearch /></SearchIcon>
+              <SearchInput placeholder="Search" />
+            </SearchWrapper>
+          </TopBarRight>
         </TopBar>
 
         <Content>
@@ -306,46 +343,12 @@ export default function SideBar() {
   );
 }
 
-/* =========================
-   styled (원래 테마 변수 기반 유지)
-========================= */
 
-const SidebarWrapper = styled.div`
-  width: 240px;
-  height: 100vh;
-  background: #1f2937;
-  color: white;
-  display: flex;
-  flex-direction: column;
-`;
 
-const MenuArea = styled.div`
-  flex: 1;
-`;
-
-const BottomArea = styled.div`
-  padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-`;
-
-const LoginBtn = styled.button`
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: none;
-  background: #374151;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-
-  &:hover {
-    background: #4b5563;
-  }
-`;
 
 const Shell = styled.div`
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 200px 1fr;
   min-height: 100vh;
   background: var(--background2);
 `;
@@ -354,162 +357,337 @@ const Sidebar = styled.aside`
   background: var(--background);
   display: flex;
   flex-direction: column;
+  border-right: 1px solid var(--border);
+`;
+
+const Logo = styled.img`
+  width: 100%;
+  min-width: 100px;
+  height: 100%;
+  cursor: pointer;
+  object-fit: cover;
+  box-sizing: border-box;
+  padding: 10px 60px;
 `;
 
 const Brand = styled.div`
-  padding: 18px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-sizing: border-box;
+  flex: 0 0 auto;
+`;
+
+const ScrollContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #ddd;
+    border-radius: 4px;
+  }
 `;
 
 const Nav = styled.nav`
-  padding: 12px;
-  flex: 1;
+  padding: 10px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const NavGroup = styled.div`
+  padding: 0;
+  border-bottom: ${({ $isOpen }) => ($isOpen ? "1px solid var(--border)" : "none")}; 
+
+  &:last-child {
+    border-bottom: none;
+  }
 `;
 
 const GroupTitle = styled.div`
-  margin-top: 16px;
-  padding: 10px 12px;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: -0.2px;
-  opacity: 0.9;
+  padding: 5px 10px;
+  font-size: var(--fontMd);
+  font-weight: var(--bold); 
+  color: var(--font); 
+  letter-spacing: -0.5px;
   cursor: pointer;
-
+  
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  /* 원래 톤 유지하면서 강조 */
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  
+  border: none;
 
   &:hover {
-    background: rgba(99, 102, 241, 0.14);
+    background-color: rgb(from var(--main2) r g b / 0.3);
+    border-radius: 15px;
   }
 `;
 
 const Arrow = styled.span`
-  font-size: 11px;
-  opacity: 0.7;
+  font-size: var(--fontLg);
+  color: var(--font);
   transform: ${({ $open }) => ($open ? "rotate(180deg)" : "rotate(0deg)")};
   transition: transform 0.2s ease;
 `;
 
 const GroupBody = styled.div`
-  margin-top: 8px;
+  padding:10px 0 5px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 `;
 
 const GroupItems = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
+  gap: 5px;
 `;
 
 const MidWrap = styled.div`
-  margin-top: 10px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px
 `;
 
 const MidTitle = styled.div`
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  opacity: 0.85;
+  padding : 10px;
+  font-size: var(--fontSm);
+  font-weight: var(--bold); 
+  color: var(--font); 
+  letter-spacing: -0.5px;
   cursor: pointer;
-
+  
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  
+  border: none;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background-color: rgb(from var(--main2) r g b / 0.3);
+    border-radius: 15px;
   }
 `;
 
 const MidItems = styled.div`
-  margin-top: 6px;
-  margin-left: 8px;
-  padding-left: 10px;
-  border-left: 2px solid rgba(99, 102, 241, 0.25);
-
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  padding-left: 5px;
 `;
 
 const MenuLink = styled(NavLink)`
-  padding: 8px 12px;
+  padding: 5px 10px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--fontSm);
 
   &:hover {
-    background: var(--main2);
+    background-color: rgb(from var(--main2) r g b / 0.3);
+    border-radius: 15px;
   }
 
   &.active {
-    background: rgba(99, 102, 241, 0.25);
-    font-weight: 700;
+    background-color: rgb(from var(--main2) r g b / 0.3);
+    border-radius: 15px;
   }
 `;
 
-const SidebarFooter = styled.div`
-  padding: 12px 16px;
-  font-size: 12px;
-  opacity: 0.6;
+const UserProfile = styled.div`
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
 `;
+
+const UserAvatar = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--background2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--font2);
+`;
+
+const UserInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const UserName = styled.span`
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--font);
+`;
+
+const UserId = styled.span`
+  font-size: 12px;
+  color: var(--font2);
+`;
+
+
 
 const Main = styled.main`
   display: flex;
   flex-direction: column;
   min-width: 0;
 `;
-
 const TopBar = styled.header`
   position: sticky;
   top: 0;
-  z-index: 5;
-  background: rgba(246, 247, 251, 0.9);
-  backdrop-filter: blur(10px);
+  z-index: 10;
+  height: 40px;
+  background: var(--background);
   border-bottom: 1px solid var(--border);
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 18px 22px;
-  gap: 10px;
+  padding: 0 10px;
 `;
 
-const TopLeft = styled.div`
+const TopBarLeft = styled.div`
   display: flex;
-  gap: 8px;
-  max-width: calc(100vw - 500px);
+  align-items: center;
+  height: 100%;
+  overflow: hidden;
+`;
+
+const IconBtn = styled.button`
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--font);
+
+  &:hover {
+    background: var(--background2);
+  }
+`;
+
+const PaddedIconBtn = styled(IconBtn)`
+  width: auto;
+  padding: 0 10px;
+`;
+
+
+const BorderedChevronBtn = styled(IconBtn)`
+  border-right: 1px solid var(--border);
+  width: 40px; 
+  height: 40px;
+`;
+
+const Divider = styled.div`
+  width: 1px;
+  height: 16px;
+  background: var(--font2);
+  margin: 0 4px;
+`;
+
+const TabsContainer = styled.div`
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-left: 8px;
   overflow-x: auto;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const Tab = styled.div`
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: ${({ $active }) =>
-    $active ? "var(--main2)" : "var(--background)"};
-  font-size: 13px;
+  height: 100%;
+  width: 150px;
+  min-width: 150px;
+  padding: 0 16px;
+  font-size: 14px;
+  color: var(--font);
+  font-weight: ${({ $active }) => ($active ? "var(--bold)" : "var(--normal)")};
   cursor: pointer;
+  position: relative;
   white-space: nowrap;
+  
+  border-right: 1px solid var(--border);
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: ${({ $active }) => ($active ? "var(--main)" : "transparent")};
+  }
+
+  &:hover {
+    background-color: rgb(from var(--background2) r g b / 0.3);
+  }
+
+  button {
+    margin-left: 8px;
+    font-size: 14px;
+    color: var(--font2);
+    display: flex;
+    align-items: center;
+    &:hover { color: var(--font); }
+  }
 `;
 
-const Search = styled.input`
-  width: min(320px, 36vw);
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+const TopBarRight = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+`;
+
+const SearchWrapper = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+`;
+
+const SearchInput = styled.input`
+  width: 250px;
+  height: 30px;
+  padding: 0 16px 0 40px;
+  border-radius: 30px; 
+  border: 1px solid transparent;
+  background: var(--background2);
+  font-size: var(--fontSm);
+
+  &:focus {
+    background: white;
+    border-color: var(--main);
+    box-shadow: 0 0 0 2px rgba(0, 77, 252, 0.1);
+  }
+
+  &::placeholder {
+    color: var(--font2);
+  }
+`;
+
+const SearchIcon = styled.div`
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--font2);
 `;
 
 const Content = styled.section`
-  padding: 22px;
+  padding: 24px;
 `;

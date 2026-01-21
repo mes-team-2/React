@@ -1,5 +1,5 @@
 import { createGlobalStyle } from "styled-components";
-import reset from "styled-reset"; 
+import reset from "styled-reset";
 
 const GlobalStyle = createGlobalStyle`
   ${reset}
@@ -8,8 +8,11 @@ const GlobalStyle = createGlobalStyle`
   }
   body {
     font-family: 'Noto Sans KR', sans-serif;
+    font-size: var(--text-base);
+    color: var(--font);
   }
   :root {
+    /* 색상 정의 */
     --main : #004dfc;
     --main2 : #AED6F2;
     --background : #FFFFFF;
@@ -28,6 +31,19 @@ const GlobalStyle = createGlobalStyle`
     --bgComplete : #E6EEFF;
     --bgError : #FEEDED;
     --bgStop : #D1D6DD;
+
+    /* 폰트 사이즈 정의 */
+    --fontXs : 12px;  /* 아주 작은 텍스트 (캡션, 라벨) */
+    --fontSm : 14px;  /* 작은 텍스트 (보조 설명) */
+    --fontMd : 15px;  /* 본문 기본 텍스트 (일반적인 크기) */
+    --fontLg : 16px;  /* 강조된 본문, 소제목 */
+    --fontXL : 18px;  /* 카드 타이틀, 중간 제목 */
+    --font2XL : 20px;  /* 대제목 */
+    --font3XL : 24px;  /* 화면 타이틀 */
+
+    /* 폰트 굵기 정의 */
+    --normal : 400;
+    --bold : 600;
   }
   button {
     background: none;
@@ -39,6 +55,7 @@ const GlobalStyle = createGlobalStyle`
     outline: none; 
     border: none;
     font-family: inherit; 
+    font-size: inherit
   }
   a {
     text-decoration: none;
