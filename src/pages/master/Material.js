@@ -230,7 +230,7 @@ export default function Material() {
         </Card>
       </ChartGrid>
 
-      {/* ===== 검색 ===== */}
+      {/* ===== 검색 + 등록 버튼 ===== */}
       <FilterBar>
         <SearchBar
           value={keyword}
@@ -243,7 +243,7 @@ export default function Material() {
         </CreateButton>
       </FilterBar>
 
-      {/* ===== 테이블 (밀림 방지) ===== */}
+      {/* ===== 테이블 ===== */}
       <TableContainer>
         <Table
           columns={columns}
@@ -258,8 +258,13 @@ export default function Material() {
 
       {/* ===== 상세 Drawer ===== */}
       <SideDrawer open={open} onClose={() => setOpen(false)}>
-        <MaterialDetail material={selectedMaterial} />
+        <MaterialDetail
+          material={selectedMaterial}
+          onClose={() => setOpen(false)}
+        />
       </SideDrawer>
+
+      {/* ===== 등록 Drawer ===== */}
       <SideDrawer open={createOpen} onClose={() => setCreateOpen(false)}>
         <MaterialCreate onClose={() => setCreateOpen(false)} />
       </SideDrawer>

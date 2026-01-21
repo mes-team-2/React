@@ -30,10 +30,50 @@ export default function MaterialDetail({ material, onClose }) {
   ];
 
   /* =========================
-     숫자 안전 처리
+     LOT별 재고 (더미) ⭐ 추가
   ========================= */
-  const stock = Number(material.stock ?? 0).toLocaleString();
-  const safeStock = Number(material.safeStock ?? 0).toLocaleString();
+  const lotColumns = [
+    { key: "lotNo", label: "LOT 번호", width: 180 },
+    { key: "inboundAt", label: "입고일", width: 160 },
+    { key: "qty", label: "잔량", width: 120 },
+    { key: "status", label: "상태", width: 120 },
+    { key: "remark", label: "비고", width: 180 },
+  ];
+
+  // 보통: 같은 자재코드 기준으로 LOT가 여러 개 존재
+  const lotData = [
+    {
+      id: 1,
+      lotNo: "LOT-20260105-001",
+      inboundAt: "2026/01/05",
+      qty: 800,
+      status: "사용중",
+      remark: "라인 A 투입",
+    },
+    {
+      id: 2,
+      lotNo: "LOT-20260103-002",
+      inboundAt: "2026/01/03",
+      qty: 400,
+      status: "보관",
+      remark: "-",
+    },
+    {
+      id: 3,
+      lotNo: "LOT-20260101-003",
+      inboundAt: "2026/01/01",
+      qty: 0,
+      status: "소진",
+      remark: "완전 소진",
+    },
+  ];
+
+  /* =========================
+     숫자 안전 처리 (Material.js 필드명과 정합)
+  ========================= */
+  const stock = Number(material.stockQty ?? 0).toLocaleString();
+  const safeStock = Number(material.safeQty ?? 0).toLocaleString();
+  const status = material.stockStatus || "안전";
 
   return (
     <Wrapper>
@@ -71,9 +111,7 @@ export default function MaterialDetail({ material, onClose }) {
 
         <Field>
           <label>재고상태</label>
-          <StatusBadge status={material.status || "안전"}>
-            {material.status || "안전"}
-          </StatusBadge>
+          <StatusBadge status={status}>{status}</StatusBadge>
         </Field>
 
         <Field>
@@ -97,17 +135,25 @@ export default function MaterialDetail({ material, onClose }) {
         />
       </Section>
 
+      {/* ===== LOT별 재고 (추가) ===== */}
+      <Section>
+        <SectionTitle>LOT별 재고 현황</SectionTitle>
+        <Table columns={lotColumns} data={lotData} selectable={false} />
+        <Note>
+          ※ LOT는 “입고 단위”이며, 생산/차감/불량 추적의 기준이 됩니다.
+        </Note>
+      </Section>
+
       {/* ===== 버튼 ===== */}
       <ButtonArea>
-        <CancelButton onClick={onClose}>취소</CancelButton>
-        <SubmitButton>등록</SubmitButton>
+        <CancelButton onClick={onClose}>닫기</CancelButton>
       </ButtonArea>
     </Wrapper>
   );
 }
 
 /* =========================
-   styled (❗ 그대로 유지)
+   styled
 ========================= */
 
 const Wrapper = styled.div`
@@ -175,25 +221,20 @@ const SectionTitle = styled.h4`
   margin-bottom: 8px;
 `;
 
+const Note = styled.div`
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.65;
+`;
+
 const ButtonArea = styled.div`
   margin-top: auto;
-  display: flex;
-  gap: 10px;
 `;
 
 const CancelButton = styled.button`
-  flex: 1;
+  width: 100%;
   padding: 12px;
   border-radius: 20px;
   background: #f1f1f1;
-  font-size: 14px;
-`;
-
-const SubmitButton = styled.button`
-  flex: 1;
-  padding: 12px;
-  border-radius: 20px;
-  background: var(--main);
-  color: white;
   font-size: 14px;
 `;
