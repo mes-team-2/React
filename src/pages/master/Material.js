@@ -73,7 +73,12 @@ export default function Material() {
     { key: "stockQty", label: "재고", width: 100 },
     { key: "safeQty", label: "안전재고", width: 100 },
     { key: "unit", label: "단위", width: 80 },
-    { key: "stockStatus", label: "재고상태",  width: 150, render: (value) => <Status status={value} /> },
+    {
+      key: "stockStatus",
+      label: "재고상태",
+      width: 150,
+      render: (value) => <Status status={value} />,
+    },
     { key: "createdAt", label: "자재등록일자", width: 180 },
     { key: "inboundAt", label: "입고일자", width: 180 },
   ];
