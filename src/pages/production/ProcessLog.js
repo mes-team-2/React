@@ -18,7 +18,6 @@ export default function ProcessLog() {
      컬럼
   ========================= */
   const columns = [
-    { key: "lotNo", label: "LOT No", width: 160 },
     { key: "processStep", label: "공정", width: 160 },
     { key: "machine", label: "설비", width: 160 },
     { key: "status", label: "상태", width: 120 },
@@ -38,18 +37,18 @@ export default function ProcessLog() {
           i % 5 === 0
             ? "전극 공정"
             : i % 5 === 1
-            ? "조립 공정"
-            : i % 5 === 2
-            ? "활성화 공정"
-            : i % 5 === 3
-            ? "팩 공정"
-            : "기능 검사",
+              ? "조립 공정"
+              : i % 5 === 2
+                ? "활성화 공정"
+                : i % 5 === 3
+                  ? "팩 공정"
+                  : "기능 검사",
         machine: `설비-${String.fromCharCode(65 + (i % 4))}`,
         status: i % 3 === 0 ? "DONE" : i % 3 === 1 ? "IN_PROGRESS" : "WAIT",
         startTime: "2026-01-06 09:00",
         endTime: i % 3 === 0 ? "2026-01-06 10:20" : "-",
       })),
-    []
+    [],
   );
 
   /* =========================
@@ -62,7 +61,7 @@ export default function ProcessLog() {
       (row) =>
         row.lotNo.toLowerCase().includes(lower) ||
         row.processStep.toLowerCase().includes(lower) ||
-        row.machine.toLowerCase().includes(lower)
+        row.machine.toLowerCase().includes(lower),
     );
   }, [keyword, tableData]);
 

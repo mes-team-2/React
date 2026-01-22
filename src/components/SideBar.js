@@ -3,13 +3,81 @@ import { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import logo from "../images/logo.png";
 
-
-const IconHome = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>;
-const IconStar = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
-const IconChevronLeft = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>;
-const IconChevronRight = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>;
-const IconSearch = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
-const IconUser = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+const IconHome = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+  </svg>
+);
+const IconStar = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+  </svg>
+);
+const IconChevronLeft = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+);
+const IconChevronRight = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+);
+const IconSearch = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#999"
+    strokeWidth="2"
+  >
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+);
+const IconUser = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+    <circle cx="12" cy="7" r="4"></circle>
+  </svg>
+);
 /* =========================
    최근 페이지 라벨
 ========================= */
@@ -28,7 +96,7 @@ const PAGE_LABEL = {
   "/mes/lot": "LOT 관리",
 
   // 품질
-  "/mes/quality/test": "검사 이력",
+  "/mes/quality/test-log": "검사 이력",
   "/mes/quality/defect": "불량 관리",
 
   // 자재
@@ -67,14 +135,15 @@ const MENU = [
     items: [
       { to: "/mes/workorders", label: "작업지시 관리" },
       { to: "/mes/process-log", label: "공정 로그" },
-      { to: "/mes/lot", label: "LOT 관리" },
+      { to: "/mes/material-lot", label: "자재 LOT 관리" },
+      { to: "/mes/lot", label: "제품 LOT 관리" },
     ],
   },
   {
     key: "quality",
     title: "품질 관리",
     items: [
-      { to: "/mes/quality/test", label: "검사 이력" },
+      { to: "/mes/quality/test-log", label: "검사 이력" },
       { to: "/mes/quality/defect", label: "불량 관리" },
     ],
   },
@@ -125,7 +194,6 @@ export default function SideBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const tabsRef = useRef(null);
-
 
   const [recentPages, setRecentPages] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -220,7 +288,7 @@ export default function SideBar() {
   return (
     <Shell>
       <Sidebar>
-        <Brand >
+        <Brand>
           <Logo src={logo} alt="logo" onClick={() => navigate("/")} />
         </Brand>
 
@@ -295,11 +363,17 @@ export default function SideBar() {
       <Main>
         <TopBar>
           <TopBarLeft>
-            <PaddedIconBtn><IconStar /></PaddedIconBtn>
+            <PaddedIconBtn>
+              <IconStar />
+            </PaddedIconBtn>
             <Divider />
-            <PaddedIconBtn onClick={() => navigate("/")}><IconHome /></PaddedIconBtn>
+            <PaddedIconBtn onClick={() => navigate("/")}>
+              <IconHome />
+            </PaddedIconBtn>
             <Divider />
-            <BorderedChevronBtn onClick={() => scrollTabs("left")}><IconChevronLeft /></BorderedChevronBtn>
+            <BorderedChevronBtn onClick={() => scrollTabs("left")}>
+              <IconChevronLeft />
+            </BorderedChevronBtn>
 
             <TabsContainer ref={tabsRef}>
               {recentPages.map((p) => {
@@ -324,12 +398,16 @@ export default function SideBar() {
               })}
             </TabsContainer>
 
-            <IconBtn onClick={() => scrollTabs("right")}><IconChevronRight /></IconBtn>
+            <IconBtn onClick={() => scrollTabs("right")}>
+              <IconChevronRight />
+            </IconBtn>
           </TopBarLeft>
 
           <TopBarRight>
             <SearchWrapper>
-              <SearchIcon><IconSearch /></SearchIcon>
+              <SearchIcon>
+                <IconSearch />
+              </SearchIcon>
               <SearchInput placeholder="Search" />
             </SearchWrapper>
           </TopBarRight>
@@ -342,9 +420,6 @@ export default function SideBar() {
     </Shell>
   );
 }
-
-
-
 
 const Shell = styled.div`
   display: grid;
@@ -380,7 +455,7 @@ const ScrollContainer = styled.div`
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  
+
   &::-webkit-scrollbar {
     width: 4px;
   }
@@ -400,7 +475,8 @@ const Nav = styled.nav`
 
 const NavGroup = styled.div`
   padding: 0;
-  border-bottom: ${({ $isOpen }) => ($isOpen ? "1px solid var(--border)" : "none")}; 
+  border-bottom: ${({ $isOpen }) =>
+    $isOpen ? "1px solid var(--border)" : "none"};
 
   &:last-child {
     border-bottom: none;
@@ -410,15 +486,15 @@ const NavGroup = styled.div`
 const GroupTitle = styled.div`
   padding: 5px 10px;
   font-size: var(--fontMd);
-  font-weight: var(--bold); 
-  color: var(--font); 
+  font-weight: var(--bold);
+  color: var(--font);
   letter-spacing: -0.5px;
   cursor: pointer;
-  
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  
+
   border: none;
 
   &:hover {
@@ -435,7 +511,7 @@ const Arrow = styled.span`
 `;
 
 const GroupBody = styled.div`
-  padding:10px 0 5px 5px;
+  padding: 10px 0 5px 5px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -451,21 +527,21 @@ const MidWrap = styled.div`
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px
+  gap: 5px;
 `;
 
 const MidTitle = styled.div`
-  padding : 10px;
+  padding: 10px;
   font-size: var(--fontSm);
-  font-weight: var(--bold); 
-  color: var(--font); 
+  font-weight: var(--bold);
+  color: var(--font);
   letter-spacing: -0.5px;
   cursor: pointer;
-  
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  
+
   border: none;
 
   &:hover {
@@ -532,8 +608,6 @@ const UserId = styled.span`
   color: var(--font2);
 `;
 
-
-
 const Main = styled.main`
   display: flex;
   flex-direction: column;
@@ -549,7 +623,7 @@ const TopBar = styled.header`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 ;
+  padding: 0;
 `;
 
 const TopBarLeft = styled.div`
@@ -577,10 +651,9 @@ const PaddedIconBtn = styled(IconBtn)`
   padding: 0 10px;
 `;
 
-
 const BorderedChevronBtn = styled(IconBtn)`
   border-right: 1px solid var(--border);
-  width: 40px; 
+  width: 40px;
   height: 40px;
 `;
 
@@ -597,7 +670,7 @@ const TabsContainer = styled.div`
   height: 100%;
   margin-left: 8px;
   overflow-x: auto;
-  
+
   &::-webkit-scrollbar {
     display: none;
   }
@@ -617,11 +690,11 @@ const Tab = styled.div`
   cursor: pointer;
   position: relative;
   white-space: nowrap;
-  
+
   border-right: 1px solid var(--border);
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 0;
@@ -640,7 +713,9 @@ const Tab = styled.div`
     color: var(--font2);
     display: flex;
     align-items: center;
-    &:hover { color: var(--font); }
+    &:hover {
+      color: var(--font);
+    }
   }
 `;
 
@@ -660,7 +735,7 @@ const SearchInput = styled.input`
   width: 250px;
   height: 30px;
   padding: 0 16px 0 40px;
-  border-radius: 30px; 
+  border-radius: 30px;
   border: 1px solid transparent;
   background: var(--background2);
   font-size: var(--fontSm);

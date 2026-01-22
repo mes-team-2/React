@@ -191,8 +191,8 @@ export default function Lot() {
   ========================= */
   const columns = [
     { key: "lotNo", label: "LOT 번호", width: 180 },
-    { key: "materialCode", label: "자재코드", width: 140 },
-    { key: "materialName", label: "자재명", width: 160 },
+    { key: "materialCode", label: "제품코드", width: 140 },
+    { key: "materialName", label: "제품명", width: 160 },
     { key: "remainQty", label: "잔량", width: 100 },
     { key: "status", label: "상태", width: 110 },
     { key: "workOrderNo", label: "작업지시", width: 160 },
