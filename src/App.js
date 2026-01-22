@@ -21,8 +21,8 @@ import Machine from "./pages/master/Machine";
 import Material from "./pages/master/Material";
 import ProcessLog from "./pages/production/ProcessLog";
 import Product from "./pages/master/Product";
-import Trace from "./pages/report/Trace";
-import ProductReport from "./pages/report/ProductReport";
+import Traceability from "./pages/report/Traceability";
+import ProductionReport from "./pages/report/ProductionReport";
 import Test from "./pages/Test";
 import Worker from "./pages/master/Worker";
 import Process from "./pages/master/Process";
@@ -30,6 +30,7 @@ import Barcode from "./pages/production/Barcode";
 import { AuthProvider } from "./context/AuthContext";
 import TestLog from "./pages/quality/TestLog";
 import MaterialLog from "./pages/master/MaterialLog";
+import Shipment from "./pages/production/Shipment";
 
 /* 아직 안 만든 페이지는 임시 */
 const Empty = ({ title }) => <div>{title}</div>;
@@ -63,7 +64,7 @@ function App() {
             <Route path="workorders" element={<WorkOrders />} />
             <Route path="material-lot" element={<MaterialLot />} />
             <Route path="lot" element={<Lot />} />
-            <Route path="shipment" element={<Empty title="출하 관리" />} />
+            <Route path="shipment" element={<Shipment />} />
             <Route path="barcode" element={<Barcode />} />
 
             {/* ================= 품질 관리 ================= */}
@@ -80,8 +81,8 @@ function App() {
 
             {/* ================= 리포트 ================= */}
             <Route path="report">
-              <Route path="product-report" element={<ProductReport />} />
-              <Route path="trace" element={<Trace />} />
+              <Route path="product-report" element={<ProductionReport />} />
+              <Route path="trace" element={<Traceability />} />
             </Route>
 
             {/* ================= 공정 로그 ================= */}
