@@ -502,7 +502,6 @@ const UserProfile = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  border-top: 1px solid var(--border);
 `;
 
 const UserAvatar = styled.div`
@@ -550,7 +549,7 @@ const TopBar = styled.header`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px;
+  padding: 0 ;
 `;
 
 const TopBarLeft = styled.div`
