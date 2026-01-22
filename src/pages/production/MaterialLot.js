@@ -44,7 +44,7 @@ const DB_DATA = {
   ]
 };
 
-export default function MaterialDetail({ onClose }) {
+export default function MaterialLot({ onClose }) {
   const [activeTab, setActiveTab] = useState("INFO"); // INFO | USAGE | DEFECT
 
   const { material_info, used_in_products, usage_history, defect_logs } = DB_DATA;

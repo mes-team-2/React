@@ -13,6 +13,7 @@ import SideBar from "./components/SideBar";
 
 import WorkOrders from "./pages/production/WorkOrder";
 import Lot from "./pages/production/Lot";
+import MaterialLot from "./pages/production/MaterialLot";
 import Bom from "./pages/master/BOM";
 import DefectLog from "./pages/quality/DefectLog";
 import Inventory from "./pages/inventory/Inventory";
@@ -60,6 +61,7 @@ function App() {
 
             {/* ================= 생산 관리 ================= */}
             <Route path="workorders" element={<WorkOrders />} />
+            <Route path="material-lot" element={<MaterialLot />} />
             <Route path="lot" element={<Lot />} />
             <Route path="shipment" element={<Empty title="출하 관리" />} />
             <Route path="barcode" element={<Barcode />} />

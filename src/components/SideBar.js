@@ -135,7 +135,8 @@ const MENU = [
     items: [
       { to: "/mes/workorders", label: "작업지시 관리" },
       { to: "/mes/process-log", label: "공정 로그" },
-      { to: "/mes/lot", label: "LOT 관리" },
+      { to: "/mes/material-lot", label: "자재 LOT 관리" },
+      { to: "/mes/lot", label: "제품 LOT 관리" },
     ],
   },
   {
