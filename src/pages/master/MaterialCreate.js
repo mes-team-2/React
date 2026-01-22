@@ -41,7 +41,7 @@ export default function MaterialCreate({ onClose }) {
         </Field>
 
         <Field>
-          <label>자재명 *</label>
+          <label>자재명</label>
           <input
             name="materialName"
             value={form.materialName}
@@ -51,7 +51,7 @@ export default function MaterialCreate({ onClose }) {
         </Field>
 
         <Field>
-          <label>재고 *</label>
+          <label>재고</label>
           <input
             name="stockQty"
             type="number"
@@ -62,12 +62,24 @@ export default function MaterialCreate({ onClose }) {
         </Field>
 
         <Field>
+          <label>안전재고</label>
+          <input
+            name="safeQty"
+            type="number"
+            value={form.safeQty}
+            onChange={handleChange}
+            placeholder="안전재고 수량을 입력하세요"
+          />
+        </Field>
+
+        <Field>
           <label>단위 *</label>
           <select name="unit" value={form.unit} onChange={handleChange}>
             <option value="">자재 단위를 선택하세요</option>
             <option value="EA">EA</option>
             <option value="KG">KG</option>
             <option value="L">L</option>
+            <option value="M">M</option>
           </select>
         </Field>
       </Form>
