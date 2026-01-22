@@ -1,36 +1,56 @@
 import styled from "styled-components";
+import { useEffect, useState } from "react";
 import Table from "../../components/TableStyle";
+import { InventoryAPI } from "../../api/AxiosAPI";
 
 export default function MaterialDetail({ material, onClose }) {
-  // 🔒 material 없으면 렌더 안 함
+  // [수정] 1. Hook을 조건문(if)보다 무조건 먼저 선언해야 합니다.
+  const [lotList, setLotList] = useState([]);
+
+  // [수정] 2. useEffect 내부에서 material 유무를 체크하도록 변경
+  useEffect(() => {
+    // material이 없거나 ID가 없으면 API 호출 안 함
+    if (!material || !material.materialId) return;
+
+    const fetchLots = async () => {
+      try {
+        const response = await InventoryAPI.getMaterialLots(
+          material.materialId,
+        );
+        if (response.status === 200) {
+          setLotList(response.data);
+        }
+      } catch (e) {
+        console.error("LOT 조회 실패:", e);
+      }
+    };
+
+    fetchLots();
+  }, [material]);
+
+  // [수정] 3. Hook 선언이 다 끝난 뒤에 예외 처리(Guard Clause)를 수행
   if (!material) return null;
 
   /* =========================
-     위치별 재고 (더미)
+     위치별 재고 (백엔드 데이터 기반 가공)
   ========================= */
   const locationColumns = [
     { key: "location", label: "위치", width: 120 },
     { key: "qty", label: "수량", width: 100 },
-    { key: "updatedAt", label: "업데이트 시각", width: 160 },
+    { key: "updatedAt", label: "최근 입고일", width: 160 },
   ];
 
   const locationData = [
     {
       id: 1,
-      location: "자재 창고 1",
-      qty: 1200,
-      updatedAt: "2026/01/01 12:34",
-    },
-    {
-      id: 2,
-      location: "공정라인 A",
-      qty: 345,
-      updatedAt: "2026/01/01 13:55",
+      location: "자재 창고 (Main)",
+      qty: Number(material.stockQty ?? 0).toLocaleString(),
+      updatedAt: material.inboundAt || "-",
     },
   ];
 
   /* =========================
-     LOT별 재고 (더미) ⭐ 추가
+     LOT별 재고 (실제 데이터 매핑)
   ========================= */
   const lotColumns = [
     { key: "lotNo", label: "LOT 번호", width: 180 },
@@ -40,49 +60,36 @@ export default function MaterialDetail({ material, onClose }) {
     { key: "remark", label: "비고", width: 180 },
   ];
 
-  // 보통: 같은 자재코드 기준으로 LOT가 여러 개 존재
-  const lotData = [
-    {
-      id: 1,
-      lotNo: "LOT-20260105-001",
-      inboundAt: "2026/01/05",
-      qty: 800,
-      status: "사용중",
-      remark: "라인 A 투입",
-    },
-    {
-      id: 2,
-      lotNo: "LOT-20260103-002",
-      inboundAt: "2026/01/03",
-      qty: 400,
-      status: "보관",
-      remark: "-",
-    },
-    {
-      id: 3,
-      lotNo: "LOT-20260101-003",
-      inboundAt: "2026/01/01",
-      qty: 0,
-      status: "소진",
-      remark: "완전 소진",
-    },
-  ];
+  const lotData = lotList.map((lot) => ({
+    id: lot.materialLotId,
+    lotNo: lot.materialLotNo,
+    inboundAt: lot.inputDate,
+    qty: Number(lot.remainQty).toLocaleString(),
+    status: lot.status === "AVAILABLE" ? "사용가능" : "소진",
+    remark: "-",
+  }));
 
   /* =========================
-     숫자 안전 처리 (Material.js 필드명과 정합)
+     데이터 표시용 변수 처리
   ========================= */
   const stock = Number(material.stockQty ?? 0).toLocaleString();
   const safeStock = Number(material.safeQty ?? 0).toLocaleString();
-  const status = material.stockStatus || "안전";
+
+  // Status.js 매핑 로직
+  let statusLabel = "안전";
+  let statusKey = material.stockStatus;
+
+  if (statusKey === "SAFE" || statusKey === "OK") statusLabel = "안전";
+  else if (statusKey === "WARNING" || statusKey === "CAUTION")
+    statusLabel = "주의";
+  else if (statusKey === "DANGER" || statusKey === "FAIL") statusLabel = "경고";
 
   return (
     <Wrapper>
-      {/* ===== 헤더 ===== */}
       <Header>
         <h3>자재 재고 상세 조회</h3>
       </Header>
 
-      {/* ===== 기본 정보 ===== */}
       <FormGrid>
         <Field>
           <label>자재코드</label>
@@ -111,7 +118,7 @@ export default function MaterialDetail({ material, onClose }) {
 
         <Field>
           <label>재고상태</label>
-          <StatusBadge status={status}>{status}</StatusBadge>
+          <StatusBadge status={statusLabel}>{statusLabel}</StatusBadge>
         </Field>
 
         <Field>
@@ -120,12 +127,11 @@ export default function MaterialDetail({ material, onClose }) {
         </Field>
 
         <Field>
-          <label>입고일자</label>
+          <label>최근 입고일자</label>
           <input value={material.inboundAt || "-"} readOnly />
         </Field>
       </FormGrid>
 
-      {/* ===== 위치별 재고 ===== */}
       <Section>
         <SectionTitle>위치별 재고 현황</SectionTitle>
         <Table
@@ -135,7 +141,6 @@ export default function MaterialDetail({ material, onClose }) {
         />
       </Section>
 
-      {/* ===== LOT별 재고 (추가) ===== */}
       <Section>
         <SectionTitle>LOT별 재고 현황</SectionTitle>
         <Table columns={lotColumns} data={lotData} selectable={false} />
@@ -144,7 +149,6 @@ export default function MaterialDetail({ material, onClose }) {
         </Note>
       </Section>
 
-      {/* ===== 버튼 ===== */}
       <ButtonArea>
         <CancelButton onClick={onClose}>닫기</CancelButton>
       </ButtonArea>
@@ -152,44 +156,35 @@ export default function MaterialDetail({ material, onClose }) {
   );
 }
 
-/* =========================
-   styled
-========================= */
-
+/* Styled Components (기존과 동일) */
 const Wrapper = styled.div`
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 18px;
 `;
-
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-
   h3 {
     font-size: 18px;
     font-weight: 700;
   }
 `;
-
 const FormGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 `;
-
 const Field = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
-
   label {
     font-size: 11px;
     opacity: 0.6;
   }
-
   input {
     padding: 10px;
     border-radius: 10px;
@@ -198,7 +193,6 @@ const Field = styled.div`
     font-size: 13px;
   }
 `;
-
 const StatusBadge = styled.div`
   padding: 10px;
   border-radius: 10px;
@@ -210,27 +204,22 @@ const StatusBadge = styled.div`
   color: ${({ status }) =>
     status === "안전" ? "#16a34a" : status === "주의" ? "#d97706" : "#dc2626"};
 `;
-
 const Section = styled.div`
   margin-top: 8px;
 `;
-
 const SectionTitle = styled.h4`
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
 `;
-
 const Note = styled.div`
   margin-top: 8px;
   font-size: 12px;
   opacity: 0.65;
 `;
-
 const ButtonArea = styled.div`
   margin-top: auto;
 `;
-
 const CancelButton = styled.button`
   width: 100%;
   padding: 12px;
