@@ -36,12 +36,12 @@ export default function QualityDefectLog() {
   ========================= */
   const columns = [
     { key: "lotNo", label: "LOT No", width: 160 },
-    { key: "workOrderNo", label: "작업지시", width: 160 },
     { key: "process", label: "공정", width: 140 },
     { key: "machine", label: "설비", width: 160 },
     { key: "defectType", label: "불량 유형", width: 160 },
     { key: "defectQty", label: "불량 수량", width: 120 },
     { key: "occurredAt", label: "발생 시각", width: 180 },
+    { key: "worker", label: "작업자", width: 130 },
   ];
 
   /* =========================
