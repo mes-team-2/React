@@ -27,6 +27,8 @@ import Worker from "./pages/master/Worker";
 import Process from "./pages/master/Process";
 import Barcode from "./pages/production/Barcode";
 import { AuthProvider } from "./context/AuthContext";
+import TestLog from "./pages/quality/TestLog";
+import MaterialLog from "./pages/master/MaterialLog";
 
 /* 아직 안 만든 페이지는 임시 */
 const Empty = ({ title }) => <div>{title}</div>;
@@ -64,13 +66,13 @@ function App() {
 
             {/* ================= 품질 관리 ================= */}
             <Route path="quality">
-              <Route path="test" element={<Empty title="검사 이력" />} />
+              <Route path="test-log" element={<TestLog />} />
               <Route path="defect" element={<DefectLog />} />
             </Route>
 
             {/* ================= 자재 / 재고 ================= */}
             <Route path="material" element={<Material />} />
-            <Route path="material-tx" element={<Empty title="자재 이력" />} />
+            <Route path="material-tx" element={<MaterialLog />} />
             <Route path="product" element={<Product />} />
             <Route path="inventory" element={<Inventory />} />
 
