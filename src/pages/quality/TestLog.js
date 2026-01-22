@@ -7,6 +7,14 @@ import SummaryCard from "../../components/SummaryCard";
 import TestLogDetail from "./TestLogDetail";
 
 import {
+  FiClipboard,
+  FiCheckCircle,
+  FiXCircle,
+  FiPercent,
+  FiAlertTriangle,
+} from "react-icons/fi";
+
+import {
   ResponsiveContainer,
   LineChart,
   Line,
@@ -277,11 +285,36 @@ export default function TestLog() {
 
       {/* ===== 요약 ===== */}
       <SummaryGrid>
-        <SummaryCard title="검사 건수" value={summary.total.toLocaleString()} />
-        <SummaryCard title="OK" value={summary.ok.toLocaleString()} />
-        <SummaryCard title="NG" value={summary.ng.toLocaleString()} />
-        <SummaryCard title="OK 비율" value={`${summary.okRate}%`} />
-        <SummaryCard title="최다 불량" value={summary.topDefect} />
+        <SummaryCard
+          icon={<FiClipboard />}
+          label="검사 건수"
+          value={summary.total.toLocaleString()}
+          color="var(--main)"
+        />
+        <SummaryCard
+          icon={<FiCheckCircle />}
+          label="OK"
+          value={summary.ok.toLocaleString()}
+          color="var(--run)"
+        />
+        <SummaryCard
+          icon={<FiXCircle />}
+          label="NG"
+          value={summary.ng.toLocaleString()}
+          color="var(--error)"
+        />
+        <SummaryCard
+          icon={<FiPercent />}
+          label="OK 비율"
+          value={`${summary.okRate}%`}
+          color="var(--waiting)"
+        />
+        <SummaryCard
+          icon={<FiAlertTriangle />}
+          label="최다 불량"
+          value={summary.topDefect}
+          color="var(--error)"
+        />
       </SummaryGrid>
 
       {/* ===== 차트 ===== */}
