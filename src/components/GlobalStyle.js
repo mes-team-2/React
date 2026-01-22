@@ -30,7 +30,7 @@ const GlobalStyle = createGlobalStyle`
     --bgRun : #E9FAEF;
     --bgComplete : #E6EEFF;
     --bgError : #FEEDED;
-    --bgStop : #D1D6DD;
+    --bgStop : #F0F2F4;
 
     /* 폰트 사이즈 정의 */
     --fontXs : 12px;  /* 아주 작은 텍스트 (캡션, 라벨) */

@@ -1,219 +1,263 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
-import { QRCodeCanvas } from 'qrcode.react';
 import {
-  FiPrinter, FiCheckCircle, FiAlertTriangle,
-  FiBox, FiActivity, FiSettings, FiFileText, FiX, FiList
+  FiSearch, FiDownload, FiPrinter, FiCpu,
+  FiCheckCircle, FiAlertCircle, FiClock, FiActivity
 } from 'react-icons/fi';
 
 /* =================================================================
-   [MOCK DATA] 현재 DB 구조(CSV)에서 가져올 수 있는 데이터
-   - Material Master + BOM + Production Log + Defect Log 조합
+   [MOCK DATA] DB 구조 기반 가상 데이터
+   - production_log + product + machine + defect_log(집계)
 ================================================================= */
-const DB_DATA = {
-  // [Table: material] - 자재 마스터 정보
-  material_info: {
-    material_id: 501,
-    material_code: "MAT-AL-CASE-05",
-    material_name: "알루미늄 케이스 (S-Type)",
-    material_type: "Raw Material", // 자재 유형
-    unit: "EA",
-    safe_qty: 100, // 안전 재고
-
-    // 현재고 (DB에 재고 컬럼이 없다면, 입고-투입 계산값이나 가상의 현재고 사용)
-    current_qty: 4500,
+const PRODUCT_LOT_DATA = [
+  {
+    id: 1001,
+    lot_number: "PL-250122-A01",
+    product_code: "PROD-GB80L",
+    product_name: "GB80L 자동차 배터리",
+    machine_name: "조립 1호기",
+    worker_name: "김조립",
+    start_time: "2025-01-22 08:00",
+    end_time: "2025-01-22 12:00",
+    plan_qty: 500,    // 계획 수량
+    actual_qty: 495,  // 생산 수량 (production_log)
+    defect_qty: 5,    // 불량 수량 (defect_log count)
+    status: "COMPLETE" // COMPLETE, RUNNING, STOP
   },
+  {
+    id: 1002,
+    lot_number: "PL-250122-B02",
+    product_code: "PROD-GB60L",
+    product_name: "GB60L 자동차 배터리",
+    machine_name: "조립 2호기",
+    worker_name: "이생산",
+    start_time: "2025-01-22 09:00",
+    end_time: "-",
+    plan_qty: 300,
+    actual_qty: 150,
+    defect_qty: 0,
+    status: "RUNNING"
+  },
+  {
+    id: 1003,
+    lot_number: "PL-250121-A05",
+    product_code: "PROD-EV-CELL",
+    product_name: "EV 파우치 셀 (Type-C)",
+    machine_name: "패키징 3호기",
+    worker_name: "박포장",
+    start_time: "2025-01-21 14:00",
+    end_time: "2025-01-21 18:00",
+    plan_qty: 1000,
+    actual_qty: 920,
+    defect_qty: 80, // 불량 다수 발생
+    status: "COMPLETE"
+  },
+];
 
-  // [Table: bom + product] - 이 자재가 사용되는 제품 정보 (역전개)
-  used_in_products: [
-    { product_name: "GB80L 배터리", bom_qty: 1 },
-    { product_name: "GB60L 배터리", bom_qty: 1 },
-  ],
+export default function Test() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL"); // ALL | RUNNING | COMPLETE
 
-  // [Table: production_log + machine] - 생산 투입 이력 (자재 사용 이력)
-  // BOM을 통해 "어떤 생산 로그에 이 자재가 쓰였는지" 추적
-  usage_history: [
-    { log_id: 101, date: "2025-01-22 09:00", machine: "조립 1호기", product: "GB80L 배터리", used_qty: 500, worker: "김가공" },
-    { log_id: 102, date: "2025-01-22 13:00", machine: "조립 2호기", product: "GB60L 배터리", used_qty: 300, worker: "박조립" },
-  ],
+  // --- [Data Logic] 필터링 및 계산 ---
+  const filteredData = useMemo(() => {
+    return PRODUCT_LOT_DATA.filter(item => {
+      const matchesSearch =
+        item.lot_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.product_name.includes(searchTerm) ||
+        item.machine_name.includes(searchTerm);
 
-  // [Table: defect_log] - 공정 중 발생한 불량 (자재 관련 불량일 경우)
-  defect_logs: [
-    { defect_id: 1, date: "2025-01-22 14:00", type: "자재 변형", qty: 5, machine: "조립 1호기" },
-    { defect_id: 2, date: "2025-01-22 16:30", type: "치수 불량", qty: 2, machine: "조립 1호기" }
-  ]
-};
+      const matchesFilter = filterStatus === 'ALL' || item.status === filterStatus;
 
-export default function MaterialDetail({ onClose }) {
-  const [activeTab, setActiveTab] = useState("INFO"); // INFO | USAGE | DEFECT
+      return matchesSearch && matchesFilter;
+    });
+  }, [searchTerm, filterStatus]);
 
-  const { material_info, used_in_products, usage_history, defect_logs } = DB_DATA;
+  // --- [Statistics] 통계 계산 ---
+  const stats = useMemo(() => {
+    const totalQty = PRODUCT_LOT_DATA.reduce((acc, cur) => acc + cur.actual_qty, 0);
+    const totalDefect = PRODUCT_LOT_DATA.reduce((acc, cur) => acc + cur.defect_qty, 0);
+    const avgYield = totalQty > 0 ? ((totalQty - totalDefect) / totalQty) * 100 : 0;
+    const runningCount = PRODUCT_LOT_DATA.filter(i => i.status === 'RUNNING').length;
 
-  // 재고 상태 판단 (안전재고 기준)
-  const stockStatus = material_info.current_qty > material_info.safe_qty ? 'NORMAL' : 'LOW';
+    return { totalQty, totalDefect, avgYield: avgYield.toFixed(1), runningCount };
+  }, []);
 
   return (
     <Container>
-      {/* --- Header --- */}
-      <Header>
-        <HeaderLeft>
-          <Badge $status={stockStatus}>
-            {stockStatus === 'NORMAL' ? <FiCheckCircle /> : <FiAlertTriangle />}
-            {stockStatus === 'NORMAL' ? '재고 적정' : '재고 부족 (Low Stock)'}
-          </Badge>
-          <Title>{material_info.material_name}</Title>
-          <SubTitle>{material_info.material_code}</SubTitle>
-        </HeaderLeft>
-        <HeaderRight>
-          <ActionBtn><FiPrinter /> 라벨 발행</ActionBtn>
-          {onClose && <CloseBtn onClick={onClose}><FiX /></CloseBtn>}
-        </HeaderRight>
-      </Header>
+      <PageHeader>
+        <PageTitle>제품 LOT / 생산 이력 조회</PageTitle>
+        <ButtonGroup>
+          <OutlinedBtn><FiPrinter /> 리포트 출력</OutlinedBtn>
+          <PrimaryBtn><FiDownload /> 엑셀 다운로드</PrimaryBtn>
+        </ButtonGroup>
+      </PageHeader>
 
-      <ScrollContent>
-        {/* --- Summary Dashboard --- */}
-        <SummaryGrid>
-          {/* QR (자재 코드) */}
-          <SummaryCard className="qr-card">
-            <QRCodeCanvas value={material_info.material_code} size={80} />
-            <div className="text-col">
-              <span>현재 재고 (Current)</span>
-              <div className="big-qty">
-                {material_info.current_qty.toLocaleString()} <small>{material_info.unit}</small>
-              </div>
+      {/* 1. 상단 통계 대시보드 (그래프 포함) */}
+      <DashboardGrid>
+        {/* 카드 1: 금일 생산 수량 */}
+        <StatCard>
+          <div className="card-header">
+            <span className="title">금일 총 생산량 (Output)</span>
+            <FiCheckCircle className="icon blue" />
+          </div>
+          <div className="card-body">
+            <span className="value">{stats.totalQty.toLocaleString()} <small>EA</small></span>
+            <div className="sub-text">계획 대비 98.5% 달성</div>
+          </div>
+          {/* 미니 바 차트 (CSS 구현) */}
+          <MiniBarChart>
+            <div className="bar-bg">
+              <div className="bar-fill blue" style={{ width: '98.5%' }}></div>
             </div>
-          </SummaryCard>
+          </MiniBarChart>
+        </StatCard>
 
-          {/* BOM Info (사용처) */}
-          <SummaryCard>
-            <div className="label-row">
-              <span>사용 제품 (Used In)</span>
-              <FiBox className="icon-bg" />
+        {/* 카드 2: 평균 수율 (Yield) */}
+        <StatCard>
+          <div className="card-header">
+            <span className="title">평균 공정 수율 (Yield)</span>
+            <FiActivity className="icon green" />
+          </div>
+          <div className="card-body">
+            <span className="value">{stats.avgYield}%</span>
+            <div className="sub-text">불량률 {(100 - stats.avgYield).toFixed(1)}%</div>
+          </div>
+          {/* 원형 차트 느낌의 프로그레스 */}
+          <MiniBarChart>
+            <div className="bar-bg">
+              <div className="bar-fill green" style={{ width: `${stats.avgYield}%` }}></div>
             </div>
-            <ul className="usage-list">
-              {used_in_products.map((prod, idx) => (
-                <li key={idx}>
-                  • {prod.product_name}
-                  <small>(소요량: {prod.bom_qty})</small>
-                </li>
-              ))}
-            </ul>
-          </SummaryCard>
+          </MiniBarChart>
+        </StatCard>
 
-          {/* Safety Stock */}
-          <SummaryCard>
-            <div className="label-row">
-              <span>안전 재고 (Safe Qty)</span>
-              <FiActivity className="icon-bg" />
+        {/* 카드 3: 가동 중 설비 */}
+        <StatCard onClick={() => setFilterStatus('RUNNING')} $clickable>
+          <div className="card-header">
+            <span className="title">가동 중인 LOT (Running)</span>
+            <FiCpu className="icon orange" />
+          </div>
+          <div className="card-body">
+            <span className="value">{stats.runningCount} <small>Lines</small></span>
+            <div className="sub-text">실시간 모니터링 중</div>
+          </div>
+          <StatusIndicator>
+            <span className="dot animate-pulse"></span> 시스템 정상 가동 중
+          </StatusIndicator>
+        </StatCard>
+
+        {/* 카드 4: 불량 발생 현황 */}
+        <StatCard>
+          <div className="card-header">
+            <span className="title">누적 불량 (Defect)</span>
+            <FiAlertCircle className="icon red" />
+          </div>
+          <div className="card-body">
+            <span className="value">{stats.totalDefect} <small>EA</small></span>
+            <div className="sub-text">주요 유형: 치수불량</div>
+          </div>
+          <MiniBarChart>
+            <div className="bar-bg">
+              <div className="bar-fill red" style={{ width: '15%' }}></div>
             </div>
-            <div className="stat-value">
-              {material_info.safe_qty.toLocaleString()} <small>{material_info.unit}</small>
-            </div>
-            <div className="stat-desc">최소 유지 수량</div>
-          </SummaryCard>
-        </SummaryGrid>
+          </MiniBarChart>
+        </StatCard>
+      </DashboardGrid>
 
-        {/* --- Tabs --- */}
-        <TabContainer>
-          <Tab $active={activeTab === 'INFO'} onClick={() => setActiveTab('INFO')}>기본 정보</Tab>
-          <Tab $active={activeTab === 'USAGE'} onClick={() => setActiveTab('USAGE')}>
-            생산 투입 이력 <span className="count">{usage_history.length}</span>
-          </Tab>
-          <Tab $active={activeTab === 'DEFECT'} onClick={() => setActiveTab('DEFECT')}>
-            불량 이력 <span className="count">{defect_logs.length}</span>
-          </Tab>
-        </TabContainer>
+      {/* 2. 필터 및 검색 */}
+      <FilterBar>
+        <div className="left">
+          <FilterTab $active={filterStatus === 'ALL'} onClick={() => setFilterStatus('ALL')}>전체 이력</FilterTab>
+          <FilterTab $active={filterStatus === 'RUNNING'} onClick={() => setFilterStatus('RUNNING')}>생산 중 (WIP)</FilterTab>
+          <FilterTab $active={filterStatus === 'COMPLETE'} onClick={() => setFilterStatus('COMPLETE')}>생산 완료</FilterTab>
+        </div>
+        <SearchBox>
+          <FiSearch />
+          <input
+            placeholder="LOT 번호, 제품명, 설비명 검색"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </SearchBox>
+      </FilterBar>
 
-        {/* --- Tab Contents --- */}
-        <ContentArea>
+      {/* 3. 목록 테이블 */}
+      <TableWrapper>
+        <Table>
+          <thead>
+            <tr>
+              <th width="50">No</th>
+              <th>진행 상태</th>
+              <th>제품 LOT 번호</th>
+              <th>제품 정보</th>
+              <th>설비 / 작업자</th>
+              <th className="center">수율 (Yield)</th>
+              <th className="right">생산 / 불량</th>
+              <th>생산 시간</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredData.map((item, index) => {
+              // 수율 계산 (개별 LOT)
+              const yieldRate = item.actual_qty > 0
+                ? ((item.actual_qty - item.defect_qty) / item.actual_qty * 100).toFixed(1)
+                : 0;
+              const isLowYield = yieldRate < 90; // 90% 미만이면 경고
 
-          {/* 1. 기본 정보 (Material Master) */}
-          {activeTab === 'INFO' && (
-            <InfoTable>
-              <tbody>
-                <InfoRow>
-                  <th>자재 코드</th>
-                  <td>{material_info.material_code}</td>
-                  <th>자재명</th>
-                  <td className="highlight">{material_info.material_name}</td>
-                </InfoRow>
-                <InfoRow>
-                  <th>자재 유형</th>
-                  <td>{material_info.material_type}</td>
-                  <th>단위 (Unit)</th>
-                  <td>{material_info.unit}</td>
-                </InfoRow>
-                <InfoRow>
-                  <th>안전 재고</th>
-                  <td style={{ color: 'var(--error)', fontWeight: 'bold' }}>
-                    {material_info.safe_qty} {material_info.unit}
+              return (
+                <tr key={item.id}>
+                  <td>{index + 1}</td>
+
+                  {/* 상태 뱃지 */}
+                  <td>
+                    <StatusBadge $status={item.status}>
+                      {item.status === 'RUNNING' ? '가동중' : '완료'}
+                    </StatusBadge>
                   </td>
-                  <th>관리 상태</th>
-                  <td><span style={{ color: 'var(--run)' }}>● 사용 가능 (Active)</span></td>
-                </InfoRow>
-              </tbody>
-            </InfoTable>
-          )}
 
-          {/* 2. 생산 투입 이력 (Production Log 연동) */}
-          {activeTab === 'USAGE' && (
-            <UsageTable>
-              <thead>
-                <tr>
-                  <th>투입 일시</th>
-                  <th>생산 설비</th>
-                  <th>생산 제품</th>
-                  <th>투입 수량</th>
-                  <th>작업자</th>
+                  <td className="lot-no">{item.lot_number}</td>
+
+                  <td>
+                    <div className="prod-info">
+                      <span className="name">{item.product_name}</span>
+                      <span className="code">{item.product_code}</span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div className="machine-info">
+                      <span className="machine">{item.machine_name}</span>
+                      <span className="worker">{item.worker_name}</span>
+                    </div>
+                  </td>
+
+                  {/* 수율 그래프 (테이블 내) */}
+                  <td className="center">
+                    <YieldBox $isLow={isLowYield}>
+                      <span className="text">{yieldRate}%</span>
+                      <div className="track">
+                        <div className="fill" style={{ width: `${yieldRate}%` }}></div>
+                      </div>
+                    </YieldBox>
+                  </td>
+
+                  <td className="right qty-group">
+                    <span className="good">{item.actual_qty.toLocaleString()}</span>
+                    <span className="divider">/</span>
+                    <span className="bad">{item.defect_qty}</span>
+                  </td>
+
+                  <td>
+                    <div className="time-info">
+                      <span className="start"><FiClock size={10} /> {item.start_time.split(' ')[1]} ~</span>
+                      <span className="end">{item.end_time === '-' ? '진행중' : item.end_time.split(' ')[1]}</span>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {usage_history.map((log) => (
-                  <tr key={log.log_id}>
-                    <td>{log.date}</td>
-                    <td>{log.machine}</td>
-                    <td>{log.product}</td>
-                    <td className="qty">-{log.used_qty}</td>
-                    <td>{log.worker}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </UsageTable>
-          )}
-
-          {/* 3. 불량 이력 (Defect Log) */}
-          {activeTab === 'DEFECT' && (
-            <DefectTable>
-              <thead>
-                <tr>
-                  <th>발생 일시</th>
-                  <th>불량 유형</th>
-                  <th>불량 수량</th>
-                  <th>관련 설비</th>
-                  <th>투입 제품 코드</th>
-                  <th>투입 제품명</th>
-                  <th>투입 제품 LOT</th>
-                </tr>
-              </thead>
-              <tbody>
-                {defect_logs.length > 0 ? (
-                  defect_logs.map((log) => (
-                    <tr key={log.defect_id}>
-                      <td>{log.date}</td>
-                      <td><span className="tag">{log.type}</span></td>
-                      <td className="qty">-{log.qty}</td>
-                      <td>{log.machine}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan="4" className="empty">불량 이력이 없습니다.</td></tr>
-                )}
-              </tbody>
-            </DefectTable>
-          )}
-
-        </ContentArea>
-      </ScrollContent>
+              );
+            })}
+          </tbody>
+        </Table>
+      </TableWrapper>
     </Container>
   );
 }
@@ -221,122 +265,103 @@ export default function MaterialDetail({ onClose }) {
 /* =========================
    Styled Components
 ========================= */
-const Container = styled.div`
-  display: flex; flex-direction: column; height: 100%;
-  background: #f8fafc; border-radius: 8px; overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  max-width: 900px; margin: 0 auto;
+const Container = styled.div` display: flex; flex-direction: column; gap: 20px; height: 100%; `;
+const PageHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; `;
+const PageTitle = styled.h2` font-size: 20px; font-weight: 700; color: var(--font); `;
+const ButtonGroup = styled.div` display: flex; gap: 8px; `;
+
+const Btn = styled.button` display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; transition: 0.2s; `;
+const PrimaryBtn = styled(Btn)` background: var(--main); color: white; &:hover { opacity: 0.9; } `;
+const OutlinedBtn = styled(Btn)` background: white; border: 1px solid #ddd; color: #555; &:hover { background: #f8fafc; } `;
+
+/* Dashboard Styles */
+const DashboardGrid = styled.div`
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  @media (max-width: 1200px) { grid-template-columns: repeat(2, 1fr); }
 `;
 
-/* Header */
-const Header = styled.div`
-  padding: 24px; background: white; border-bottom: 1px solid #eee;
-  display: flex; justify-content: space-between; align-items: flex-start;
-`;
-const HeaderLeft = styled.div` display: flex; flex-direction: column; gap: 6px; `;
-const HeaderRight = styled.div` display: flex; gap: 8px; `;
+const StatCard = styled.div`
+  background: white; border-radius: 12px; padding: 20px;
+  border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  display: flex; flex-direction: column; justify-content: space-between;
+  cursor: ${props => props.$clickable ? 'pointer' : 'default'};
+  transition: transform 0.2s;
+  &:hover { transform: translateY(-2px); }
 
-const Badge = styled.span`
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 4px; width: fit-content;
-  background: ${props => props.$status === 'NORMAL' ? 'var(--bgRun)' : 'var(--bgWaiting)'};
-  color: ${props => props.$status === 'NORMAL' ? 'var(--run)' : 'var(--waiting)'};
-`;
-const Title = styled.h2` font-size: 22px; font-weight: 800; color: var(--font); margin: 4px 0; letter-spacing: -0.5px; `;
-const SubTitle = styled.div` font-size: 14px; color: var(--font2); `;
-
-const ActionBtn = styled.button`
-  display: flex; align-items: center; gap: 6px; padding: 8px 14px;
-  background: white; border: 1px solid #ddd; border-radius: 6px;
-  font-size: 13px; font-weight: 600; color: #555;
-  &:hover { background: #f1f3f5; }
-`;
-const CloseBtn = styled.button`
-  padding: 8px; color: #999; font-size: 20px;
-  &:hover { color: #333; }
-`;
-
-/* Scroll Content */
-const ScrollContent = styled.div` flex: 1; overflow-y: auto; padding: 24px; `;
-
-/* Summary Dashboard */
-const SummaryGrid = styled.div`
-  display: grid; grid-template-columns: 1.2fr 1.5fr 1fr; gap: 16px; margin-bottom: 24px;
-  @media (max-width: 768px) { grid-template-columns: 1fr; }
-`;
-
-const SummaryCard = styled.div`
-  background: white; padding: 20px; border-radius: 12px;
-  border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02); position: relative;
-
-  &.qr-card { 
-    flex-direction: row; align-items: center; gap: 16px; justify-content: flex-start;
-    .text-col { display: flex; flex-direction: column; }
-    .big-qty { font-size: 24px; font-weight: 800; color: var(--main); line-height: 1.2; }
-    small { font-size: 14px; font-weight: 600; color: #888; margin-left: 2px; }
+  .card-header { 
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+    .title { font-size: 13px; font-weight: 600; color: #64748b; }
+    .icon { font-size: 20px; opacity: 0.8; }
+    .icon.blue { color: var(--main); }
+    .icon.green { color: #22c55e; }
+    .icon.orange { color: #f97316; }
+    .icon.red { color: #ef4444; }
   }
 
-  .label-row { 
-    display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 8px; font-weight: 600;
-    .icon-bg { font-size: 18px; opacity: 0.5; }
+  .card-body {
+    margin-bottom: 12px;
+    .value { font-size: 26px; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; }
+    small { font-size: 14px; font-weight: 600; color: #94a3b8; margin-left: 4px; }
+    .sub-text { font-size: 12px; color: #94a3b8; margin-top: 4px; }
   }
-  
-  .usage-list {
-    list-style: none; padding: 0; margin: 0; font-size: 13px; color: #333;
-    li { margin-bottom: 4px; display: flex; justify-content: space-between; }
-    small { color: #888; }
-  }
-
-  .stat-value { font-size: 24px; font-weight: 800; color: #333; }
-  .stat-desc { font-size: 12px; color: #999; margin-top: 4px; }
 `;
 
-/* Tabs */
-const TabContainer = styled.div`
-  display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 0;
-`;
-const Tab = styled.div`
-  padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
-  color: ${props => props.$active ? 'var(--main)' : '#888'};
-  border-bottom: 2px solid ${props => props.$active ? 'var(--main)' : 'transparent'};
-  display: flex; align-items: center; gap: 6px;
-  
-  .count { 
-    background: #f1f5f9; color: #64748b; font-size: 10px; padding: 2px 6px; border-radius: 10px; 
-    ${props => props.$active && `background: var(--bgRun); color: var(--run);`}
-  }
-  &:hover { color: var(--main); }
+/* CSS-only Mini Charts */
+const MiniBarChart = styled.div`
+  .bar-bg { width: 100%; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .blue { background: var(--main); }
+  .green { background: #22c55e; }
+  .red { background: #ef4444; }
 `;
 
-/* Content Area */
-const ContentArea = styled.div`
-  background: white; padding: 24px; border-radius: 0 0 12px 12px;
-  border: 1px solid #e2e8f0; border-top: none; min-height: 300px;
+const StatusIndicator = styled.div`
+  font-size: 11px; color: #22c55e; font-weight: 600; display: flex; align-items: center; gap: 6px;
+  .dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; }
+  .animate-pulse { animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 `;
 
-/* Table Styles */
-const InfoTable = styled.table`
-  width: 100%; border-collapse: collapse; font-size: 14px;
-  th { text-align: left; color: #888; font-weight: 500; padding: 12px 0; width: 120px; vertical-align: top; }
-  td { color: #333; padding: 12px 0; font-weight: 500; }
-  .highlight { color: var(--main); font-weight: 700; }
-  tr:not(:last-child) { border-bottom: 1px solid #f1f5f9; }
+/* Filter & Table */
+const FilterBar = styled.div`
+  display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border);
+  .left { display: flex; gap: 4px; }
 `;
-const InfoRow = styled.tr``;
+const FilterTab = styled.button`
+  padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  background: ${props => props.$active ? 'var(--bgComplete)' : 'transparent'};
+  color: ${props => props.$active ? 'var(--main)' : '#64748b'};
+  &:hover { background: #f1f5f9; }
+`;
+const SearchBox = styled.div`
+  display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 12px;
+  svg { color: #94a3b8; }
+  input { border: none; background: transparent; padding: 8px; width: 220px; font-size: 13px; &::placeholder { color: #cbd5e1; } }
+`;
 
-const UsageTable = styled.table`
+const TableWrapper = styled.div` background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; flex: 1; `;
+const Table = styled.table`
   width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;
-  th { background: #f8fafc; color: #64748b; font-weight: 600; padding: 10px; border-bottom: 1px solid #e2e8f0; }
-  td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; color: #333; }
-  .qty { font-weight: 700; color: #333; }
+  th { background: #f8fafc; color: #64748b; font-weight: 600; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; &.right { text-align: right; } &.center { text-align: center; } }
+  td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; color: #333; vertical-align: middle; &.right { text-align: right; } &.center { text-align: center; } 
+       &.lot-no { font-family: monospace; font-weight: 600; color: var(--main); cursor: pointer; &:hover { text-decoration: underline; } } }
+
+  .prod-info { display: flex; flex-direction: column; .name { font-weight: 600; } .code { font-size: 11px; color: #94a3b8; } }
+  .machine-info { display: flex; flex-direction: column; .machine { font-weight: 600; } .worker { font-size: 11px; color: #94a3b8; } }
+  .time-info { display: flex; flex-direction: column; .start { color: #333; } .end { color: #94a3b8; font-size: 11px; } }
+  
+  .qty-group { font-family: monospace; font-size: 14px; .good { color: #333; font-weight: 700; } .bad { color: #ef4444; font-weight: 700; } .divider { color: #ddd; margin: 0 4px; } }
 `;
 
-const DefectTable = styled.table`
-  width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;
-  th { background: #f8fafc; color: #64748b; font-weight: 600; padding: 10px; border-bottom: 1px solid #e2e8f0; }
-  td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; color: #333; }
-  .tag { background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-  .qty { font-weight: 700; color: #ef4444; }
-  .empty { text-align: center; color: #999; padding: 30px; }
+/* Custom Table Components */
+const StatusBadge = styled.span`
+  display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;
+  ${props => props.$status === 'RUNNING' ? `background: #dcfce7; color: #166534;` : `background: #f1f5f9; color: #64748b;`}
+`;
+
+const YieldBox = styled.div`
+  display: flex; flex-direction: column; align-items: center; width: 80px; margin: 0 auto;
+  .text { font-size: 12px; font-weight: 700; color: ${props => props.$isLow ? '#ef4444' : '#333'}; margin-bottom: 4px; }
+  .track { width: 100%; height: 4px; background: #f1f5f9; border-radius: 2px; }
+  .fill { height: 100%; background: ${props => props.$isLow ? '#ef4444' : '#22c55e'}; border-radius: 2px; }
 `;

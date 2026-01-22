@@ -1,219 +1,205 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
-import { QRCodeCanvas } from 'qrcode.react';
 import {
-  FiPrinter, FiCheckCircle, FiAlertTriangle,
-  FiBox, FiActivity, FiSettings, FiFileText, FiX, FiList
+  FiSearch, FiDownload, FiPrinter, FiBox,
+  FiCheckCircle, FiAlertTriangle, FiTruck, FiLayers
 } from 'react-icons/fi';
 
 /* =================================================================
-   [MOCK DATA] 현재 DB 구조(CSV)에서 가져올 수 있는 데이터
-   - Material Master + BOM + Production Log + Defect Log 조합
+   [MOCK DATA] 자재 데이터 (DB: material + material_lot)
 ================================================================= */
-const DB_DATA = {
-  // [Table: material] - 자재 마스터 정보
-  material_info: {
-    material_id: 501,
-    material_code: "MAT-AL-CASE-05",
-    material_name: "알루미늄 케이스 (S-Type)",
-    material_type: "Raw Material", // 자재 유형
+const MATERIAL_DATA = [
+  {
+    id: 1,
+    lot_no: "MAT-260101-121212",
+    code: "MAT-AL-05",
+    name: "알루미늄 케이스 (S-Type)",
+    category: "원자재",
+    supplier: "알루코",
+    location: "A-01-02",
+    current: 4500,
+    safe: 1000,
     unit: "EA",
-    safe_qty: 100, // 안전 재고
-
-    // 현재고 (DB에 재고 컬럼이 없다면, 입고-투입 계산값이나 가상의 현재고 사용)
-    current_qty: 4500,
+    status: "NORMAL",
+    date: "2025-01-22 12:34"
   },
+  {
+    id: 2,
+    lot_no: "MAT-EL-250115-B05",
+    code: "MAT-EL-01",
+    name: "고순도 전해액 (LFP용)",
+    category: "화학물질",
+    supplier: "솔브레인",
+    location: "C-05-01",
+    current: 200,
+    safe: 500,
+    unit: "KG",
+    status: "LOW",
+    date: "2025-01-20 12:34"
+  },
+  {
+    id: 3,
+    lot_no: "MAT-CU-250122-A01",
+    code: "MAT-CU-FOIL",
+    name: "구리 포일 (Copper)",
+    category: "원자재",
+    supplier: "LS엠트론",
+    location: "B-02-04",
+    current: 5000,
+    safe: 1000,
+    unit: "ROLL",
+    status: "NORMAL",
+    date: "2025-01-22 12:34"
+  },
+  {
+    id: 4,
+    lot_no: "MAT-PK-250110-C02",
+    code: "MAT-BOX-L",
+    name: "대형 포장 박스",
+    category: "부자재",
+    supplier: "태림포장",
+    location: "D-01-01",
+    current: 0,
+    safe: 200,
+    unit: "EA",
+    status: "EMPTY",
+    date: "2025-01-10 12:34"
+  },
+];
 
-  // [Table: bom + product] - 이 자재가 사용되는 제품 정보 (역전개)
-  used_in_products: [
-    { product_name: "GB80L 배터리", bom_qty: 1 },
-    { product_name: "GB60L 배터리", bom_qty: 1 },
-  ],
+export default function MaterialLot() {
+  const [activeTab, setActiveTab] = useState("ALL");
+  const [keyword, setKeyword] = useState("");
 
-  // [Table: production_log + machine] - 생산 투입 이력 (자재 사용 이력)
-  // BOM을 통해 "어떤 생산 로그에 이 자재가 쓰였는지" 추적
-  usage_history: [
-    { log_id: 101, date: "2025-01-22 09:00", machine: "조립 1호기", product: "GB80L 배터리", used_qty: 500, worker: "김가공" },
-    { log_id: 102, date: "2025-01-22 13:00", machine: "조립 2호기", product: "GB60L 배터리", used_qty: 300, worker: "박조립" },
-  ],
+  // 필터링
+  const filteredList = useMemo(() => {
+    return MATERIAL_DATA.filter(item => {
+      const matchStatus = activeTab === 'ALL' || item.status === activeTab;
+      const matchSearch = item.name.includes(keyword) || item.code.includes(keyword);
+      return matchStatus && matchSearch;
+    });
+  }, [activeTab, keyword]);
 
-  // [Table: defect_log] - 공정 중 발생한 불량 (자재 관련 불량일 경우)
-  defect_logs: [
-    { defect_id: 1, date: "2025-01-22 14:00", type: "자재 변형", qty: 5, machine: "조립 1호기" },
-    { defect_id: 2, date: "2025-01-22 16:30", type: "치수 불량", qty: 2, machine: "조립 1호기" }
-  ]
-};
-
-export default function MaterialLot({ onClose }) {
-  const [activeTab, setActiveTab] = useState("INFO"); // INFO | USAGE | DEFECT
-
-  const { material_info, used_in_products, usage_history, defect_logs } = DB_DATA;
-
-  // 재고 상태 판단 (안전재고 기준)
-  const stockStatus = material_info.current_qty > material_info.safe_qty ? 'NORMAL' : 'LOW';
+  // 상단 통계
+  const stats = useMemo(() => {
+    return {
+      total: MATERIAL_DATA.length,
+      normal: MATERIAL_DATA.filter(i => i.status === 'NORMAL').length,
+      low: MATERIAL_DATA.filter(i => i.status === 'LOW' || i.status === 'EMPTY').length,
+      inbound: 5 // 가상의 입고 예정 건수
+    };
+  }, []);
 
   return (
     <Container>
-      {/* --- Header --- */}
+      {/* 1. Header */}
       <Header>
-        <HeaderLeft>
-          <Badge $status={stockStatus}>
-            {stockStatus === 'NORMAL' ? <FiCheckCircle /> : <FiAlertTriangle />}
-            {stockStatus === 'NORMAL' ? '재고 적정' : '재고 부족 (Low Stock)'}
-          </Badge>
-          <Title>{material_info.material_name}</Title>
-          <SubTitle>{material_info.material_code}</SubTitle>
-        </HeaderLeft>
-        <HeaderRight>
-          <ActionBtn><FiPrinter /> 라벨 발행</ActionBtn>
-          {onClose && <CloseBtn onClick={onClose}><FiX /></CloseBtn>}
-        </HeaderRight>
+        <Title>자재 재고 관리</Title>
+        <BtnGroup>
+          <Btn><FiPrinter /> 인쇄</Btn>
+          <Btn $primary><FiDownload /> 엑셀 다운로드</Btn>
+        </BtnGroup>
       </Header>
 
-      <ScrollContent>
-        {/* --- Summary Dashboard --- */}
-        <SummaryGrid>
-          {/* QR (자재 코드) */}
-          <SummaryCard className="qr-card">
-            <QRCodeCanvas value={material_info.material_code} size={80} />
-            <div className="text-col">
-              <span>현재 재고 (Current)</span>
-              <div className="big-qty">
-                {material_info.current_qty.toLocaleString()} <small>{material_info.unit}</small>
-              </div>
-            </div>
-          </SummaryCard>
+      {/* 2. Dashboard Cards */}
+      <Cards>
+        <Card>
+          <div className="icon blue"><FiBox /></div>
+          <div className="text">
+            <span>전체 LOT</span>
+            <strong>{stats.total}</strong>
+          </div>
+        </Card>
+        <Card>
+          <div className="icon green"><FiCheckCircle /></div>
+          <div className="text">
+            <span>생산중(투입)</span>
+            <strong>{stats.normal}</strong>
+          </div>
+        </Card>
+        <Card>
+          <div className="icon orange"><FiAlertTriangle /></div>
+          <div className="text">
+            <span>대기중</span>
+            <strong className="warn">{stats.low}</strong>
+          </div>
+        </Card>
+        <Card>
+          <div className="icon purple"><FiTruck /></div>
+          <div className="text">
+            <span>불량</span>
+            <strong>{stats.inbound}</strong>
+          </div>
+        </Card>
+      </Cards>
 
-          {/* BOM Info (사용처) */}
-          <SummaryCard>
-            <div className="label-row">
-              <span>사용 제품 (Used In)</span>
-              <FiBox className="icon-bg" />
-            </div>
-            <ul className="usage-list">
-              {used_in_products.map((prod, idx) => (
-                <li key={idx}>
-                  • {prod.product_name}
-                  <small>(소요량: {prod.bom_qty})</small>
-                </li>
-              ))}
-            </ul>
-          </SummaryCard>
+      {/* 3. Filter & Search */}
+      <Controls>
+        <Tabs>
+          <Tab $active={activeTab === 'ALL'} onClick={() => setActiveTab('ALL')}>전체</Tab>
+          <Tab $active={activeTab === 'NORMAL'} onClick={() => setActiveTab('NORMAL')}>정상</Tab>
+          <Tab $active={activeTab === 'LOW'} onClick={() => setActiveTab('LOW')}>부족</Tab>
+          <Tab $active={activeTab === 'EMPTY'} onClick={() => setActiveTab('EMPTY')}>품절</Tab>
+        </Tabs>
+        <Search>
+          <FiSearch />
+          <input
+            placeholder="자재명 또는 코드 검색"
+            value={keyword}
+            onChange={e => setKeyword(e.target.value)}
+          />
+        </Search>
+      </Controls>
 
-          {/* Safety Stock */}
-          <SummaryCard>
-            <div className="label-row">
-              <span>안전 재고 (Safe Qty)</span>
-              <FiActivity className="icon-bg" />
-            </div>
-            <div className="stat-value">
-              {material_info.safe_qty.toLocaleString()} <small>{material_info.unit}</small>
-            </div>
-            <div className="stat-desc">최소 유지 수량</div>
-          </SummaryCard>
-        </SummaryGrid>
-
-        {/* --- Tabs --- */}
-        <TabContainer>
-          <Tab $active={activeTab === 'INFO'} onClick={() => setActiveTab('INFO')}>기본 정보</Tab>
-          <Tab $active={activeTab === 'USAGE'} onClick={() => setActiveTab('USAGE')}>
-            생산 투입 이력 <span className="count">{usage_history.length}</span>
-          </Tab>
-          <Tab $active={activeTab === 'DEFECT'} onClick={() => setActiveTab('DEFECT')}>
-            불량 이력 <span className="count">{defect_logs.length}</span>
-          </Tab>
-        </TabContainer>
-
-        {/* --- Tab Contents --- */}
-        <ContentArea>
-
-          {/* 1. 기본 정보 (Material Master) */}
-          {activeTab === 'INFO' && (
-            <InfoTable>
-              <tbody>
-                <InfoRow>
-                  <th>자재 코드</th>
-                  <td>{material_info.material_code}</td>
-                  <th>자재명</th>
-                  <td className="highlight">{material_info.material_name}</td>
-                </InfoRow>
-                <InfoRow>
-                  <th>자재 유형</th>
-                  <td>{material_info.material_type}</td>
-                  <th>단위 (Unit)</th>
-                  <td>{material_info.unit}</td>
-                </InfoRow>
-                <InfoRow>
-                  <th>안전 재고</th>
-                  <td style={{ color: 'var(--error)', fontWeight: 'bold' }}>
-                    {material_info.safe_qty} {material_info.unit}
-                  </td>
-                  <th>관리 상태</th>
-                  <td><span style={{ color: 'var(--run)' }}>● 사용 가능 (Active)</span></td>
-                </InfoRow>
-              </tbody>
-            </InfoTable>
-          )}
-
-          {/* 2. 생산 투입 이력 (Production Log 연동) */}
-          {activeTab === 'USAGE' && (
-            <UsageTable>
-              <thead>
-                <tr>
-                  <th>투입 일시</th>
-                  <th>생산 설비</th>
-                  <th>생산 제품</th>
-                  <th>투입 수량</th>
-                  <th>작업자</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usage_history.map((log) => (
-                  <tr key={log.log_id}>
-                    <td>{log.date}</td>
-                    <td>{log.machine}</td>
-                    <td>{log.product}</td>
-                    <td className="qty">-{log.used_qty}</td>
-                    <td>{log.worker}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </UsageTable>
-          )}
-
-          {/* 3. 불량 이력 (Defect Log) */}
-          {activeTab === 'DEFECT' && (
-            <DefectTable>
-              <thead>
-                <tr>
-                  <th>발생 일시</th>
-                  <th>불량 유형</th>
-                  <th>불량 수량</th>
-                  <th>관련 설비</th>
-                  <th>투입 제품 코드</th>
-                  <th>투입 제품명</th>
-                  <th>투입 제품 LOT</th>
-                </tr>
-              </thead>
-              <tbody>
-                {defect_logs.length > 0 ? (
-                  defect_logs.map((log) => (
-                    <tr key={log.defect_id}>
-                      <td>{log.date}</td>
-                      <td><span className="tag">{log.type}</span></td>
-                      <td className="qty">-{log.qty}</td>
-                      <td>{log.machine}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan="4" className="empty">불량 이력이 없습니다.</td></tr>
-                )}
-              </tbody>
-            </DefectTable>
-          )}
-
-        </ContentArea>
-      </ScrollContent>
+      {/* 4. List Table */}
+      <TableContainer>
+        <Table>
+          <thead>
+            <tr>
+              <th width="50">No</th>
+              <th width="100">LOT 상태</th>
+              <th>LOT 번호</th>
+              <th>자재코드</th>
+              <th>자재명</th>
+              <th>재고(A)</th>
+              <th>생산중(B)</th>
+              <th>잔여재고(A-B)</th>
+              <th width="120">상태변경일시</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredList.map((item, idx) => (
+              <tr key={item.id}>
+                <td>{idx + 1}</td>
+                <td>
+                  <Badge $status={item.status}>
+                    {item.status === 'NORMAL' && '정상'}
+                    {item.status === 'LOW' && '부족'}
+                    {item.status === 'EMPTY' && '품절'}
+                  </Badge>
+                </td>
+                <td className="code">{item.code}</td>
+                <td className="bold">{item.name}</td>
+                <td>{item.category}</td>
+                <td>{item.supplier}</td>
+                <td><Loc><FiLayers /> {item.location}</Loc></td>
+                <td className="right">
+                  <span className={item.status !== 'NORMAL' ? 'warn-text' : ''}>
+                    {item.current.toLocaleString()}
+                  </span>
+                  <span className="sep">/</span>
+                  <span className="safe">{item.safe.toLocaleString()}</span>
+                  <small>{item.unit}</small>
+                </td>
+                <td className="date">{item.date}</td>
+              </tr>
+            ))}
+            {filteredList.length === 0 && (
+              <tr><td colSpan="9" className="empty">데이터가 없습니다.</td></tr>
+            )}
+          </tbody>
+        </Table>
+      </TableContainer>
     </Container>
   );
 }
@@ -222,121 +208,103 @@ export default function MaterialLot({ onClose }) {
    Styled Components
 ========================= */
 const Container = styled.div`
-  display: flex; flex-direction: column; height: 100%;
-  background: #f8fafc; border-radius: 8px; overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  max-width: 900px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 20px; height: 100%;
 `;
 
-/* Header */
 const Header = styled.div`
-  padding: 24px; background: white; border-bottom: 1px solid #eee;
-  display: flex; justify-content: space-between; align-items: flex-start;
+  display: flex; justify-content: space-between; align-items: center;
 `;
-const HeaderLeft = styled.div` display: flex; flex-direction: column; gap: 6px; `;
-const HeaderRight = styled.div` display: flex; gap: 8px; `;
+const Title = styled.h2`
+  font-size: 20px; font-weight: 700; color: #111;
+`;
+const BtnGroup = styled.div` display: flex; gap: 8px; `;
+const Btn = styled.button`
+  display: flex; align-items: center; gap: 6px; padding: 8px 14px;
+  border-radius: 6px; font-size: 13px; font-weight: 600;
+  background: ${props => props.$primary ? '#004dfc' : 'white'};
+  color: ${props => props.$primary ? 'white' : '#555'};
+  border: 1px solid ${props => props.$primary ? '#004dfc' : '#ddd'};
+  &:hover { opacity: 0.9; }
+`;
+
+/* Cards */
+const Cards = styled.div`
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+`;
+const Card = styled.div`
+  background: white; padding: 20px; border-radius: 12px;
+  border: 1px solid #e0e0e0; display: flex; align-items: center; gap: 16px;
+  
+  .icon {
+    width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;
+    &.blue { background: #e6eeff; color: #004dfc; }
+    &.green { background: #e6fffa; color: #00c48c; }
+    &.orange { background: #fff7e6; color: #fa8c16; }
+    &.purple { background: #f9f0ff; color: #722ed1; }
+  }
+  .text {
+    display: flex; flex-direction: column;
+    span { font-size: 13px; color: #888; margin-bottom: 4px; }
+    strong { font-size: 24px; font-weight: 700; color: #333; }
+    strong.warn { color: #fa8c16; }
+  }
+`;
+
+/* Controls */
+const Controls = styled.div`
+  display: flex; justify-content: space-between; align-items: center;
+  background: white; padding: 12px 20px; border-radius: 12px; border: 1px solid #e0e0e0;
+`;
+const Tabs = styled.div` display: flex; gap: 4px; `;
+const Tab = styled.button`
+  padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
+  background: ${props => props.$active ? '#e6eeff' : 'transparent'};
+  color: ${props => props.$active ? '#004dfc' : '#666'};
+  &:hover { background: #f5f5f5; }
+`;
+const Search = styled.div`
+  display: flex; align-items: center; background: #f5f5f5; border-radius: 6px; padding: 0 12px;
+  svg { color: #999; }
+  input { border: none; background: transparent; padding: 8px; width: 200px; font-size: 13px; }
+`;
+
+/* Table */
+const TableContainer = styled.div`
+  background: white; border-radius: 12px; border: 1px solid #e0e0e0; overflow: hidden; flex: 1;
+`;
+const Table = styled.table`
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  th {
+    background: #f8f9fa; color: #666; font-weight: 600; padding: 12px 16px; text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+    &.right { text-align: right; }
+  }
+  td {
+    padding: 14px 16px; border-bottom: 1px solid #f0f0f0; color: #333;
+    &.right { text-align: right; }
+    &.empty { text-align: center; padding: 40px; color: #999; }
+    &.code { font-family: monospace; color: #666; }
+    &.bold { font-weight: 600; }
+    &.date { color: #888; }
+    
+    .warn-text { color: #fa8c16; font-weight: 700; }
+    .sep { margin: 0 6px; color: #ddd; }
+    .safe { color: #999; }
+    small { font-size: 11px; color: #999; margin-left: 4px; }
+  }
+`;
 
 const Badge = styled.span`
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 4px; width: fit-content;
-  background: ${props => props.$status === 'NORMAL' ? 'var(--bgRun)' : 'var(--bgWaiting)'};
-  color: ${props => props.$status === 'NORMAL' ? 'var(--run)' : 'var(--waiting)'};
-`;
-const Title = styled.h2` font-size: 22px; font-weight: 800; color: var(--font); margin: 4px 0; letter-spacing: -0.5px; `;
-const SubTitle = styled.div` font-size: 14px; color: var(--font2); `;
-
-const ActionBtn = styled.button`
-  display: flex; align-items: center; gap: 6px; padding: 8px 14px;
-  background: white; border: 1px solid #ddd; border-radius: 6px;
-  font-size: 13px; font-weight: 600; color: #555;
-  &:hover { background: #f1f3f5; }
-`;
-const CloseBtn = styled.button`
-  padding: 8px; color: #999; font-size: 20px;
-  &:hover { color: #333; }
+  padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;
+  ${props => {
+    if (props.$status === 'NORMAL') return `background: #e6fffa; color: #00c48c;`;
+    if (props.$status === 'LOW') return `background: #fff7e6; color: #fa8c16;`;
+    if (props.$status === 'EMPTY') return `background: #fff1f0; color: #f5222d;`;
+    return `background: #f5f5f5; color: #666;`;
+  }}
 `;
 
-/* Scroll Content */
-const ScrollContent = styled.div` flex: 1; overflow-y: auto; padding: 24px; `;
-
-/* Summary Dashboard */
-const SummaryGrid = styled.div`
-  display: grid; grid-template-columns: 1.2fr 1.5fr 1fr; gap: 16px; margin-bottom: 24px;
-  @media (max-width: 768px) { grid-template-columns: 1fr; }
-`;
-
-const SummaryCard = styled.div`
-  background: white; padding: 20px; border-radius: 12px;
-  border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02); position: relative;
-
-  &.qr-card { 
-    flex-direction: row; align-items: center; gap: 16px; justify-content: flex-start;
-    .text-col { display: flex; flex-direction: column; }
-    .big-qty { font-size: 24px; font-weight: 800; color: var(--main); line-height: 1.2; }
-    small { font-size: 14px; font-weight: 600; color: #888; margin-left: 2px; }
-  }
-
-  .label-row { 
-    display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 8px; font-weight: 600;
-    .icon-bg { font-size: 18px; opacity: 0.5; }
-  }
-  
-  .usage-list {
-    list-style: none; padding: 0; margin: 0; font-size: 13px; color: #333;
-    li { margin-bottom: 4px; display: flex; justify-content: space-between; }
-    small { color: #888; }
-  }
-
-  .stat-value { font-size: 24px; font-weight: 800; color: #333; }
-  .stat-desc { font-size: 12px; color: #999; margin-top: 4px; }
-`;
-
-/* Tabs */
-const TabContainer = styled.div`
-  display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 0;
-`;
-const Tab = styled.div`
-  padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
-  color: ${props => props.$active ? 'var(--main)' : '#888'};
-  border-bottom: 2px solid ${props => props.$active ? 'var(--main)' : 'transparent'};
-  display: flex; align-items: center; gap: 6px;
-  
-  .count { 
-    background: #f1f5f9; color: #64748b; font-size: 10px; padding: 2px 6px; border-radius: 10px; 
-    ${props => props.$active && `background: var(--bgRun); color: var(--run);`}
-  }
-  &:hover { color: var(--main); }
-`;
-
-/* Content Area */
-const ContentArea = styled.div`
-  background: white; padding: 24px; border-radius: 0 0 12px 12px;
-  border: 1px solid #e2e8f0; border-top: none; min-height: 300px;
-`;
-
-/* Table Styles */
-const InfoTable = styled.table`
-  width: 100%; border-collapse: collapse; font-size: 14px;
-  th { text-align: left; color: #888; font-weight: 500; padding: 12px 0; width: 120px; vertical-align: top; }
-  td { color: #333; padding: 12px 0; font-weight: 500; }
-  .highlight { color: var(--main); font-weight: 700; }
-  tr:not(:last-child) { border-bottom: 1px solid #f1f5f9; }
-`;
-const InfoRow = styled.tr``;
-
-const UsageTable = styled.table`
-  width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;
-  th { background: #f8fafc; color: #64748b; font-weight: 600; padding: 10px; border-bottom: 1px solid #e2e8f0; }
-  td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; color: #333; }
-  .qty { font-weight: 700; color: #333; }
-`;
-
-const DefectTable = styled.table`
-  width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;
-  th { background: #f8fafc; color: #64748b; font-weight: 600; padding: 10px; border-bottom: 1px solid #e2e8f0; }
-  td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; color: #333; }
-  .tag { background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-  .qty { font-weight: 700; color: #ef4444; }
-  .empty { text-align: center; color: #999; padding: 30px; }
+const Loc = styled.span`
+  display: flex; align-items: center; gap: 4px; color: #666;
+  svg { color: #999; }
 `;
