@@ -174,12 +174,9 @@ export default function Shipment() {
   }, [filtered]);
 
   const columns = [
-    { key: "planDate", label: "출하예정", width: 120 },
     { key: "shipmentNo", label: "출하번호", width: 150 },
-    { key: "orderNo", label: "주문번호", width: 140 },
     { key: "customer", label: "거래처", width: 140 },
     { key: "productCode", label: "제품코드", width: 140 },
-    { key: "qty", label: "요청수량", width: 90 },
     { key: "shippedQty", label: "출하수량", width: 90 },
     {
       key: "status",
@@ -187,8 +184,6 @@ export default function Shipment() {
       width: 110,
       render: (v) => STATUS[v],
     },
-    { key: "carrier", label: "택배/운송", width: 120 },
-    { key: "trackingNo", label: "운송장", width: 160 },
   ];
 
   const handleSort = (key) => {
