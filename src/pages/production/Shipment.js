@@ -3,8 +3,6 @@ import { useMemo, useState } from "react";
 import SummaryCard from "../../components/SummaryCard";
 import SearchBar from "../../components/SearchBar";
 import Table from "../../components/TableStyle";
-import SideDrawer from "../../components/SideDrawer";
-import ShipmentDetail from "./ShipmentDetail";
 
 import {
   ResponsiveContainer,
@@ -329,10 +327,6 @@ export default function Shipment() {
           })}
         />
       </TableWrap>
-
-      <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <ShipmentDetail row={selected} />
-      </SideDrawer>
     </Wrapper>
   );
 }
