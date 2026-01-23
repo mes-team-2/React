@@ -38,8 +38,9 @@ const Empty = ({ title }) => <div>{title}</div>;
 function App() {
   return (
     <Router>
+      <GlobalStyle />
       <AuthProvider>
-        <GlobalStyle />
+
         <ScrollToTop />
 
         <Routes>

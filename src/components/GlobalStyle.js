@@ -5,11 +5,27 @@ const GlobalStyle = createGlobalStyle`
   ${reset}
   * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
   body {
-    font-family: 'Noto Sans KR', sans-serif;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: var(--text-base);
     color: var(--font);
+    ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }    
   }
   :root {
     /* 색상 정의 */
@@ -33,6 +49,7 @@ const GlobalStyle = createGlobalStyle`
     --bgStop : #F0F2F4;
 
     /* 폰트 사이즈 정의 */
+    --fontXxs : 12px;  /* 아주 작은 텍스트 (캡션, 라벨) */
     --fontXs : 12px;  /* 아주 작은 텍스트 (캡션, 라벨) */
     --fontSm : 14px;  /* 작은 텍스트 (보조 설명) */
     --fontMd : 15px;  /* 본문 기본 텍스트 (일반적인 크기) */
@@ -50,6 +67,7 @@ const GlobalStyle = createGlobalStyle`
     border: none;
     padding: 0;
     cursor: pointer; 
+    font-family: inherit;
   }
   input, textarea {
     outline: none; 

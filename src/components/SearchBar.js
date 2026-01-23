@@ -1,47 +1,118 @@
-import styled from "styled-components";
+import React, { useState } from 'react';
+import styled from 'styled-components';
+import { FaSearch } from "react-icons/fa";
 
 /**
- * @param {string} value - 검색어
- * @param {Function} onChange - 검색어 변경 핸들러
- * @param {string} placeholder - placeholder 텍스트
- * @param {number} width - 입력창 너비(px)
+
+ * @param {string} width 
  */
-export default function SearchBar({
-  value,
-  onChange,
-  placeholder = "검색",
-  width = 260,
-}) {
+
+const SearchBar = ({
+  onSearch,
+  placeholder = "검색어를 입력하세요",
+  onChange = () => { },
+  width = "100%"
+}) => {
+  const [inputText, setInputText] = useState("");
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    setInputText(val);
+    onChange(val);
+  };
+
+  const handleSearchClick = () => {
+    if (onSearch) onSearch(inputText);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSearchClick();
+  };
+
   return (
-    <Wrapper style={{ width }}>
-      <Input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    </Wrapper>
+    <Container width={width}>
+      <SearchBox>
+        <Input
+          value={inputText}
+          placeholder={placeholder}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+        />
+        <SearchButton onClick={handleSearchClick}>
+          <FaSearch />
+        </SearchButton>
+      </SearchBox>
+    </Container>
   );
-}
+};
 
-/* =========================
-   styled
-========================= */
+export default SearchBar;
 
-const Wrapper = styled.div`
+const sizeMap = {
+  s: '200px',
+  m: '250px',
+  l: '300px'
+};
+
+const Container = styled.div`
+  width: ${props => sizeMap[props.width] || props.width};
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+`;
+
+const SearchBox = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  background-color: var(--background2); 
+  border-radius: 50px; 
+  padding: 0 15px;
+  border: 1px solid transparent;
+  width: 100%;
+  height: 100%;
+  transition: 0.2s ease-in-out;
+  box-sizing: border-box;
+  &:focus-within {
+   border: 1px solid var(--font2);
+  }
 `;
 
 const Input = styled.input`
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
+  flex: 1; 
+  min-width: 0;
+  background: transparent;
+  border: none;
+  height: 100%;
+  font-size: var(--fontSm); 
+  font-weight: var(--normal);
+  color: var(--font); 
   outline: none;
 
-  &:focus {
-    border-color: var(--main);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  &::placeholder {
+    color: var(--font2); 
+  }
+`;
+
+const SearchButton = styled.button`
+  flex-shrink: 0;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--font2); 
+  transition: 0.2s;
+  
+  &:hover {
+    color: var(--font); 
+  }
+  svg {
+    font-size: var(--fontSm);
   }
 `;
