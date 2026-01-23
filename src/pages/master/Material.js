@@ -42,6 +42,7 @@ export default function Material() {
     try {
       const response = await InventoryAPI.getMaterialList();
       if (response.status === 200) {
+        console.log(response.data);
         setData(response.data);
       }
     } catch (e) {
@@ -182,7 +183,7 @@ export default function Material() {
           </ChartBox>
         </Card>
         <Card>
-          <h4>자재별 재고 현황 (Top 5)</h4>
+          <h4>자재별 재고 현황</h4>
           <ChartBox>
             <ResponsiveContainer>
               <BarChart data={stockByMaterialData}>
@@ -247,11 +248,17 @@ export default function Material() {
         <MaterialDetail
           material={selectedMaterial}
           onClose={() => setOpen(false)}
+          onRefresh={fetchMaterials}
         />
       </SideDrawer>
 
       <SideDrawer open={createOpen} onClose={() => setCreateOpen(false)}>
-        <MaterialCreate onClose={() => setCreateOpen(false)} />
+        <MaterialCreate
+          onClose={() => {
+            setCreateOpen(false);
+            fetchMaterials();
+          }}
+        />
       </SideDrawer>
     </Wrapper>
   );

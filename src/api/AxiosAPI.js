@@ -56,6 +56,11 @@ export const InventoryAPI = {
   registerMaterial: async (data) => {
     return await AxiosAPI.post("/api/inventory/material", data);
   },
+
+  // 자재 입고
+  inboundMaterial: async (data) => {
+    return await AxiosAPI.post("/api/inventory/material/inbound", data);
+  },
 };
 
 export const AuthAPI = {
