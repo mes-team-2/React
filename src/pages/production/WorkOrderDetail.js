@@ -1,42 +1,22 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Table from "../../components/TableStyle";
+import SummaryCard from "../../components/SummaryCard";
+import { FiHash, FiPackage, FiActivity, FiCalendar } from "react-icons/fi";
 
 export default function WorkOrderDetail({ workOrder }) {
   /* =========================
-     정렬 상태 (테이블별)
+     단일 LOT 데이터
   ========================= */
-  const [lotSort, setLotSort] = useState({ key: null, direction: "asc" });
-  const [processSort, setProcessSort] = useState({
-    key: null,
-    direction: "asc",
-  });
-  const [materialSort, setMaterialSort] = useState({
-    key: null,
-    direction: "asc",
-  });
+  const productLot = useMemo(() => {
+    if (!workOrder) return null;
 
-  /* =========================
-     데이터
-  ========================= */
-  const lotData = useMemo(() => {
-    if (!workOrder) return [];
-    return [
-      {
-        id: 1,
-        lotNo: "LOT-202601-001",
-        qty: 500,
-        status: "IN_PROCESS",
-        createdAt: "2026-01-05 09:30",
-      },
-      {
-        id: 2,
-        lotNo: "LOT-202601-002",
-        qty: 500,
-        status: "IN_PROCESS",
-        createdAt: "2026-01-05 13:00",
-      },
-    ];
+    return {
+      lotNo: "LOT-202601-001",
+      qty: workOrder.plannedQty,
+      status: "IN_PROCESS",
+      createdAt: "2026-01-05 09:30",
+    };
   }, [workOrder]);
 
   const processData = useMemo(() => {
@@ -44,18 +24,26 @@ export default function WorkOrderDetail({ workOrder }) {
     return [
       {
         id: 1,
-        step: "조립",
-        machine: "설비-2",
+        step: "극판 적층",
+        machine: "설비-02",
         status: "DONE",
         startedAt: "09:30",
-        endedAt: "11:00",
+        endedAt: "10:40",
       },
       {
         id: 2,
-        step: "충전",
-        machine: "설비-10",
+        step: "COS 용접",
+        machine: "설비-05",
         status: "IN_PROGRESS",
-        startedAt: "11:10",
+        startedAt: "10:50",
+        endedAt: "-",
+      },
+      {
+        id: 3,
+        step: "화성",
+        machine: "설비-09",
+        status: "WAIT",
+        startedAt: "-",
         endedAt: "-",
       },
     ];
@@ -66,78 +54,35 @@ export default function WorkOrderDetail({ workOrder }) {
     return [
       {
         id: 1,
-        material: "배터리 자재 2",
+        material: "납판",
         qty: 1000,
         unit: "EA",
         time: "2026-01-05 09:20",
       },
       {
         id: 2,
-        material: "배터리 자재 10",
-        qty: 1000,
-        unit: "EA",
-        time: "2026-01-05 09:25",
+        material: "분리막",
+        qty: 350,
+        unit: "M",
+        time: "2026-01-05 09:22",
+      },
+      {
+        id: 3,
+        material: "전해액",
+        qty: 120,
+        unit: "L",
+        time: "2026-01-05 11:10",
       },
     ];
   }, [workOrder]);
 
-  /* =========================
-     정렬 유틸
-  ========================= */
-  const sortData = (data, sortConfig) => {
-    if (!sortConfig.key) return data;
-
-    return [...data].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return sortConfig.direction === "asc"
-          ? aVal.localeCompare(bVal, "ko", { numeric: true })
-          : bVal.localeCompare(aVal, "ko", { numeric: true });
-      }
-
-      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-      return 0;
-    });
-  };
-
-  const sortedLotData = useMemo(
-    () => sortData(lotData, lotSort),
-    [lotData, lotSort]
-  );
-
-  const sortedProcessData = useMemo(
-    () => sortData(processData, processSort),
-    [processData, processSort]
-  );
-
-  const sortedMaterialData = useMemo(
-    () => sortData(materialData, materialSort),
-    [materialData, materialSort]
-  );
-
-  /* =========================
-     선택 안 됐을 때
-  ========================= */
   if (!workOrder) {
     return <Empty>작업지시를 선택하세요.</Empty>;
   }
 
-  /* =========================
-     컬럼 정의
-  ========================= */
-  const lotColumns = [
-    { key: "lotNo", label: "LOT No", width: 140 },
-    { key: "qty", label: "LOT 수량", width: 100 },
-    { key: "status", label: "상태", width: 120 },
-    { key: "createdAt", label: "생성일", width: 160 },
-  ];
-
   const processColumns = [
     { key: "step", label: "공정", width: 160 },
-    { key: "machine", label: "설비", width: 160 },
+    { key: "machine", label: "설비", width: 140 },
     { key: "status", label: "상태", width: 120 },
     { key: "startedAt", label: "시작", width: 120 },
     { key: "endedAt", label: "종료", width: 120 },
@@ -161,7 +106,7 @@ export default function WorkOrderDetail({ workOrder }) {
         <StatusBadge>{workOrder.status}</StatusBadge>
       </Header>
 
-      {/* ===== 요약 ===== */}
+      {/* ===== 작업지시 요약 ===== */}
       <SummaryGrid>
         <SummaryItem>
           <label>제품</label>
@@ -172,61 +117,55 @@ export default function WorkOrderDetail({ workOrder }) {
           <strong>{workOrder.plannedQty}</strong>
         </SummaryItem>
         <SummaryItem>
-          <label>상태</label>
+          <label>작업 상태</label>
           <strong>{workOrder.status}</strong>
         </SummaryItem>
       </SummaryGrid>
 
-      {/* ===== LOT ===== */}
+      {/* ===== LOT 현황 (2 x 2 배치) ===== */}
       <Card>
         <SectionTitle>LOT 현황</SectionTitle>
-        <Table
-          columns={lotColumns}
-          data={sortedLotData}
-          sortConfig={lotSort}
-          onSort={(key) =>
-            setLotSort((p) => ({
-              key,
-              direction:
-                p.key === key && p.direction === "asc" ? "desc" : "asc",
-            }))
-          }
-          selectable={false}
-        />
+
+        <LotGrid>
+          <SummaryCard
+            icon={<FiHash />}
+            label="LOT 번호"
+            value={productLot.lotNo}
+            color="var(--main)"
+          />
+          <SummaryCard
+            icon={<FiPackage />}
+            label="LOT 수량"
+            value={productLot.qty}
+            color="var(--run)"
+          />
+          <SummaryCard
+            icon={<FiActivity />}
+            label="LOT 상태"
+            value={productLot.status}
+            color="var(--waiting)"
+          />
+          <SummaryCard
+            icon={<FiCalendar />}
+            label="생성일"
+            value={productLot.createdAt}
+            color="var(--font2)"
+          />
+        </LotGrid>
       </Card>
 
-      {/* ===== 공정 ===== */}
+      {/* ===== 공정 진행 ===== */}
       <Card>
         <SectionTitle>공정 진행</SectionTitle>
-        <Table
-          columns={processColumns}
-          data={sortedProcessData}
-          sortConfig={processSort}
-          onSort={(key) =>
-            setProcessSort((p) => ({
-              key,
-              direction:
-                p.key === key && p.direction === "asc" ? "desc" : "asc",
-            }))
-          }
-          selectable={false}
-        />
+        <Table columns={processColumns} data={processData} selectable={false} />
       </Card>
 
-      {/* ===== 자재 ===== */}
+      {/* ===== 자재 투입 ===== */}
       <Card>
         <SectionTitle>자재 투입</SectionTitle>
         <Table
           columns={materialColumns}
-          data={sortedMaterialData}
-          sortConfig={materialSort}
-          onSort={(key) =>
-            setMaterialSort((p) => ({
-              key,
-              direction:
-                p.key === key && p.direction === "asc" ? "desc" : "asc",
-            }))
-          }
+          data={materialData}
           selectable={false}
         />
       </Card>
@@ -302,9 +241,16 @@ const Card = styled.section`
 `;
 
 const SectionTitle = styled.h4`
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-size: 15px;
   font-weight: 600;
+`;
+
+/* ⭐ 여기만 핵심 변경 */
+const LotGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
 `;
 
 const Empty = styled.div`

@@ -143,8 +143,7 @@ const TableStyle = ({
                   <td key={`${row.id}-${col.key}`}>
                     {col.render
                       ? col.render(row[col.key], row)
-                      : formatValue(row[col.key])
-                    }
+                      : formatValue(row[col.key])}
                   </td>
                 ))}
               </tr>

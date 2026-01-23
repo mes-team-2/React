@@ -32,13 +32,13 @@ export default function Bom() {
           i % 3 === 0
             ? "12V 배터리 소형"
             : i % 3 === 1
-            ? "12V 배터리 중형"
-            : "12V 배터리 대형",
+              ? "12V 배터리 중형"
+              : "12V 배터리 대형",
         materialCount: 5 + i,
         totalRequiredQty: 1200 + i * 80,
         updatedAt: "2026-01-06 10:00",
       })),
-    []
+    [],
   );
 
   /* =========================
@@ -50,7 +50,7 @@ export default function Bom() {
     return tableData.filter(
       (row) =>
         row.productCode.toLowerCase().includes(lower) ||
-        row.productName.toLowerCase().includes(lower)
+        row.productName.toLowerCase().includes(lower),
     );
   }, [keyword, tableData]);
 
@@ -107,23 +107,6 @@ export default function Bom() {
       <Header>
         <h2>BOM 관리</h2>
       </Header>
-
-      {/* ===== 차트 ===== */}
-      <Card>
-        <h4>제품별 BOM 구성 규모</h4>
-        <ChartBox>
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie data={chartData} dataKey="value" outerRadius={90}>
-                {chartData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartBox>
-      </Card>
 
       {/* ===== 검색 ===== */}
       <FilterBar>

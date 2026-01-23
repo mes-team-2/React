@@ -166,13 +166,6 @@ export default function Worker() {
       </ChartGrid>
 
       {/* ===== 관리 버튼 ===== */}
-      <ActionBar>
-        <span>선택 {selectedIds.length}명</span>
-        <button onClick={handleAssign}>공정 배치</button>
-        <button className="danger" onClick={handleDeactivate}>
-          비활성
-        </button>
-      </ActionBar>
 
       {/* ===== 테이블 ===== */}
       <Table
