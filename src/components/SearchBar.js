@@ -106,11 +106,11 @@ const SearchButton = styled.button`
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  color: var(--font2); 
+  color: rgb(from var(--font2) r g b / 0.3);
   transition: 0.2s;
   
   &:hover {
-    color: var(--font); 
+    color: var(--font2); 
   }
   svg {
     font-size: var(--fontSm);

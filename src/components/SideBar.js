@@ -460,7 +460,7 @@ const ScrollContainer = styled.div`
     width: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: #ddd;
+    background-color: var(--background2);
     border-radius: 4px;
   }
 `;

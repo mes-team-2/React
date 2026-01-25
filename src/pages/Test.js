@@ -1,27 +1,72 @@
 import React from 'react';
 import styled from 'styled-components';
-import SearchBar from '../components/SearchBar';
+import SearchDate from '../components/SearchDate'; // 경로에 맞게 수정해주세요
 
 const Test = () => {
   return (
-    <div style={{
-      padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'white'
-    }}>
+    <PageContainer>
+      <Title>SearchDate 컴포넌트 테스트</Title>
 
-      <h3>Small (100px)</h3>
-      <SearchBar width="s" placeholder="S" />
+      {/* 1. S 사이즈 테스트 */}
+      <Section>
+        <Label>1. Small Size (width="s")</Label>
+        <SearchDate width="s" />
+      </Section>
 
-      <h3>Medium (150px)</h3>
-      <SearchBar width="m" placeholder="Medium" />
+      {/* 2. M 사이즈 테스트 */}
+      <Section>
+        <Label>2. Medium Size (width="m")</Label>
+        <SearchDate width="m" />
+      </Section>
 
-      <h3>Large (200px)</h3>
-      <SearchBar width="l" placeholder="Large Size" />
+      {/* 3. L 사이즈 테스트 */}
+      <Section>
+        <Label>3. Large Size (width="l")</Label>
+        <SearchDate width="l" />
+      </Section>
 
-      <h3>Custom (100%)</h3>
-      <SearchBar width="100%" placeholder="꽉 찬 사이즈" />
+      {/* 4. 커스텀 너비 테스트 */}
+      <Section>
+        <Label>4. Custom Width (width="100%")</Label>
+        <div style={{ width: '800px', border: '1px dashed #ddd', padding: '10px' }}>
+          <SearchDate width="100%" />
+        </div>
+      </Section>
 
-    </div>
+    </PageContainer>
   );
 };
 
 export default Test;
+
+/* =========================
+   스타일 컴포넌트
+========================= */
+const PageContainer = styled.div`
+  padding: 40px;
+  background-color: #f5f5f5; /* 배경색을 넣어 컴포넌트가 잘 보이게 함 */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+`;
+
+const Title = styled.h1`
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20px;
+`;
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: transparent;
+`;
+
+const Label = styled.h3`
+  font-size: 16px;
+  color: #666;
+  font-weight: 600;
+`;
