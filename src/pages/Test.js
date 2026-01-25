@@ -1,37 +1,50 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import SearchDate from '../components/SearchDate'; // 경로에 맞게 수정해주세요
+import BarcodeGen from '../components/BarcodeGen'; // 경로 확인 필요
 
 const Test = () => {
+  const [productName, setProductName] = useState("Galaxy S25 Case");
+  const [lotNumber, setLotNumber] = useState(""); // 초기엔 비어있음
+  const [isProduced, setIsProduced] = useState(false);
+
+  // 생산 완료 시 LOT 번호 생성 함수 (예시)
+  const handleProductionComplete = () => {
+    // 예: 날짜 + 랜덤코드 조합 (20251027-A01)
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const randomCode = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+    const newLot = `${date}-PROD-${randomCode}`;
+
+    setLotNumber(newLot);
+    setIsProduced(true);
+    alert(`생산이 완료되었습니다.\nLOT 번호 발행: ${newLot}`);
+  };
+
   return (
     <PageContainer>
-      <Title>SearchDate 컴포넌트 테스트</Title>
+      <Title>생산 및 바코드 발행 테스트</Title>
 
-      {/* 1. S 사이즈 테스트 */}
-      <Section>
-        <Label>1. Small Size (width="s")</Label>
-        <SearchDate width="s" />
-      </Section>
+      {/* 1. 생산 제어 패널 */}
+      <ControlPanel>
+        <InfoItem>
+          <span>생산 품목:</span>
+          <strong>{productName}</strong>
+        </InfoItem>
 
-      {/* 2. M 사이즈 테스트 */}
-      <Section>
-        <Label>2. Medium Size (width="m")</Label>
-        <SearchDate width="m" />
-      </Section>
+        <ProduceButton onClick={handleProductionComplete}>
+          생산 완료 및 LOT 발행
+        </ProduceButton>
+      </ControlPanel>
 
-      {/* 3. L 사이즈 테스트 */}
-      <Section>
-        <Label>3. Large Size (width="l")</Label>
-        <SearchDate width="l" />
-      </Section>
-
-      {/* 4. 커스텀 너비 테스트 */}
-      <Section>
-        <Label>4. Custom Width (width="100%")</Label>
-        <div style={{ width: '800px', border: '1px dashed #ddd', padding: '10px' }}>
-          <SearchDate width="100%" />
-        </div>
-      </Section>
+      {/* 2. 바코드 출력 영역 (LOT 번호가 있을 때만 표시) */}
+      {isProduced && lotNumber && (
+        <ResultSection>
+          <h3>🖨️ 발행된 바코드 라벨</h3>
+          <div style={{ width: '300px' }}>
+            <BarcodeGen value={lotNumber} />
+          </div>
+          <PrintMsg>※ 이 바코드를 클릭하여 인쇄하거나 스캔할 수 있습니다.</PrintMsg>
+        </ResultSection>
+      )}
 
     </PageContainer>
   );
@@ -39,34 +52,88 @@ const Test = () => {
 
 export default Test;
 
-/* =========================
-   스타일 컴포넌트
-========================= */
+/* 스타일 컴포넌트 */
 const PageContainer = styled.div`
   padding: 40px;
-  background-color: #f5f5f5; /* 배경색을 넣어 컴포넌트가 잘 보이게 함 */
+  background-color: var(--background);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 30px;
 `;
 
 const Title = styled.h1`
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 20px;
+  font-size: var(--font2XL);
+  font-weight: var(--bold);
+  color: var(--font);
 `;
 
-const Section = styled.div`
+const ControlPanel = styled.div`
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background-color: transparent;
+  gap: 20px;
+  align-items: center;
 `;
 
-const Label = styled.h3`
-  font-size: 16px;
-  color: #666;
-  font-weight: 600;
+const InfoItem = styled.div`
+  font-size: var(--fontLg);
+  color: var(--font);
+  display: flex;
+  gap: 10px;
+  
+  strong {
+    color: var(--main);
+    font-weight: var(--bold);
+  }
+`;
+
+const ProduceButton = styled.button`
+  background-color: var(--main);
+  color: white;
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  padding: 12px 24px;
+  border-radius: 8px;
+  width: 100%;
+  transition: 0.2s;
+
+  &:hover {
+    background-color: #2563eb; /* 좀 더 진한 파란색 */
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const ResultSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  animation: fadeIn 0.5s ease-in-out;
+
+  h3 {
+    font-size: var(--fontLg);
+    color: var(--font);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`;
+
+const PrintMsg = styled.p`
+  font-size: var(--fontSm);
+  color: var(--font2);
+  margin-top: 10px;
 `;
