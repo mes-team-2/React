@@ -1,25 +1,29 @@
 import styled from "styled-components";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaCalendarAlt } from "react-icons/fa";
 /**
  * @param {string} width 
+ * @param {function} onChange 
  */
 
-const SearchDate = (props) => {
+const SearchDate = ({ width, onChange }) => {
   const [startDate, setStartDate] = useState(null); // 시작날짜
   const [endDate, setEndDate] = useState(null); // 종료날짜
 
   const handleStartDateChange = (date) => {
     setStartDate(date);
+    if (onChange) onChange(date, endDate);
   };
+
   const handleEndDateChange = (date) => {
     setEndDate(date);
+    if (onChange) onChange(startDate, date);
   };
 
   return (
-    <Container width={props.width}>
+    <Container width={width}>
       <CustomDatePicker
         selected={startDate}
         onChange={handleStartDateChange}

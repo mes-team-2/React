@@ -31,6 +31,7 @@ const COLORS = ["var(--run)", "var(--waiting)", "var(--error)"];
 export default function Material() {
   const [data, setData] = useState([]);
   const [keyword, setKeyword] = useState("");
+  const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 검색상태
   const [selectedIds, setSelectedIds] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
@@ -54,6 +55,10 @@ export default function Material() {
   useEffect(() => {
     fetchMaterials();
   }, [createOpen]);
+
+  const handleDateChange = (start, end) => {
+    setDateRange({ start, end });
+  };
 
   // 차트 데이터 가공
   const inventoryStatusData = useMemo(() => {
@@ -93,14 +98,39 @@ export default function Material() {
 
   // 필터 및 정렬
   const filteredData = useMemo(() => {
-    if (!keyword.trim()) return data;
-    const lower = keyword.toLowerCase();
-    return data.filter(
-      (item) =>
+    return data.filter((item) => {
+      // 검색어 필터
+      const lower = keyword.toLowerCase();
+      const matchesKeyword =
+        !keyword.trim() ||
         item.materialName.toLowerCase().includes(lower) ||
-        item.materialCode.toLowerCase().includes(lower),
-    );
-  }, [keyword, data]);
+        item.materialCode.toLowerCase().includes(lower);
+
+      // 날짜 필터 (입고일자 inboundAt 기준)
+      let matchesDate = true;
+      if (item.inboundAt) {
+        const itemDate = new Date(item.inboundAt);
+        // 시간 정보를 제거하고 날짜만 비교하기 위해 setHours(0,0,0,0) 처리
+        itemDate.setHours(0, 0, 0, 0);
+
+        if (dateRange.start) {
+          const startDate = new Date(dateRange.start);
+          startDate.setHours(0, 0, 0, 0);
+          if (itemDate < startDate) matchesDate = false;
+        }
+
+        if (dateRange.end) {
+          const endDate = new Date(dateRange.end);
+          endDate.setHours(0, 0, 0, 0);
+          if (itemDate > endDate) matchesDate = false;
+        }
+      } else {
+        if (dateRange.start || dateRange.end) matchesDate = false;
+      }
+
+      return matchesKeyword && matchesDate;
+    });
+  }, [keyword, data, dateRange]); // dateRange 의존성 추가
 
   const handleSort = (key) => {
     setSortConfig((prev) =>
@@ -128,7 +158,7 @@ export default function Material() {
 
   useEffect(() => {
     setSelectedIds([]);
-  }, [keyword]);
+  }, [keyword, dateRange]);
 
   // 컬럼 정의
   const columns = [
@@ -144,8 +174,8 @@ export default function Material() {
       width: 150,
       render: (value) => <Status status={value} />,
     },
-    { key: "createdAt", label: "자재등록일자", width: 180 },
     { key: "inboundAt", label: "입고일자", width: 180 },
+    { key: "createdAt", label: "자재등록일자", width: 180 },
   ];
 
   const handleRowClick = (item) => {
@@ -222,7 +252,7 @@ export default function Material() {
 
       <FilterBar>
         <InputGroup>
-          <SearchDate width="m" />
+          <SearchDate width="m" onChange={handleDateChange} placeholder="입고일자 검색" />
           <SearchBar
             width="l"
             placeholder="자재명 / 자재코드 검색"
