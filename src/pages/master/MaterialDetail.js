@@ -1,8 +1,9 @@
 import styled from "styled-components";
 import { useEffect, useState, useMemo } from "react";
-import Table from "../../components/TableStyle";
 import { InventoryAPI } from "../../api/AxiosAPI";
 import MaterialInbound from "./MaterialInbound";
+
+// [변경] 공통 컴포넌트 Import
 import TableStyle from "../../components/TableStyle";
 import Status from "../../components/Status";
 import Button from "../../components/Button";
@@ -12,30 +13,28 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
   const [lotList, setLotList] = useState([]);
   const [showInboundModal, setShowInboundModal] = useState(false);
 
-  // [수정] 화면에 보여줄 동적 상태 관리 (초기값은 props에서 가져옴)
+  // 화면에 보여줄 동적 상태 관리 (초기값은 props에서 가져옴)
   const [displayStock, setDisplayStock] = useState(0);
   const [displayInboundAt, setDisplayInboundAt] = useState("-");
 
-  // 2. 데이터 새로고침 함수 (초기 로드 & 입고 성공 시 재호출용)
+  // 2. 데이터 새로고침 함수
   const refreshData = async () => {
     if (!material || !material.materialId) return;
     try {
-      // 최신 LOT 목록 조회
       const response = await InventoryAPI.getMaterialLots(material.materialId);
 
       if (response.status === 200) {
         const fetchedLots = response.data;
         setLotList(fetchedLots);
 
-        // [핵심 수정] 받아온 LOT 리스트를 기반으로 총 재고 & 최근 입고일 재계산
-        // 1) 총 재고 합산 (AVAILABLE 상태인 것만 or 전체 잔량 합산)
+        // 총 재고 합산
         const totalStock = fetchedLots.reduce(
           (acc, cur) => acc + (cur.remainQty || 0),
           0,
         );
         setDisplayStock(totalStock);
 
-        // 2) 최근 입고일 갱신 (LOT 리스트가 최신순 정렬되어 있다고 가정)
+        // 최근 입고일 갱신
         if (fetchedLots.length > 0) {
           setDisplayInboundAt(fetchedLots[0].inputDate);
         } else {
@@ -50,7 +49,6 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
   // 3. material 변경 시 초기값 세팅 및 데이터 조회
   useEffect(() => {
     if (material) {
-      // Props가 바뀌면 일단 Props 값으로 초기화 (깜빡임 방지)
       setDisplayStock(material.stockQty || 0);
       setDisplayInboundAt(material.inboundAt || "-");
       refreshData();
@@ -58,19 +56,20 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [material]);
 
-  // 4. 예외 처리
+  // 4. 로직 처리
 
   /* =========================
-  상태(Status) 라벨 동적 계산
+     [변경] 상태(Status) 키값 계산
+     Status.js에 정의된 Key (SAFE, CAUTION, DANGER)를 반환하도록 수정
   ========================= */
-  // 재고가 변하면 상태(안전/주의/경고)도 변해야 하므로 useMemo로 계산
-  const statusLabel = useMemo(() => {
+  const statusKey = useMemo(() => {
     const safeQty = material.safeQty || 0;
 
-    if (displayStock >= safeQty) return "안전";
-    if (displayStock === 0) return "경고";
-    return "주의";
+    if (displayStock >= safeQty) return "SAFE";     // 안전
+    if (displayStock === 0) return "DANGER";       // 경고(재고 0)
+    return "CAUTION";                              // 주의
   }, [displayStock, material.safeQty]);
+
   if (!material) return null;
 
   /* =========================
@@ -80,7 +79,7 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
   const formattedSafeStock = Number(material.safeQty ?? 0).toLocaleString();
 
   /* =========================
-     위치별 재고 (백엔드 데이터 기반 가공)
+     위치별 재고 테이블 설정
   ========================= */
   const locationColumns = [
     { key: "location", label: "위치", width: 120 },
@@ -92,19 +91,26 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
     {
       id: 1,
       location: "자재 창고 (Main)",
-      qty: formattedStock, // [수정] 갱신된 재고 반영
-      updatedAt: displayInboundAt, // [수정] 갱신된 입고일 반영
+      qty: formattedStock,
+      updatedAt: displayInboundAt,
     },
   ];
 
   /* =========================
-     LOT별 재고 테이블 데이터
+     LOT별 재고 테이블 설정
+     - Status 컴포넌트를 렌더링하도록 render 함수 추가
   ========================= */
   const lotColumns = [
     { key: "lotNo", label: "LOT 번호", width: 180 },
     { key: "inboundAt", label: "입고일", width: 160 },
     { key: "qty", label: "잔량", width: 120 },
-    { key: "status", label: "상태", width: 120 },
+    {
+      key: "status",
+      label: "상태",
+      width: 150,
+      // 테이블 내부에 Status 컴포넌트 렌더링
+      render: (value) => <Status status={value} />
+    },
     { key: "remark", label: "비고", width: 180 },
   ];
 
@@ -113,7 +119,8 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
     lotNo: lot.materialLotNo,
     inboundAt: lot.inputDate,
     qty: Number(lot.remainQty).toLocaleString(),
-    status: lot.status === "AVAILABLE" ? "사용가능" : "소진",
+    // Status 컴포넌트가 인식할 수 있는 Key로 변환 (AVAILABLE -> OK)
+    status: lot.status === "AVAILABLE" ? "OK" : "FAIL",
     remark: "-",
   }));
 
@@ -134,7 +141,6 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
           <input value={material.materialName || "-"} readOnly />
         </Field>
 
-        {/* [수정] 갱신된 displayStock 사용 */}
         <Field>
           <label>재고</label>
           <input value={formattedStock} readOnly />
@@ -150,10 +156,12 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
           <input value={material.unit || "-"} readOnly />
         </Field>
 
-        {/* [수정] 재계산된 statusLabel 사용 */}
+        {/* [변경] Status 컴포넌트 적용 */}
         <Field>
           <label>재고상태</label>
-          <StatusBadge status={statusLabel}>{statusLabel}</StatusBadge>
+          <div style={{ display: 'flex', alignItems: 'center', height: '38px' }}>
+            <Status status={statusKey} />
+          </div>
         </Field>
 
         <Field>
@@ -161,7 +169,6 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
           <input value={material.createdAt || "-"} readOnly />
         </Field>
 
-        {/* [수정] 갱신된 displayInboundAt 사용 */}
         <Field>
           <label>최근 입고일자</label>
           <input value={displayInboundAt || "-"} readOnly />
@@ -170,7 +177,8 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
 
       <Section>
         <SectionTitle>위치별 재고 현황</SectionTitle>
-        <Table
+        {/* [변경] TableStyle 적용 */}
+        <TableStyle
           columns={locationColumns}
           data={locationData}
           selectable={false}
@@ -179,17 +187,33 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
 
       <Section>
         <SectionTitle>LOT별 재고 현황</SectionTitle>
-        <Table columns={lotColumns} data={lotData} selectable={false} />
+        {/* [변경] TableStyle 적용 */}
+        <TableStyle
+          columns={lotColumns}
+          data={lotData}
+          selectable={false}
+        />
         <Note>
           ※ LOT는 “입고 단위”이며, 생산/차감/불량 추적의 기준이 됩니다.
         </Note>
       </Section>
 
       <ButtonArea>
-        <InboundButton onClick={() => setShowInboundModal(true)}>
+        {/* [변경] Button 컴포넌트 적용 */}
+        <Button
+          variant="ok"
+          size="l"
+          onClick={() => setShowInboundModal(true)}
+        >
           + 입고 등록
-        </InboundButton>
-        <CancelButton onClick={onClose}>닫기</CancelButton>
+        </Button>
+        <Button
+          variant="cancel"
+          size="l"
+          onClick={onClose}
+        >
+          닫기
+        </Button>
       </ButtonArea>
 
       {showInboundModal && (
@@ -197,7 +221,7 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
           material={material}
           onClose={() => setShowInboundModal(false)}
           onSuccess={() => {
-            refreshData(); // 성공 시 데이터 재조회 -> 재고/입고일 자동 갱신
+            refreshData();
             if (onRefresh) onRefresh();
           }}
         />
@@ -206,7 +230,7 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
   );
 }
 
-/* Styled Components (기존 유지) */
+/* Styled Components */
 const Wrapper = styled.div`
   padding: 20px;
   display: flex;
@@ -214,6 +238,7 @@ const Wrapper = styled.div`
   gap: 18px;
   height: 100%;
 `;
+
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
@@ -223,11 +248,13 @@ const Header = styled.div`
     font-weight: 700;
   }
 `;
+
 const FormGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 `;
+
 const Field = styled.div`
   display: flex;
   flex-direction: column;
@@ -242,60 +269,30 @@ const Field = styled.div`
     border: 1px solid var(--border);
     background: #fafafa;
     font-size: 13px;
+    height: 38px; /* Status 컴포넌트와 높이 맞춤 */
+    box-sizing: border-box;
   }
 `;
-const StatusBadge = styled.div`
-  padding: 10px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  background: ${({ status }) =>
-    status === "안전" ? "#e7f9ef" : status === "주의" ? "#fff7e6" : "#fee2e2"};
-  color: ${({ status }) =>
-    status === "안전" ? "#16a34a" : status === "주의" ? "#d97706" : "#dc2626"};
-`;
+
 const Section = styled.div`
   margin-top: 8px;
 `;
+
 const SectionTitle = styled.h4`
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
 `;
+
 const Note = styled.div`
   margin-top: 8px;
   font-size: 12px;
   opacity: 0.65;
 `;
+
 const ButtonArea = styled.div`
   margin-top: auto;
   display: flex;
-  gap: 10px;
-`;
-const InboundButton = styled.button`
-  flex: 1;
-  padding: 12px;
-  border-radius: 20px;
-  background: var(--main);
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-  &:hover {
-    opacity: 0.9;
-  }
-`;
-const CancelButton = styled.button`
-  flex: 1;
-  padding: 12px;
-  border-radius: 20px;
-  background: #f1f1f1;
-  font-size: 14px;
-  color: #333;
-  cursor: pointer;
-  &:hover {
-    background: #e2e2e2;
-  }
+  justify-content: center;
+  gap: 50px;
 `;
