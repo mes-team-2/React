@@ -1,105 +1,91 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import Table from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
-import SideDrawer from "../../components/SideDrawer";
+import Button from "../../components/Button";
 import BOMDetail from "./BOMDetail";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 /* =========================
-   색상
+   제품 3종 고정
 ========================= */
-const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#14b8a6"];
+const PRODUCTS = [
+  { id: 1, code: "PROD-12V-S", name: "12V 배터리 소형" },
+  { id: 2, code: "PROD-12V-M", name: "12V 배터리 중형" },
+  { id: 3, code: "PROD-12V-L", name: "12V 배터리 대형" },
+];
 
-export default function Bom() {
+/* =========================
+   BOM 데이터
+========================= */
+const BASE_BOM = [
+  {
+    id: 1,
+    materialCode: "MAT-CASE",
+    materialName: "배터리 케이스",
+    qty: 1,
+    unit: "EA",
+    process: "조립공정",
+  },
+  {
+    id: 2,
+    materialCode: "MAT-PLATE-P",
+    materialName: "납극판 (+)",
+    qty: 12,
+    unit: "EA",
+    process: "전극공정",
+  },
+  {
+    id: 3,
+    materialCode: "MAT-PLATE-N",
+    materialName: "납극판 (-)",
+    qty: 12,
+    unit: "EA",
+    process: "전극공정",
+  },
+  {
+    id: 4,
+    materialCode: "MAT-SEP",
+    materialName: "격리막 (Separator)",
+    qty: 24,
+    unit: "EA",
+    process: "적층공정",
+  },
+  {
+    id: 5,
+    materialCode: "MAT-ELEC",
+    materialName: "전해액 (황산)",
+    qty: 450,
+    unit: "ml",
+    process: "충전공정",
+  },
+];
+
+const BOM_BY_PRODUCT = {
+  "PROD-12V-S": BASE_BOM,
+  "PROD-12V-M": BASE_BOM.map((b) => ({ ...b, qty: Math.round(b.qty * 1.3) })),
+  "PROD-12V-L": BASE_BOM.map((b) => ({ ...b, qty: Math.round(b.qty * 1.6) })),
+};
+
+export default function BOM() {
   const [keyword, setKeyword] = useState("");
-  const [selectedBom, setSelectedBom] = useState(null);
-  const [open, setOpen] = useState(false);
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
-  });
+  const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
+  const [editingRow, setEditingRow] = useState(null);
 
-  /* =========================
-     BOM 데이터 (제품 기준)
-  ========================= */
-  const tableData = useMemo(
-    () =>
-      Array.from({ length: 6 }).map((_, i) => ({
-        id: i + 1,
-        productCode: `PROD-12V-${i + 1}`,
-        productName:
-          i % 3 === 0
-            ? "12V 배터리 소형"
-            : i % 3 === 1
-              ? "12V 배터리 중형"
-              : "12V 배터리 대형",
-        materialCount: 5 + i,
-        totalRequiredQty: 1200 + i * 80,
-        updatedAt: "2026-01-06 10:00",
-      })),
-    [],
-  );
-
-  /* =========================
-     검색
-  ========================= */
-  const filteredData = useMemo(() => {
-    if (!keyword.trim()) return tableData;
-    const lower = keyword.toLowerCase();
-    return tableData.filter(
-      (row) =>
-        row.productCode.toLowerCase().includes(lower) ||
-        row.productName.toLowerCase().includes(lower),
+  const products = useMemo(() => {
+    if (!keyword) return PRODUCTS;
+    return PRODUCTS.filter((p) =>
+      p.name.toLowerCase().includes(keyword.toLowerCase()),
     );
-  }, [keyword, tableData]);
+  }, [keyword]);
 
-  /* =========================
-     정렬
-  ========================= */
-  const sortedData = useMemo(() => {
-    if (!sortConfig.key) return filteredData;
+  const bomData = BOM_BY_PRODUCT[selectedProduct.code];
 
-    return [...filteredData].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (typeof aVal === "string") {
-        return sortConfig.direction === "asc"
-          ? aVal.localeCompare(bVal, "ko", { numeric: true })
-          : bVal.localeCompare(aVal, "ko", { numeric: true });
-      }
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
-    });
-  }, [filteredData, sortConfig]);
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
-  };
-
-  /* =========================
-     차트 (자재 수 비율)
-  ========================= */
-  const chartData = useMemo(() => {
-    const map = {};
-    tableData.forEach((b) => {
-      map[b.productName] = b.materialCount;
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [tableData]);
-
-  /* =========================
-     컬럼
-  ========================= */
   const columns = [
-    { key: "productCode", label: "제품 코드", width: 160 },
-    { key: "productName", label: "제품명", width: 220 },
-    { key: "materialCount", label: "자재 수", width: 120 },
-    { key: "totalRequiredQty", label: "총 소요량", width: 140 },
-    { key: "updatedAt", label: "갱신 시각", width: 160 },
+    { key: "materialCode", label: "자재코드", width: 160 },
+    { key: "materialName", label: "자재명", width: 200 },
+    { key: "qty", label: "소요량", width: 100 },
+    { key: "unit", label: "단위", width: 80 },
+    { key: "process", label: "투입 공정", width: 140 },
   ];
 
   return (
@@ -108,31 +94,45 @@ export default function Bom() {
         <h2>BOM 관리</h2>
       </Header>
 
-      {/* ===== 검색 ===== */}
-      <FilterBar>
-        <SearchBar
-          value={keyword}
-          onChange={setKeyword}
-          placeholder="제품 코드 / 제품명 검색"
-        />
-      </FilterBar>
+      <Body>
+        {/* 좌측 제품 목록 */}
+        <Left>
+          <SearchBar
+            value={keyword}
+            onChange={setKeyword}
+            placeholder="제품 검색"
+          />
+          <ProductList>
+            {products.map((p) => (
+              <ProductItem
+                key={p.code}
+                $active={p.code === selectedProduct.code}
+                onClick={() => setSelectedProduct(p)}
+              >
+                {p.name}
+              </ProductItem>
+            ))}
+          </ProductList>
+        </Left>
 
-      {/* ===== 테이블 ===== */}
-      <Table
-        columns={columns}
-        data={sortedData}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        selectable={false}
-        onRowClick={(row) => {
-          setSelectedBom(row);
-          setOpen(true);
-        }}
-      />
+        {/* 우측 BOM */}
+        <Right>
+          <Selected>
+            <span>선택된 품목</span>
+            <strong>{selectedProduct.name}</strong>
+          </Selected>
 
-      <SideDrawer open={open} onClose={() => setOpen(false)}>
-        <BOMDetail bom={selectedBom} />
-      </SideDrawer>
+          <Table
+            columns={columns}
+            data={bomData}
+            selectable={false}
+            onRowClick={(row) => setEditingRow(row)}
+          />
+        </Right>
+      </Body>
+
+      {/* BOM 수정 */}
+      <BOMDetail data={editingRow} onClose={() => setEditingRow(null)} />
     </Wrapper>
   );
 }
@@ -144,38 +144,62 @@ export default function Bom() {
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 16px;
 `;
 
 const Header = styled.div`
-  h2 {
-    font-size: 22px;
-    font-weight: 700;
-  }
-`;
-
-const Card = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-
-  h4 {
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-`;
-
-const ChartBox = styled.div`
-  height: 240px;
-
-  svg:focus,
-  svg *:focus {
-    outline: none;
-  }
-`;
-
-const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
+  align-items: center;
+`;
+
+const Body = styled.div`
+  display: flex;
+  gap: 20px;
+`;
+
+const Left = styled.div`
+  width: 260px;
+  background: white;
+  border-radius: 16px;
+  padding: 14px;
+`;
+
+const ProductList = styled.div`
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const ProductItem = styled.div`
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: ${(p) => (p.$active ? "#eef2ff" : "transparent")};
+
+  &:hover {
+    background: #f4f6fb;
+  }
+`;
+
+const Right = styled.div`
+  flex: 1;
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+`;
+
+const Selected = styled.div`
+  margin-bottom: 12px;
+
+  span {
+    font-size: 12px;
+    opacity: 0.6;
+  }
+  strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 15px;
+  }
 `;
