@@ -60,21 +60,30 @@ export default function Material() {
     setDateRange({ start, end });
   };
 
-  // 차트 데이터 가공
+  // 차트 데이터도 프론트엔드 계산 로직으로 변경
+  // 백엔드 stockStatus 무시하고 수량 기반으로 직접 집계
   const inventoryStatusData = useMemo(() => {
     let safe = 0,
       warning = 0,
       danger = 0;
+
     data.forEach((item) => {
-      if (item.stockStatus === "SAFE") safe++;
-      else if (item.stockStatus === "WARNING" || item.stockStatus === "CAUTION")
-        warning++;
-      else danger++;
+      const currentStock = Number(item.stockQty || 0);
+      const safeStock = Number(item.safeQty || 0);
+
+      if (currentStock === 0) {
+        danger++; // 재고 0 -> 위험
+      } else if (currentStock >= safeStock) {
+        safe++;   // 재고 >= 안전재고 -> 안전
+      } else {
+        warning++; // 재고 < 안전재고 -> 주의
+      }
     });
+
     return [
-      { name: "충분", value: safe },
-      { name: "부족", value: warning },
-      { name: "위험", value: danger },
+      { name: "안전", value: safe },
+      { name: "주의", value: warning },
+      { name: "경고", value: danger },
     ];
   }, [data]);
 
@@ -130,7 +139,7 @@ export default function Material() {
 
       return matchesKeyword && matchesDate;
     });
-  }, [keyword, data, dateRange]); // dateRange 의존성 추가
+  }, [keyword, data, dateRange]);
 
   const handleSort = (key) => {
     setSortConfig((prev) =>
@@ -172,7 +181,28 @@ export default function Material() {
       key: "stockStatus",
       label: "재고상태",
       width: 150,
-      render: (value) => <Status status={value} />,
+      render: (_, row) => {
+        // 숫자 변환 
+        const currentStock = Number(row.stockQty || 0);
+        const safeStock = Number(row.safeQty || 0);
+
+        let calcStatus = "CAUTION"; // 기본값 (주의)
+
+        // 재고가 0이면 -> DANGER
+        if (currentStock === 0) {
+          calcStatus = "DANGER";
+        }
+        // 재고가 안전재고보다 많거나 같으면 -> SAFE
+        else if (currentStock >= safeStock) {
+          calcStatus = "SAFE";
+        }
+        // 재고가 안전재고보다 적으면 (0보다는 큼) -> CAUTION (WARNING)
+        else {
+          calcStatus = "CAUTION";
+        }
+
+        return <Status status={calcStatus} />;
+      },
     },
     { key: "inboundAt", label: "입고일자", width: 180 },
     { key: "createdAt", label: "자재등록일자", width: 180 },

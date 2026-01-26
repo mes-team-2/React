@@ -3,6 +3,9 @@ import { useEffect, useState, useMemo } from "react";
 import Table from "../../components/TableStyle";
 import { InventoryAPI } from "../../api/AxiosAPI";
 import MaterialInbound from "./MaterialInbound";
+import TableStyle from "../../components/TableStyle";
+import Status from "../../components/Status";
+import Button from "../../components/Button";
 
 export default function MaterialDetail({ material, onClose, onRefresh }) {
   // 1. Hook 선언
