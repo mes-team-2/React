@@ -763,5 +763,6 @@ const SearchIcon = styled.div`
 `;
 
 const Content = styled.section`
-  padding: 24px;
+  padding: 25px;
+  background-color: var(--background);
 `;

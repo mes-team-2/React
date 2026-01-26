@@ -100,9 +100,10 @@ const BadgeWrapper = styled.div`
   gap: 8px;
   padding: 6px 10px;
   border-radius: 9999px;
-  font-size: 12px;
-  font-weight: normal;
+  font-size: var(--fontXs);
+  font-weight: var(--normal);
   min-width: 110px;
+  height: 20px;
   box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.05);
   white-space: nowrap;
 
@@ -112,13 +113,13 @@ const BadgeWrapper = styled.div`
 const IconWrapper = styled.span`
   display: flex;
   align-items: center;
-  font-size: 14px;
+  justify-content: center;
+  font-size: var(--fontSm);
   color: ${(props) => props.$color};
 `;
 
 const TextWrapper = styled.span`
   line-height: 1;
-  padding-top: 1px;
   color: ${(props) => props.$color};
 `;
 

@@ -52,7 +52,6 @@ const Container = styled.div`
   align-items: center;
   gap: 5px;
   box-sizing: border-box;
-  padding: 0 15px;
 `;
 
 
@@ -117,10 +116,13 @@ const CalendarIcon = styled(FaCalendarAlt)`
   font-size: var(--fontSm);
   pointer-events: none;
   z-index: 1; 
+  &:hover {
+    color: var(--font2); 
+  }
 `;
 
 const Separator = styled.p`
-  font-size: 20px;
+  font-size: var(--fontSm);
   color: var(--font);
   margin: 0;
   flex-shrink: 0; 

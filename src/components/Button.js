@@ -8,7 +8,7 @@ import styled, { css } from 'styled-components';
  * @param {string} width 
  * @param {boolean} disabled - 비활성화 여부
  * @param {function} onClick - 클릭 이벤트
- * @param {node} te - 버튼 내부 텍스트 또는 아이콘
+ * @param {node} children - 버튼 내부 텍스트 또는 아이콘
  */
 const Button = ({
   children,
@@ -36,7 +36,8 @@ const Button = ({
 export default Button;
 
 const StyledButton = styled.button`
-  display: inline-flex;
+  display: flex;
+  text-align: center;
   align-items: center;
   justify-content: center;
   border-radius: 15px; 
@@ -44,8 +45,9 @@ const StyledButton = styled.button`
   font-weight: var(--medium);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
+  line-height: 1;
   
-  width: ${props => props.$width || 's'};
+  width: ${props => props.$width || 'auto'};
 
 
   ${props => props.$size === 's' && css`

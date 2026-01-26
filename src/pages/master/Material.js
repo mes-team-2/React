@@ -1,12 +1,15 @@
 import styled from "styled-components";
 import { useMemo, useState, useEffect } from "react";
-import Table from "../../components/TableStyle";
+import TableStyle from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
+import SearchDate from "../../components/SearchDate";
+import Button from "../../components/Button";
+import Status from "../../components/Status";
 import MaterialDetail from "./MaterialDetail";
 import SideDrawer from "../../components/SideDrawer";
 import MaterialCreate from "./MaterialCreate";
-import Status from "../../components/Status";
 import { InventoryAPI } from "../../api/AxiosAPI";
+
 
 import {
   PieChart,
@@ -22,9 +25,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-/* =========================
-   차트 색상
-========================= */
+// 차트 색상
 const COLORS = ["var(--run)", "var(--waiting)", "var(--error)"];
 
 export default function Material() {
@@ -37,7 +38,7 @@ export default function Material() {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  // 1. 데이터 조회
+  // 데이터 조회
   const fetchMaterials = async () => {
     try {
       const response = await InventoryAPI.getMaterialList();
@@ -54,7 +55,7 @@ export default function Material() {
     fetchMaterials();
   }, [createOpen]);
 
-  // 2. 차트 데이터 가공
+  // 차트 데이터 가공
   const inventoryStatusData = useMemo(() => {
     let safe = 0,
       warning = 0,
@@ -90,7 +91,7 @@ export default function Material() {
     { date: "01-05", inbound: 520, outbound: 430 },
   ];
 
-  // 3. 필터 및 정렬
+  // 필터 및 정렬
   const filteredData = useMemo(() => {
     if (!keyword.trim()) return data;
     const lower = keyword.toLowerCase();
@@ -129,9 +130,7 @@ export default function Material() {
     setSelectedIds([]);
   }, [keyword]);
 
-  /* =========================
-     4. 컬럼 정의 (여기서 매핑 처리!)
-  ========================= */
+  // 컬럼 정의
   const columns = [
     { key: "no", label: "No", width: 50 },
     { key: "materialCode", label: "자재 코드", width: 180 },
@@ -222,20 +221,29 @@ export default function Material() {
       </ChartGrid>
 
       <FilterBar>
-        <SearchBar
-          value={keyword}
-          onChange={setKeyword}
-          placeholder="자재명 / 자재코드 검색"
-        />
-        <CreateButton onClick={() => setCreateOpen(true)}>
+        <InputGroup>
+          <SearchDate width="m" />
+          <SearchBar
+            width="l"
+            placeholder="자재명 / 자재코드 검색"
+            onChange={setKeyword} // 키워드 상태 업데이트
+            onSearch={() => { }}
+          />
+        </InputGroup>
+        <Button
+          variant="ok"
+          size="m"
+          onClick={() => setCreateOpen(true)}
+        >
           + 신규 자재 등록
-        </CreateButton>
+        </Button>
       </FilterBar>
 
       <TableContainer>
-        <Table
+        <TableStyle
           columns={columns}
           data={sortedData}
+          selectable={false}
           sortConfig={sortConfig}
           onSort={handleSort}
           selectedIds={selectedIds}
@@ -265,18 +273,6 @@ export default function Material() {
 }
 
 
-const CreateButton = styled.button`
-  padding: 8px 16px;
-  border-radius: 20px;
-  background: var(--main);
-  color: white;
-  font-size: 13px;
-  cursor: pointer;
-  transition: 0.2s;
-  &:hover {
-    opacity: 0.9;
-  }
-`;
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -284,15 +280,17 @@ const Wrapper = styled.div`
 `;
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #333;
+    font-size: var(--fontXl);
+    font-weight: var(--bold);
+    color: var(--font);
   }
 `;
 const ChartGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+
+  
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
   }
@@ -301,12 +299,14 @@ const Card = styled.div`
   background: white;
   border-radius: 16px;
   padding: 18px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow);
+              
+  
   h4 {
-    font-size: 14px;
-    margin-bottom: 10px;
-    font-weight: 600;
-    color: #555;
+    font-size: var(--fontSm);
+    margin-bottom: 20px;
+    font-weight: var(--bold);
+    color: var(--font2);
   }
 `;
 const ChartBox = styled.div`
@@ -320,7 +320,15 @@ const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
 `;
+
+const InputGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
 const TableContainer = styled.div`
   width: 100%;
   overflow-x: auto;

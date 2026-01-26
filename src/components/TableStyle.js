@@ -6,21 +6,24 @@ const TableStyle = ({
   data = [],
   columns = [],
   sortConfig = { key: null, direction: null },
-  onSort = () => {},
+  onSort = () => { },
   selectedIds = [],
-  onSelectChange = () => {},
+  onSelectChange = () => { },
   onRowClick,
-  selectable = true,
+  selectable = false,
 }) => {
-  const [widths, setWidths] = useState(() =>
-    columns.reduce(
-      (acc, col) => {
-        acc[col.key] = col.width || 150;
-        return acc;
-      },
-      { check: 42 },
-    ),
-  );
+  const [widths, setWidths] = useState(() => {
+    const initialWidths = columns.reduce((acc, col) => {
+      acc[col.key] = col.width || 150;
+      return acc;
+    }, {});
+
+    // selectable이 true일 때만 체크박스 컬럼 너비 추가
+    if (selectable) {
+      initialWidths.check = 42;
+    }
+    return initialWidths;
+  });
 
   const resizingColumn = useRef(null);
 
@@ -163,15 +166,14 @@ const TableStyle = ({
 
 export default TableStyle;
 
-/* =========================
-   styled
-========================= */
+
 
 const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
   border: 1px solid var(--border);
   background: white;
+  border-radius: 15px;
 `;
 
 const StyledTable = styled.table`
@@ -212,5 +214,5 @@ const Resizer = styled.div`
 
 const SortIcon = styled.span`
   margin-left: 4px;
-  color: ${({ active }) => (active ? "var(--main)" : "#999")};
+  color: ${({ active }) => (active ? "var(--main)" : "var(--font2)")};
 `;
