@@ -25,7 +25,7 @@ import {
 /* =========================
    차트 색상
 ========================= */
-const COLORS = ["#22c55e", "#f59e0b", "#ef4444"];
+const COLORS = ["var(--run)", "var(--waiting)", "var(--error)"];
 
 export default function Material() {
   const [data, setData] = useState([]);
@@ -187,10 +187,10 @@ export default function Material() {
           <ChartBox>
             <ResponsiveContainer>
               <BarChart data={stockByMaterialData}>
-                <XAxis dataKey="name" fontSize={12} tick={{ dy: 5 }} />
+                <XAxis dataKey="name" fontSize={10} tick={{ dy: 5 }} />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="stock" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="stock" fill="var(--main)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartBox>
@@ -205,13 +205,13 @@ export default function Material() {
                 <Tooltip />
                 <Line
                   dataKey="inbound"
-                  stroke="#3b82f6"
+                  stroke="var(--main)"
                   strokeWidth={2}
                   dot={false}
                 />
                 <Line
                   dataKey="outbound"
-                  stroke="#ef4444"
+                  stroke="var(--error)"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -264,7 +264,7 @@ export default function Material() {
   );
 }
 
-/* Styled Components (기존 유지) */
+
 const CreateButton = styled.button`
   padding: 8px 16px;
   border-radius: 20px;

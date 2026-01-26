@@ -60,6 +60,7 @@ const GlobalStyle = createGlobalStyle`
 
     /* 폰트 굵기 정의 */
     --normal : 400;
+    --medium : 500;
     --bold : 600;
   }
   button {
