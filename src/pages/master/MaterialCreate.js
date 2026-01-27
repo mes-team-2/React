@@ -1,11 +1,10 @@
 import styled from "styled-components";
 import { useState } from "react";
 import { InventoryAPI } from "../../api/AxiosAPI"; // API import
+import Button from "../../components/Button";
 
 export default function MaterialCreate({ onClose }) {
-  /* =========================
-     form state (DTO 구조에 맞춤)
-  ========================= */
+
   const [form, setForm] = useState({
     materialName: "",
     initialStock: "", // 기존 stockQty -> initialStock (기초재고)
@@ -19,7 +18,7 @@ export default function MaterialCreate({ onClose }) {
   };
 
   const handleSubmit = async () => {
-    // 1. 유효성 검사
+    // 유효성 검사
     if (!form.materialName.trim()) {
       alert("자재명을 입력해주세요.");
       return;
@@ -29,7 +28,7 @@ export default function MaterialCreate({ onClose }) {
       return;
     }
 
-    // 2. 데이터 포맷팅 (숫자 변환)
+    // 데이터 포맷팅 (숫자 변환)
     const requestData = {
       materialName: form.materialName,
       unit: form.unit,
@@ -38,7 +37,7 @@ export default function MaterialCreate({ onClose }) {
       safeQty: form.safeQty ? Number(form.safeQty) : 0,
     };
 
-    // 3. API 호출
+    // API 호출
     try {
       const response = await InventoryAPI.registerMaterial(requestData);
       if (response.status === 200) {
@@ -53,12 +52,10 @@ export default function MaterialCreate({ onClose }) {
 
   return (
     <Wrapper>
-      {/* ===== Header ===== */}
       <Header>
         <h3>신규 자재 등록</h3>
       </Header>
 
-      {/* ===== Form ===== */}
       <Form>
         <Field>
           <label>no (자재번호)</label>
@@ -104,28 +101,46 @@ export default function MaterialCreate({ onClose }) {
 
         <Field>
           <label>단위 *</label>
-          <select name="unit" value={form.unit} onChange={handleChange}>
-            <option value="">자재 단위를 선택하세요</option>
+          <StyledSelect
+            name="unit"
+            value={form.unit}
+            onChange={handleChange}
+            $isPlaceholder={form.unit === ""}
+          >
+            <option value="" disabled hidden>
+              자재 단위를 선택하세요
+            </option>
             <option value="EA">EA</option>
             <option value="KG">KG</option>
             <option value="L">L</option>
             <option value="M">M</option>
-          </select>
+          </StyledSelect>
         </Field>
       </Form>
 
       {/* ===== Buttons ===== */}
       <ButtonArea>
-        <CancelButton onClick={onClose}>취소</CancelButton>
-        <SubmitButton onClick={handleSubmit}>등록</SubmitButton>
+        <Button
+          variant="cancel"
+          size="l"
+          width="100%"
+          onClick={onClose}
+        >
+          취소
+        </Button>
+        <Button
+          variant="ok"
+          size="l"
+          width="100%"
+          onClick={handleSubmit}
+        >
+          등록
+        </Button>
       </ButtonArea>
     </Wrapper>
   );
 }
 
-/* =========================
-   styled-components (기존 유지)
-========================= */
 
 const Wrapper = styled.div`
   padding: 24px;
@@ -154,44 +169,53 @@ const Field = styled.div`
   gap: 6px;
 
   label {
-    font-size: 12px;
-    opacity: 0.7;
+    font-size: var(--fontXs);
+    font-weight: var(--normal);
+    padding: 2px;
+    opacity: 0.6;
   }
 
-  input,
-  select {
-    padding: 12px;
+  input {
+    padding: 10px;
     border-radius: 10px;
     border: 1px solid var(--border);
-    font-size: 14px;
-    background: #fafafa;
+    background: var(--background);
+    font-size: var(--fontXs);
+    height: 38px; 
+    box-sizing: border-box;
+
+    ::placeholder {
+      color: var(--font2);
+    }
   }
 
   input:disabled {
-    background: #f1f1f1;
-    color: #999;
+    background: var(--background2);
+    color: var(--font2);
+  }
+`;
+
+const StyledSelect = styled.select`
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: var(--fontXs);
+  height: 38px;
+  box-sizing: border-box;
+  
+  /* 값이 비어있으면($isPlaceholder) font2(회색), 값이 있으면 font(검정) */
+  color: ${(props) => (props.$isPlaceholder ? "var(--font2)" : "var(--font)")};
+
+  option {
+    color: var(--font); /* 드롭다운 내 옵션들은 항상 검정색 */
   }
 `;
 
 const ButtonArea = styled.div`
   margin-top: auto;
   display: flex;
-  gap: 10px;
+  justify-content: center;
+  gap: 50px;
 `;
 
-const CancelButton = styled.button`
-  flex: 1;
-  padding: 12px;
-  border-radius: 20px;
-  background: #f1f1f1;
-  font-size: 14px;
-`;
-
-const SubmitButton = styled.button`
-  flex: 1;
-  padding: 12px;
-  border-radius: 20px;
-  background: var(--main);
-  color: white;
-  font-size: 14px;
-`;
