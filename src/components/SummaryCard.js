@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { rgba } from "polished";
 
 export default function SummaryCard({ icon, label, value, color }) {
   return (
@@ -12,46 +13,45 @@ export default function SummaryCard({ icon, label, value, color }) {
   );
 }
 
-/* =========================
-   styled
-========================= */
 
 const Card = styled.div`
   background: white;
-  border-radius: 16px;
-  padding: 18px;
+  border-radius: 15px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+  gap: 20px;
+  box-shadow: var(--shadow);
 `;
 
 const IconBox = styled.div`
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: ${(props) => props.color}22;
+  background: color-mix(in srgb, ${(props) => props.color || 'black'}, transparent 90%);
   color: ${(props) => props.color};
   display: flex;
   align-items: center;
   justify-content: center;
 
   svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
 `;
 
 const TextBox = styled.div`
+display: flex;
+flex-direction: column;
+gap: 10px;
   span {
-    font-size: 12px;
+    font-size: var(--fontXs);
     opacity: 0.7;
   }
 
   strong {
     display: block;
-    margin-top: 4px;
-    font-size: 20px;
-    font-weight: 700;
+    font-size: var(--font2xl);
+    font-weight: var(--bold);
   }
 `;

@@ -261,8 +261,8 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   h3 {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
 `;
 

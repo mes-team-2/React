@@ -1,16 +1,14 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import Table from "../../components/TableStyle";
+import TableStyle from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
 import SideDrawer from "../../components/SideDrawer";
 import SummaryCard from "../../components/SummaryCard";
 import MaterialLogDetail from "./MaterialLogDetail";
+import SearchDate from "../../components/SearchDate";
 
 import { FiArchive, FiLogIn, FiLogOut } from "react-icons/fi";
 
-/* =========================
-   더미 데이터
-========================= */
 
 const TYPES = {
   IN: "입고",
@@ -66,41 +64,61 @@ export default function MaterialLog() {
   const [keyword, setKeyword] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 검색상태
 
-  /* =========================
-     필터
-  ========================= */
+  // 필터 로직 (키워드 + 날짜)
   const filtered = useMemo(() => {
-    if (!keyword) return rows;
-    const k = keyword.toLowerCase();
-    return rows.filter(
-      (r) =>
+    return rows.filter((r) => {
+      // 키워드 검색
+      const k = keyword.toLowerCase();
+      const matchesKeyword =
+        !keyword ||
         r.materialCode.toLowerCase().includes(k) ||
         r.materialName.toLowerCase().includes(k) ||
-        r.lotNo.toLowerCase().includes(k),
-    );
-  }, [rows, keyword]);
+        r.lotNo.toLowerCase().includes(k);
 
-  /* =========================
-     Summary 계산
-  ========================= */
+      // 날짜 검색
+      let matchesDate = true;
+      if (r.occurredAt) {
+        const logDate = new Date(r.occurredAt);
+        logDate.setHours(0, 0, 0, 0); // 시간 초기화
+
+        if (dateRange.start) {
+          const startDate = new Date(dateRange.start);
+          startDate.setHours(0, 0, 0, 0);
+          if (logDate < startDate) matchesDate = false;
+        }
+
+        if (dateRange.end) {
+          const endDate = new Date(dateRange.end);
+          endDate.setHours(0, 0, 0, 0);
+          if (logDate > endDate) matchesDate = false;
+        }
+      }
+
+      return matchesKeyword && matchesDate;
+    });
+  }, [rows, keyword, dateRange]);
+
+  // Summary 계산
   const summary = useMemo(() => {
-    const total = filtered.length;
 
-    const inQty = filtered
+    const targetData = filtered;
+
+    const total = targetData.length;
+
+    const inQty = targetData
       .filter((r) => r.type === "IN")
       .reduce((a, b) => a + b.qty, 0);
 
-    const outUseQty = filtered
+    const outUseQty = targetData
       .filter((r) => r.type !== "IN")
       .reduce((a, b) => a + Math.abs(b.qty), 0);
 
     return { total, inQty, outUseQty };
   }, [filtered]);
 
-  /* =========================
-     테이블
-  ========================= */
+  // 테이블
   const columns = [
     { key: "occurredAt", label: "일시", width: 160 },
     { key: "materialCode", label: "자재코드", width: 140 },
@@ -116,6 +134,10 @@ export default function MaterialLog() {
     { key: "operator", label: "작업자", width: 100 },
   ];
 
+  const handleDateChange = (start, end) => {
+    setDateRange({ start, end });
+  };
+
   const onRowClick = (row) => {
     setSelected(row);
     setDrawerOpen(true);
@@ -127,7 +149,6 @@ export default function MaterialLog() {
         <h2>자재 이력 조회</h2>
       </Header>
 
-      {/* ===== SummaryCard (공통 컴포넌트 그대로 사용) ===== */}
       <SummaryGrid>
         <SummaryCard
           icon={<FiArchive />}
@@ -149,18 +170,18 @@ export default function MaterialLog() {
         />
       </SummaryGrid>
 
-      {/* ===== 검색 ===== */}
       <FilterBar>
+        <SearchDate width="m" onChange={handleDateChange} placeholder="일자 검색" />
         <SearchBar
-          value={keyword}
-          onChange={setKeyword}
+          width="l"
           placeholder="자재명 / 코드 / LOT 검색"
+          onChange={setKeyword} // 키워드 상태 업데이트
+          onSearch={() => { }}
         />
       </FilterBar>
 
-      {/* ===== 테이블 ===== */}
       <TableWrap>
-        <Table
+        <TableStyle
           columns={columns}
           data={filtered}
           selectable={false}
@@ -168,44 +189,40 @@ export default function MaterialLog() {
         />
       </TableWrap>
 
-      {/* ===== 상세 Drawer ===== */}
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <MaterialLogDetail row={selected} />
+        {selected && <MaterialLogDetail row={selected} />}
       </SideDrawer>
     </Wrapper>
   );
 }
 
-/* =========================
-   styled (❌ 수정 없음)
-========================= */
 
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 `;
 
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
 `;
 
 const SummaryGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 20px;
 `;
 
 const FilterBar = styled.div`
   display: flex;
   align-items: center;
+  gap: 10px;
 `;
 
 const TableWrap = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 10px;
+  width: 100%;
+  overflow-x: auto;
 `;

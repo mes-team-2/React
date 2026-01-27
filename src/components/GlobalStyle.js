@@ -57,6 +57,7 @@ const GlobalStyle = createGlobalStyle`
     --fontSm : 14px;  /* 작은 텍스트 (보조 설명) */
     --fontMd : 15px;  /* 본문 기본 텍스트 (일반적인 크기) */
     --fontLg : 16px;  /* 강조된 본문, 소제목 */
+    --fontHd : 18px;  /* 카드 타이틀, 중간 제목 */
     --fontXl : 18px;  /* 카드 타이틀, 중간 제목 */
     --font2xl : 20px;  /* 대제목 */
     --font3xl : 22px;  /* 화면 타이틀 */
