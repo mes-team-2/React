@@ -8,6 +8,11 @@ import styled, { css } from "styled-components";
 import { LuHourglass } from "react-icons/lu";
 import { AiFillSafetyCertificate } from "react-icons/ai";
 
+import {
+  IoArrowForwardCircleOutline,
+  IoArrowBackCircleOutline
+} from "react-icons/io5";
+
 
 // 텍스트 색상(color), 배경색(bg), 아이콘(icon), 라벨(label)
 const STATUS_CONFIG = {
@@ -30,6 +35,20 @@ const STATUS_CONFIG = {
     textColor: "var(--font)",
     bg: "var(--bgRun)",
     icon: <FiRefreshCw />,
+  },
+  MATIN: {
+    label: "자재입고",
+    iconColor: "var(--run)",
+    textColor: "var(--font)",
+    bg: "var(--bgRun)",
+    icon: <IoArrowBackCircleOutline />,
+  },
+  MATOUT: {
+    label: "생산투입",
+    iconColor: "var(--error)",
+    textColor: "var(--font)",
+    bg: "var(--bgError)",
+    icon: <IoArrowForwardCircleOutline />,
   },
   COMPLETE: {
     label: "COMPLETE",
