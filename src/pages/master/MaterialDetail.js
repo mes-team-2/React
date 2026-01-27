@@ -263,6 +263,7 @@ const Header = styled.div`
   h3 {
     font-size: var(--fontHd);
     font-weight: var(--bold);
+    margin-bottom: 20px;
   }
 `;
 
