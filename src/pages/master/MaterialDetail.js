@@ -6,6 +6,7 @@ import TableStyle from "../../components/TableStyle";
 import Status from "../../components/Status";
 import Button from "../../components/Button";
 
+
 export default function MaterialDetail({ material, onClose, onRefresh }) {
   // Hook 선언
   const [lotList, setLotList] = useState([]);
@@ -150,17 +151,26 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
         <h3>자재 재고 상세 조회</h3>
       </Header>
 
+
+      <SectionTitle>자재 정보</SectionTitle>
+      <Field>
+        <label>자재코드</label>
+        <input value={material.materialCode || "-"} readOnly />
+      </Field>
+
+      <Field>
+        <label>자재명</label>
+        <input value={material.materialName || "-"} readOnly />
+      </Field>
+
+      <Field>
+        <label>자재등록일자</label>
+        <input value={material.createdAt || "-"} readOnly />
+      </Field>
+
+      <SectionTitle>재고 정보</SectionTitle>
+
       <FormGrid>
-        <Field>
-          <label>자재코드</label>
-          <input value={material.materialCode || "-"} readOnly />
-        </Field>
-
-        <Field>
-          <label>자재명</label>
-          <input value={material.materialName || "-"} readOnly />
-        </Field>
-
         <Field>
           <label>재고</label>
           <input value={formattedStock} readOnly />
@@ -182,17 +192,13 @@ export default function MaterialDetail({ material, onClose, onRefresh }) {
             <Status status={statusKey} type="wide" />
           </div>
         </Field>
-
-        <Field>
-          <label>자재등록일자</label>
-          <input value={material.createdAt || "-"} readOnly />
-        </Field>
-
-        <Field>
+        <FullWidthField>
           <label>최근 입고일자</label>
           <input value={displayInboundAt || "-"} readOnly />
-        </Field>
+        </FullWidthField>
       </FormGrid>
+
+
 
       <Section>
         <SectionTitle>위치별 재고 현황</SectionTitle>
@@ -254,6 +260,7 @@ const Wrapper = styled.div`
   flex-direction: column;
   gap: 18px;
   height: 100%;
+  overflow-y: auto;
 `;
 
 const Header = styled.div`
@@ -272,6 +279,7 @@ const FormGrid = styled.div`
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 `;
+
 
 const Field = styled.div`
   display: flex;
@@ -294,14 +302,36 @@ const Field = styled.div`
   }
 `;
 
+const FullWidthField = styled(Field)`
+  grid-column: 1 / -1; 
+`;
+
 const Section = styled.div`
-  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
 
 const SectionTitle = styled.h4`
-  font-size: var(--fontSm);
+  font-size: var(--fontMd);
   font-weight: var(--bold);
-  margin-bottom: 8px;
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main); 
+    border-radius: 2px;
+  }
 `;
 
 const Note = styled.div`
@@ -311,7 +341,7 @@ const Note = styled.div`
 `;
 
 const ButtonArea = styled.div`
-  margin-top: auto;
+margin: 20px;
   display: flex;
   justify-content: center;
   gap: 50px;

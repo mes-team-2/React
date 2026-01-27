@@ -27,7 +27,7 @@ const Drawer = styled.div`
   width: 760px;
   height: 100%;
   background: var(--background);
-  padding: 20px;
+  padding: 20px 20px 20px 20px;
   overflow-y: auto;
 `;
 
