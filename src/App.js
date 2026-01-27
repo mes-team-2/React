@@ -69,7 +69,6 @@ function App() {
 
               {/* ================= 기준정보 (Master) ================= */}
               <Route path="master">
-                <Route path="product" element={<Product />} />
                 <Route path="process" element={<Process />} />
                 <Route path="worker" element={<Worker />} />
                 <Route path="machine" element={<Machine />} />
@@ -93,6 +92,7 @@ function App() {
               <Route path="material" element={<Material />} />
               <Route path="material-tx" element={<MaterialLog />} />
               <Route path="inventory" element={<Inventory />} />
+              <Route path="product" element={<Product />} />
 
               {/* ================= 리포트 ================= */}
               <Route path="report">
