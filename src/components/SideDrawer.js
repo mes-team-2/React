@@ -26,7 +26,7 @@ const Drawer = styled.div`
   top: 0;
   width: 760px;
   height: 100%;
-  background: #f9fafb;
+  background: var(--background);
   padding: 20px;
   overflow-y: auto;
 `;
@@ -37,5 +37,5 @@ const Close = styled.button`
   right: 14px;
   border: none;
   background: none;
-  font-size: 18px;
+  font-size: var(--fontXl);
 `;

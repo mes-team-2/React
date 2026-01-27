@@ -3,11 +3,11 @@ import {
   FiAlertTriangle,
   FiRefreshCw,
   FiCheckCircle,
-  FiShield,
 } from "react-icons/fi";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { LuHourglass } from "react-icons/lu";
 import { AiFillSafetyCertificate } from "react-icons/ai";
+
 
 // 텍스트 색상(color), 배경색(bg), 아이콘(icon), 라벨(label)
 const STATUS_CONFIG = {
@@ -79,12 +79,17 @@ const STATUS_CONFIG = {
   },
 };
 
-const Status = ({ status }) => {
+/**
+ * @param {string} status - 상태 값 
+ * @param {string} type - 'basic'(기본 캡슐형) / 'wide'(넓은 박스형)
+ */
+
+const Status = ({ status, type = "basic" }) => {
   const statusKey = status ? status.toUpperCase() : "DEFAULT";
   const config = STATUS_CONFIG[statusKey] || STATUS_CONFIG.DEFAULT;
 
   return (
-    <BadgeWrapper $bg={config.bg}>
+    <BadgeWrapper $bg={config.bg} $type={type}>
       {config.icon && (
         <IconWrapper $color={config.iconColor}>{config.icon}</IconWrapper>
       )}
@@ -98,16 +103,29 @@ const BadgeWrapper = styled.div`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 6px 10px;
-  border-radius: 9999px;
+  padding: 10px;
   font-size: var(--fontXs);
   font-weight: var(--normal);
-  min-width: 110px;
-  height: 20px;
-  box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.05);
   white-space: nowrap;
-
   background-color: ${(props) => props.$bg};
+  box-sizing: border-box;
+
+  ${(props) =>
+    props.$type === "wide"
+      ? css`
+          width: 100%; 
+          height: 38px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          justify-content: flex-start;
+        `
+      : css`
+          min-width: 110px;
+          height: 20px;
+          padding: 6px 10px;
+          border-radius: 9999px;
+          box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.05);
+        `}
 `;
 
 const IconWrapper = styled.span`

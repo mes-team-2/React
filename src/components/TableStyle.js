@@ -173,7 +173,7 @@ const TableWrapper = styled.div`
   overflow-x: auto;
   border: 1px solid var(--border);
   background: white;
-  border-radius: 15px;
+  border-radius: 10px;
 `;
 
 const StyledTable = styled.table`
@@ -186,21 +186,27 @@ const StyledTable = styled.table`
     background: var(--background2);
     border: 1px solid var(--border);
     padding: 8px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
     white-space: nowrap;
-    user-select: none;
+    user-select: none; 
+    height: 30px;
+    box-sizing: border-box;
+    vertical-align: middle;
   }
 
   td {
     border: 1px solid var(--border);
     padding: 6px;
-    font-size: 12px;
+    font-size: var(--fontXs);
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
+    height: 30px;
+    box-sizing: border-box;
+    vertical-align: middle;
+      }
 `;
 
 const Resizer = styled.div`
