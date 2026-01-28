@@ -2,7 +2,7 @@ import React from "react";
 import {
   FiAlertTriangle,
   FiRefreshCw,
-  FiCheckCircle,
+  FiCheckCircle, FiAlertCircle
 } from "react-icons/fi";
 import styled, { css } from "styled-components";
 import { LuHourglass } from "react-icons/lu";
@@ -10,7 +10,7 @@ import { AiFillSafetyCertificate } from "react-icons/ai";
 
 import {
   IoArrowForwardCircleOutline,
-  IoArrowBackCircleOutline
+  IoArrowBackCircleOutline,
 } from "react-icons/io5";
 
 
@@ -91,6 +91,27 @@ const STATUS_CONFIG = {
   DANGER: {
     //경고
     label: "경고",
+    iconColor: "var(--error)",
+    textColor: "var(--font)",
+    bg: "var(--bgError)",
+    icon: <FiAlertTriangle />,
+  },
+  LOT_WAIT: {
+    label: "대기중",
+    iconColor: "var(--waiting)",
+    textColor: "var(--font)",
+    bg: "var(--bgWaiting)",
+    icon: <LuHourglass />,
+  },
+  LOT_RUN: {
+    label: "생산중(투입)",
+    iconColor: "var(--run)",
+    textColor: "var(--font)",
+    bg: "var(--bgRun)",
+    icon: <FiRefreshCw />,
+  },
+  LOT_ERR: {
+    label: "품절/불량",
     iconColor: "var(--error)",
     textColor: "var(--font)",
     bg: "var(--bgError)",
