@@ -327,11 +327,15 @@ export default function MaterialLot() {
         />
       </TableContainer>
 
-      <SideDrawer open={drawerOpen} onClose={handleCloseDrawer}>
+      <SideDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title="자재 LOT 상세 조회" // ⭐ 여기서 타이틀 설정
+      >
         {selectedRow && (
           <MaterialLotDetail
             row={selectedRow}
-            onClose={handleCloseDrawer}
+          // onClose는 SideDrawer가 처리하므로 Detail에는 안 넘겨도 됨
           />
         )}
       </SideDrawer>

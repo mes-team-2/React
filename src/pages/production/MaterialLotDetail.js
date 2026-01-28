@@ -15,125 +15,192 @@ export default function MaterialLotDetail({ row, onClose }) {
   return (
     <Container>
       <Header>
-        <Title>자재 LOT 상세 정보</Title>
+        <h3>자재 LOT 상세 조회</h3>
+        {onClose && <Button variant="cancel" size="s" onClick={onClose}>닫기</Button>}
       </Header>
 
       <Content>
-        {/* 섹션 1: 기본 정보 */}
         <Section>
-          <SectionTitle><FiBox /> 기본 정보</SectionTitle>
+          <SectionTitle>LOT 정보</SectionTitle>
           <Grid>
-            <Field>
-              <Label>LOT 번호</Label>
-              <Value className="mono bold">{row.lot_no}</Value>
-            </Field>
-            <Field>
-              <Label>자재코드</Label>
-              <Value className="mono">{row.code}</Value>
-            </Field>
-            <Field style={{ gridColumn: "1 / -1" }}>
-              <Label>자재명</Label>
-              <Value className="bold">{row.name}</Value>
-            </Field>
-            <Field>
-              <Label>현재 상태</Label>
-              <div style={{ display: 'flex' }}>
+            <FullItem>
+              <label>LOT 번호</label>
+              <Value>{row.lot_no}</Value>
+            </FullItem>
+
+            <Item>
+              <label>LOT 상태</label>
+              <div>
                 <Status status={statusKey} type="wide" />
               </div>
-            </Field>
-          </Grid>
-        </Section>
-
-        {/* 섹션 2: 재고 현황 */}
-        <Section>
-          <SectionTitle><FiActivity /> 재고 현황</SectionTitle>
-          <Grid>
-            <Field>
-              <Label>현재고</Label>
-              <Value>{row.current.toLocaleString()} <Unit>EA</Unit></Value>
-            </Field>
-            <Field>
-              <Label>생산 투입중</Label>
-              <Value>{row.production.toLocaleString()} <Unit>EA</Unit></Value>
-            </Field>
-            <Field style={{ gridColumn: "1 / -1" }}>
-              <Label>가용 재고 (투입 가능)</Label>
-              <HighlightValue>
-                {row.available.toLocaleString()} <Unit>EA</Unit>
-              </HighlightValue>
-            </Field>
-          </Grid>
-        </Section>
-
-        {/* 섹션 3: 이력 정보 */}
-        <Section>
-          <SectionTitle><FiCalendar /> 이력 정보</SectionTitle>
-          <Grid>
-            <Field>
-              <Label>최초 입고일</Label>
+            </Item>
+            <Item>
+              <label>최초 입고일</label>
               <Value>{row.inbound_date}</Value>
-            </Field>
-            <Field>
-              <Label>최근 상태 변경일</Label>
+            </Item>
+          </Grid>
+        </Section>
+
+        <Section>
+          <SectionTitle>자재 정보</SectionTitle>
+          <Grid>
+            <FullItem>
+              <label>자재코드</label>
+              <Value>{row.code}</Value>
+            </FullItem>
+            <FullItem>
+              <label>자재명</label>
+              <Value>{row.name}</Value>
+            </FullItem><FullItem>
+              <label>단위</label>
+              <Value>{row.unit}</Value>
+            </FullItem>
+          </Grid>
+
+        </Section>
+
+        <Section>
+          <SectionTitle>재고 현황</SectionTitle>
+          <Grid>
+            <FullItem>
+              <label>현재고(A)</label>
+              <Value>{row.current.toLocaleString()} <Unit>EA</Unit></Value>
+            </FullItem>
+            <FullItem>
+              <label>생산 투입중(B)</label>
+              <Value>{row.production.toLocaleString()} <Unit>EA</Unit></Value>
+            </FullItem>
+            <FullItem>
+              <label>가용 재고(A-B)</label>
+              <Value>
+                {row.available.toLocaleString()} <Unit>EA</Unit>
+              </Value>
+            </FullItem>
+          </Grid>
+        </Section>
+
+        <Section>
+          <SectionTitle>이력 정보</SectionTitle>
+          <Grid>
+
+            <Item>
+              <label>최근 상태 변경일</label>
               <Value>{row.date}</Value>
-            </Field>
+            </Item>
           </Grid>
         </Section>
       </Content>
-
-      <Footer>
-        <Button onClick={onClose}>닫기</Button>
-      </Footer>
     </Container>
   );
 }
 
-// 스타일 컴포넌트
+
 const Container = styled.div`
-  display: flex; flex-direction: column; height: 100%; gap: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 100%;
 `;
 
 const Header = styled.div`
-  padding-bottom: 20px; border-bottom: 1px solid var(--border);
-`;
-
-const Title = styled.h2`
-  font-size: var(--fontXl); font-weight: var(--bold); color: var(--font);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  h3 {
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
+    margin-bottom: 20px;
+  }
 `;
 
 const Content = styled.div`
-  flex: 1; display: flex; flex-direction: column; gap: 30px; overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  padding-right: 15px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
 `;
 
 const Section = styled.div`
-  display: flex; flex-direction: column; gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
 
-const SectionTitle = styled.h3`
-  font-size: var(--fontMd); font-weight: var(--bold); color: var(--font);
-  display: flex; align-items: center; gap: 8px;
-  svg { color: var(--main); }
+const SectionTitle = styled.h4`
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main); 
+    border-radius: 2px;
+  }
 `;
 
 const Grid = styled.div`
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 `;
 
-const Field = styled.div`
-  display: flex; flex-direction: column; gap: 6px;
-  background: var(--background); padding: 12px; border-radius: 8px;
-  border: 1px solid var(--border);
+const Item = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  label {
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
+  }
 `;
 
-const Label = styled.span`
-  font-size: var(--fontXs); color: var(--font2);
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
+`;
+
+const SmallItem = styled(Item)`
+  grid-column: 1 / -2;
 `;
 
 const Value = styled.div`
-  font-size: var(--fontSm); color: var(--font);
-  &.mono { font-family: monospace; }
-  &.bold { font-weight: var(--bold); }
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  height: 38px;
+
+  
+  strong {
+    font-weight: var(--normal);
+    color: var(--font);
+    font-size: var(--fontXs);
+  }
 `;
+
 
 const HighlightValue = styled(Value)`
   color: var(--main); font-weight: var(--bold); font-size: var(--fontMd);
