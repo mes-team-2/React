@@ -72,8 +72,8 @@ export default function WorkOrder() {
         width: 120,
         render: (row) => <Status value={row.status} />,
       },
-      { key: "startDate", label: "시작 예정일", width: 140 },
-      { key: "dueDate", label: "납기일", width: 140 },
+      { key: "startDate", label: "시작 시간", width: 140 },
+      { key: "dueDate", label: "종료 시간", width: 140 },
     ],
     [],
   );

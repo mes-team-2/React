@@ -48,7 +48,7 @@ export default function WorkOrderCreate({ onSubmit }) {
           placeholder="예: 1000"
         />
 
-        <label>시작 예정일</label>
+        <label>시작 시간</label>
         <input
           type="datetime-local"
           name="startDate"
@@ -56,7 +56,7 @@ export default function WorkOrderCreate({ onSubmit }) {
           onChange={handleChange}
         />
 
-        <label>납기일</label>
+        <label>종료 시간</label>
         <input
           type="datetime-local"
           name="dueDate"
