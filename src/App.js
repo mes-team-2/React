@@ -73,6 +73,8 @@ function App() {
                 <Route path="worker" element={<Worker />} />
                 <Route path="machine" element={<Machine />} />
                 <Route path="bom" element={<Bom />} />
+                <Route path="material" element={<Material />} />
+                <Route path="product" element={<Product />} />
               </Route>
 
               {/* ================= 생산 관리 ================= */}

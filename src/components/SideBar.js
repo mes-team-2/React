@@ -127,6 +127,8 @@ const MENU = [
       { to: "/mes/master/process", label: "공정 관리" },
       { to: "/mes/master/bom", label: "BOM 관리" },
       { to: "/mes/master/worker", label: "작업자 관리" },
+      { to: "/mes/master/material", label: "자재 관리" },
+      { to: "/mes/master/product", label: "제품 관리" },
     ],
   },
   {
