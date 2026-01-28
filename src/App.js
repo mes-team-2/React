@@ -14,7 +14,7 @@ import Login from "./pages/Login";
 import DashBoard from "./pages/dashboard/DashBoard";
 
 import WorkOrders from "./pages/production/WorkOrder";
-import Lot from "./pages/production/Lot";
+import ProductLot from "./pages/production/ProductLot";
 import MaterialLot from "./pages/production/MaterialLot";
 import Shipment from "./pages/production/Shipment";
 import Barcode from "./pages/production/Barcode";
@@ -29,7 +29,7 @@ import Process from "./pages/master/Process";
 import TestLog from "./pages/quality/TestLog";
 import DefectLog from "./pages/quality/DefectLog";
 
-import Inventory from "./pages/inventory/Inventory";
+import FgInventory from "./pages/inventory/FgInventory";
 import MaterialLog from "./pages/master/MaterialLog";
 
 import Traceability from "./pages/report/Traceability";
@@ -79,9 +79,7 @@ function App() {
 
               {/* ================= 생산 관리 ================= */}
               <Route path="workorders" element={<WorkOrders />} />
-              <Route path="material-lot" element={<MaterialLot />} />
-              <Route path="lot" element={<Lot />} />
-              <Route path="shipment" element={<Shipment />} />
+              <Route path="product-lot" element={<ProductLot />} />
               <Route path="barcode" element={<Barcode />} />
 
               {/* ================= 품질 관리 ================= */}
@@ -91,11 +89,14 @@ function App() {
               </Route>
 
               {/* ================= 자재 / 재고 ================= */}
-              <Route path="material" element={<Material />} />
-              <Route path="material-tx" element={<MaterialLog />} />
-              <Route path="inventory" element={<Inventory />} />
-              <Route path="product" element={<Product />} />
-
+              <Route path="inventory">
+                <Route path="material" element={<Material />} />
+                <Route path="material-tx" element={<MaterialLog />} />
+                <Route path="material-lot" element={<MaterialLot />} />
+                <Route path="fg-inventory" element={<FgInventory />} />
+                <Route path="product" element={<Product />} />
+                <Route path="shipment" element={<Shipment />} />
+              </Route>
               {/* ================= 리포트 ================= */}
               <Route path="report">
                 <Route path="product-report" element={<ProductionReport />} />

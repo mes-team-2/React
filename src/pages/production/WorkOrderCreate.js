@@ -48,22 +48,6 @@ export default function WorkOrderCreate({ onSubmit }) {
           placeholder="예: 1000"
         />
 
-        <label>시작 시간</label>
-        <input
-          type="datetime-local"
-          name="startDate"
-          value={form.startDate}
-          onChange={handleChange}
-        />
-
-        <label>종료 시간</label>
-        <input
-          type="datetime-local"
-          name="dueDate"
-          value={form.dueDate}
-          onChange={handleChange}
-        />
-
         <CreateBtn onClick={handleSubmit}>작업지시 등록</CreateBtn>
       </Form>
     </Wrapper>

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import Table from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
 import SideDrawer from "../../components/SideDrawer";
-import InventoryDetail from "./InventoryDetail";
+import InventoryDetail from "./FgInventoryDetail";
 import {
   PieChart,
   Pie,
@@ -21,7 +21,7 @@ import {
 ========================= */
 const COLORS = ["#22c55e", "#f59e0b", "#ef4444"];
 
-export default function Inventory() {
+export default function FgInventory() {
   const [keyword, setKeyword] = useState("");
   const [selectedInventory, setSelectedInventory] = useState(null);
   const [open, setOpen] = useState(false);
@@ -47,11 +47,11 @@ export default function Inventory() {
           800 - i * 20 > 400
             ? "SAFE"
             : 800 - i * 20 > 200
-            ? "WARNING"
-            : "DANGER",
+              ? "WARNING"
+              : "DANGER",
         updatedAt: "2026-01-05 16:00",
       })),
-    []
+    [],
   );
 
   /* =========================
@@ -64,7 +64,7 @@ export default function Inventory() {
     return tableData.filter(
       (row) =>
         row.productCode.toLowerCase().includes(lower) ||
-        row.productName.toLowerCase().includes(lower)
+        row.productName.toLowerCase().includes(lower),
     );
   }, [keyword, tableData]);
 
