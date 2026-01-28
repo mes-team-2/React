@@ -12,6 +12,7 @@ import AuthGuard from "./context/AuthGuard";
 
 import Login from "./pages/Login";
 import DashBoard from "./pages/dashboard/DashBoard";
+import ProcessMonitoring from "./pages/dashboard/ProcessMonitoring";
 
 import WorkOrders from "./pages/production/WorkOrder";
 import ProductLot from "./pages/production/ProductLot";
@@ -66,6 +67,10 @@ function App() {
             <Route path="/mes" element={<SideBar />}>
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<DashBoard />} />
+              <Route
+                path="process-monitoring"
+                element={<ProcessMonitoring />}
+              />
 
               {/* ================= 기준정보 (Master) ================= */}
               <Route path="master">
