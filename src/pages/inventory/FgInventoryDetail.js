@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { useMemo, useState } from "react";
 import Table from "../../components/TableStyle";
 
-export default function InventoryDetail({ inventory }) {
+export default function FgInventoryDetail({ inventory }) {
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",

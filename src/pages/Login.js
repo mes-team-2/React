@@ -4,10 +4,6 @@ import { Navigate } from "react-router-dom";
 import AxiosAPI from "../api/AxiosAPI";
 import { AuthContext } from "../context/AuthContext";
 
-/* =========================
-   🔒 스타일 (네가 준 그대로)
-========================= */
-
 const LoginWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -90,7 +86,7 @@ const Login = () => {
   const [id, setId] = useState("");
   const [pwd, setPwd] = useState("");
 
-  // ✅ 이미 로그인 상태면 로그인 페이지 접근 차단
+  // 이미 로그인 상태면 로그인 페이지 접근 차단
   if (isLoggedIn) {
     return <Navigate to="/mes/dashboard" replace />;
   }
@@ -109,7 +105,7 @@ const Login = () => {
       if (res.status === 200) {
         const { accessToken } = res.data;
 
-        // 👉 토큰 저장 & 이동은 AuthContext에서
+        //  토큰 저장, 이동은 AuthContext에서
         login(accessToken, id);
       }
     } catch (err) {

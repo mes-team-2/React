@@ -95,20 +95,20 @@ const PAGE_LABEL = {
   // 생산
   "/mes/workorders": "작업지시 관리",
   "/mes/process-log": "공정 이력",
-  "/mes/lot": "LOT 관리",
+  "/mes/product-lot": "제품 LOT 관리",
 
   // 품질
   "/mes/quality/test-log": "검사 이력",
   "/mes/quality/defect": "불량 관리",
 
   // 자재
-  "/mes/material": "자재 관리",
-  "/mes/material-tx": "자재 이력 조회",
+  "/mes/inventory/material": "자재 관리",
+  "/mes/inventory/material-tx": "자재 이력 조회",
 
   // 제품
-  "/mes/product": "제품 관리",
-  "/mes/inventory": "제품 재고 관리",
-  "/mes/shipment": "제품 출하 관리",
+  "/mes/inventory/product": "제품 관리",
+  "/mes/inventory/fg-inventory": "제품 재고 관리",
+  "/mes/inventory/shipment": "제품 출하 관리",
 
   // 리포트
   "/mes/report/product-report": "생산 리포트",
@@ -140,7 +140,7 @@ const MENU = [
       { to: "/mes/workorders", label: "작업지시 관리" },
       { to: "/mes/process-log", label: "공정 이력" },
 
-      { to: "/mes/lot", label: "제품 LOT 관리" },
+      { to: "/mes/product-lot", label: "제품 LOT 관리" },
     ],
   },
   {
@@ -159,17 +159,17 @@ const MENU = [
         key: "material",
         title: "자재 관리",
         items: [
-          { to: "/mes/material-lot", label: "자재 LOT 관리" },
-          { to: "/mes/material", label: "자재 재고 조회" },
-          { to: "/mes/material-tx", label: "자재 입출고 이력 조회" },
+          { to: "/mes/inventory/material-lot", label: "자재 LOT 관리" },
+          { to: "/mes/inventory/material", label: "자재 재고 조회" },
+          { to: "/mes/inventory/material-tx", label: "자재 입출고 이력 조회" },
         ],
       },
       {
         key: "product",
         title: "제품 관리",
         items: [
-          { to: "/mes/inventory", label: "제품 재고 조회" },
-          { to: "/mes/shipment", label: "제품 입출고 이력 조회" },
+          { to: "/mes/inventory/fg-inventory", label: "제품 재고 조회" },
+          { to: "/mes/inventory/shipment", label: "제품 입출고 이력 조회" },
         ],
       },
     ],
