@@ -303,9 +303,6 @@ export default function Process() {
             );
           })}
         </MiniChartGrid>
-        <Hint>
-          ※ 지금은 MOCK. C# → 백엔드(WebSocket/SSE) 수신으로 교체하면 됨
-        </Hint>
       </Card>
 
       {/* ===== 자재 소모 ===== */}
