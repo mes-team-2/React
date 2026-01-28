@@ -1,6 +1,6 @@
 // src/pages/mes/Dashboard.js
 import styled from "styled-components";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -13,9 +13,9 @@ import {
   Pie,
   Cell,
   Legend,
+  CartesianGrid,
 } from "recharts";
 
-/* ===== react-icons ===== */
 import {
   FaClock,
   FaCloudSun,
@@ -35,10 +35,20 @@ import SummaryCard from "../../components/SummaryCard";
 import Status from "../../components/Status";
 
 /* =========================
+   공정 정의
+========================= */
+const PROCESS_STEPS = [
+  { key: "electrode", label: "전극공정" },
+  { key: "assembly", label: "조립공정" },
+  { key: "activation", label: "활성화공정" },
+  { key: "pack", label: "팩" },
+  { key: "final", label: "최종 검사" },
+];
+
+/* =========================
    MOCK DATA
 ========================= */
 
-// 현재 시각
 const getNowTime = () =>
   new Date().toLocaleTimeString("ko-KR", {
     hour: "2-digit",
@@ -46,7 +56,6 @@ const getNowTime = () =>
     second: "2-digit",
   });
 
-// 🔥 시간별 계획 vs 실적 (핵심 차트)
 const PROD_TREND = [
   { time: "08:00", plan: 120, actual: 110 },
   { time: "09:00", plan: 120, actual: 115 },
@@ -56,13 +65,11 @@ const PROD_TREND = [
   { time: "13:00", plan: 120, actual: 108 },
 ];
 
-// 수율 / 불량률
 const YIELD_CHART = [
   { name: "양품", value: 96.2 },
   { name: "불량", value: 3.8 },
 ];
 
-// 설비 환경 (SensorLog 기반)
 const MACHINE_ENV = [
   {
     machine: "전극공정-01",
@@ -87,33 +94,64 @@ const MACHINE_ENV = [
   },
 ];
 
-// 작업자 정보
 const WORKER_INFO = {
   total: 18,
   working: 14,
   standby: 4,
 };
 
-// 공정 효율
 const PROCESS_EFF = {
   uph: 120,
   defectRate: 3.8,
   materialUsage: 52,
 };
 
+/* =========================
+   Dashboard
+========================= */
+
 export default function Dashboard() {
   const [time, setTime] = useState(getNowTime());
 
+  const [progress, setProgress] = useState({
+    electrode: 0,
+    assembly: 0,
+    activation: 0,
+    pack: 0,
+    final: 0,
+  });
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(getNowTime());
+    const clock = setInterval(() => setTime(getNowTime()), 1000);
+
+    const progressTimer = setInterval(() => {
+      setProgress((prev) => {
+        const next = { ...prev };
+        PROCESS_STEPS.forEach((p) => {
+          next[p.key] = Math.min(100, prev[p.key] + Math.random() * 2);
+        });
+        return next;
+      });
     }, 1000);
-    return () => clearInterval(timer);
+
+    return () => {
+      clearInterval(clock);
+      clearInterval(progressTimer);
+    };
   }, []);
+
+  const progressData = useMemo(
+    () =>
+      PROCESS_STEPS.map((p) => ({
+        name: p.label,
+        value: Math.round(progress[p.key]),
+      })),
+    [progress],
+  );
 
   return (
     <Wrapper>
-      {/* ================= 상단 글로벌 ================= */}
+      {/* ================= 상단 ================= */}
       <Section>
         <Grid cols={4}>
           <SummaryCard label="현재 시각" value={time} icon={<FaClock />} />
@@ -127,32 +165,26 @@ export default function Dashboard() {
         </Grid>
       </Section>
 
-      {/* ================= 생산 정보 (핵심) ================= */}
+      {/* ================= 생산 정보 ================= */}
       <Section>
         <SectionTitle>
           <FaChartBar /> 생산 정보
         </SectionTitle>
 
         <ChartGrid>
-          {/* 시간별 계획 vs 실적 */}
           <ChartCard>
             <ChartTitle>
               <FaIndustry /> 시간별 계획 대비 생산량
             </ChartTitle>
-
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={PROD_TREND}>
                 <XAxis dataKey="time" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-
-                <Bar dataKey="actual" name="실적" fill="#004DFC" barSize={22} />
-
+                <Bar dataKey="actual" fill="#004DFC" barSize={22} />
                 <Line
-                  type="monotone"
                   dataKey="plan"
-                  name="계획"
                   stroke="#FF9F0A"
                   strokeWidth={2}
                   dot={false}
@@ -161,18 +193,15 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* 수율 / 불량률 */}
           <ChartCard>
             <ChartTitle>
               <FaExclamationTriangle /> 수율 / 불량률
             </ChartTitle>
-
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={YIELD_CHART}
                   dataKey="value"
-                  nameKey="name"
                   innerRadius={55}
                   outerRadius={85}
                 >
@@ -187,20 +216,41 @@ export default function Dashboard() {
         </ChartGrid>
       </Section>
 
-      {/* ================= 설비 환경 ================= */}
+      {/* ================= 설비별 환경 정보 ================= */}
       <Section>
         <SectionTitle>
           <FaTools /> 설비별 환경 정보
         </SectionTitle>
 
+        {/* 🔥 여기만 추가됨 */}
+        <ChartCard>
+          <ChartTitle>공정별 실시간 진행률</ChartTitle>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart
+              data={progressData}
+              layout="vertical"
+              margin={{ left: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <YAxis type="category" dataKey="name" width={90} />
+              <Tooltip formatter={(v) => [`${v}%`, "진행률"]} />
+              <Bar dataKey="value" fill="#004DFC" barSize={14} radius={0} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
         <Grid cols={3}>
           {MACHINE_ENV.map((m) => (
-            <Card key={m.machine}>
-              <CardHeader>
+            <EnvCard key={m.machine}>
+              <EnvHeader>
                 <strong>{m.machine}</strong>
                 <Status value={m.status} />
-              </CardHeader>
-
+              </EnvHeader>
               <EnvRow>
                 <span>온도</span>
                 <span>{m.temperature} ℃</span>
@@ -213,7 +263,7 @@ export default function Dashboard() {
                 <span>전압</span>
                 <span>{m.voltage} V</span>
               </EnvRow>
-            </Card>
+            </EnvCard>
           ))}
         </Grid>
       </Section>
@@ -223,7 +273,6 @@ export default function Dashboard() {
         <SectionTitle>
           <FaUserCheck /> 작업자 현황
         </SectionTitle>
-
         <Grid cols={3}>
           <SummaryCard
             label="출근 인원"
@@ -248,10 +297,9 @@ export default function Dashboard() {
         <SectionTitle>
           <FaTachometerAlt /> 공정 효율
         </SectionTitle>
-
         <Grid cols={3}>
           <SummaryCard
-            label="시간당 생산량 (UPH)"
+            label="시간당 생산량"
             value={PROCESS_EFF.uph}
             icon={<FaTachometerAlt />}
           />
@@ -261,7 +309,7 @@ export default function Dashboard() {
             icon={<FaExclamationTriangle />}
           />
           <SummaryCard
-            label="자재 소모량 (5분)"
+            label="자재 소모량(5분)"
             value={`${PROCESS_EFF.materialUsage} EA`}
             icon={<FaIndustry />}
           />
@@ -272,7 +320,7 @@ export default function Dashboard() {
 }
 
 /* =========================
-   Layout Styles
+   styles
 ========================= */
 
 const Wrapper = styled.div`
@@ -293,8 +341,6 @@ const SectionTitle = styled.h3`
   gap: 8px;
   font-size: 16px;
   font-weight: 800;
-  margin: 0;
-
   svg {
     color: #004dfc;
   }
@@ -313,33 +359,26 @@ const ChartGrid = styled.div`
 `;
 
 const ChartCard = styled.div`
-  background: white;
+  background: #fff;
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
 `;
 
 const ChartTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 8px;
-
-  svg {
-    color: #004dfc;
-  }
 `;
 
-const Card = styled.div`
-  background: white;
+const EnvCard = styled.div`
+  background: #fff;
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
 `;
 
-const CardHeader = styled.div`
+const EnvHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;

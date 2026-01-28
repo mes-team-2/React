@@ -11,8 +11,8 @@ import SideBar from "./components/SideBar";
 import AuthGuard from "./context/AuthGuard";
 
 import Login from "./pages/Login";
-import DashBoard from "./pages/dashboard/DashBoard";
-import ProcessMonitoring from "./pages/dashboard/ProcessMonitoring";
+import Dashboard from "./pages/monitoring/DashBoard";
+import ProcessMonitoring from "./pages/monitoring/ProcessMonitoring";
 
 import WorkOrders from "./pages/production/WorkOrder";
 import ProductLot from "./pages/production/ProductLot";
@@ -66,7 +66,7 @@ function App() {
             {/* ================= MES 레이아웃 ================= */}
             <Route path="/mes" element={<SideBar />}>
               <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<DashBoard />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route
                 path="process-monitoring"
                 element={<ProcessMonitoring />}
