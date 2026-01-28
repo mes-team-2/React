@@ -129,7 +129,6 @@ const MENU = [
       { to: "/mes/master/material", label: "자재 관리" },
       { to: "/mes/master/bom", label: "BOM 관리" },
       { to: "/mes/master/worker", label: "작업자 관리" },
-
     ],
   },
   {
@@ -138,7 +137,7 @@ const MENU = [
     items: [
       { to: "/mes/workorders", label: "작업지시 관리" },
       { to: "/mes/process-log", label: "공정 로그" },
-      { to: "/mes/material-lot", label: "자재 LOT 관리" },
+
       { to: "/mes/lot", label: "제품 LOT 관리" },
     ],
   },
@@ -158,6 +157,7 @@ const MENU = [
         key: "material",
         title: "자재 관리",
         items: [
+          { to: "/mes/material-lot", label: "자재 LOT 관리" },
           { to: "/mes/material", label: "자재 재고 조회" },
           { to: "/mes/material-tx", label: "자재 입출고 이력 조회" },
         ],
