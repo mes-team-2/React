@@ -17,7 +17,7 @@ export default function SummaryCard({ icon, label, value, color }) {
 const Card = styled.div`
   background: white;
   border-radius: 15px;
-  padding: 20px;
+  padding: 30px 20px;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -45,7 +45,7 @@ display: flex;
 flex-direction: column;
 gap: 10px;
   span {
-    font-size: var(--fontXs);
+    font-size: var(--fontSm);
     opacity: 0.7;
   }
 

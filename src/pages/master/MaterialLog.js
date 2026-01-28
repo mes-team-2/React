@@ -6,14 +6,9 @@ import SideDrawer from "../../components/SideDrawer";
 import SummaryCard from "../../components/SummaryCard";
 import MaterialLogDetail from "./MaterialLogDetail";
 import SearchDate from "../../components/SearchDate";
+import Status from "../../components/Status";
 
-import { FiArchive, FiLogIn, FiLogOut } from "react-icons/fi";
-
-
-const TYPES = {
-  IN: "입고",
-  USE: "공정투입",
-};
+import { FiArchive, FiLogIn, FiLogOut, FiPieChart } from "react-icons/fi";
 
 const MATERIAL_LOGS = [
   {
@@ -24,7 +19,12 @@ const MATERIAL_LOGS = [
     lotNo: "LOT-202601-001",
     type: "IN",
     qty: 500,
+    remainQty: 500, // 잔량
+    unit: "EA",
+    fromLocation: "협력사(ABC메탈)", // 출발지
+    toLocation: "자재창고 A-01",     // 도착지
     operator: "WK-101",
+    note: "정기 입고",
   },
   {
     id: 2,
@@ -34,7 +34,12 @@ const MATERIAL_LOGS = [
     lotNo: "LOT-202601-001",
     type: "USE",
     qty: -120,
+    remainQty: 380, // 500 - 120
+    unit: "EA",
+    fromLocation: "자재창고 A-01",
+    toLocation: "생산 1라인",
     operator: "WK-103",
+    note: "",
   },
   {
     id: 3,
@@ -44,7 +49,12 @@ const MATERIAL_LOGS = [
     lotNo: "LOT-202601-014",
     type: "IN",
     qty: 1000,
-    operator: "WK-102",
+    remainQty: 1000,
+    unit: "L",
+    fromLocation: "협력사(케미칼X)",
+    operator: "WK-104",
+    toLocation: "위험물 창고 B-02",
+    note: "",
   },
   {
     id: 4,
@@ -54,7 +64,72 @@ const MATERIAL_LOGS = [
     lotNo: "LOT-202601-014",
     type: "USE",
     qty: -300,
+    remainQty: 700,
+    unit: "L",
+    fromLocation: "위험물 창고 B-02",
+    toLocation: "생산 2라인",
     operator: "WK-104",
+    note: "",
+  },
+  {
+    id: 5,
+    occurredAt: "2026-01-20 09:12",
+    materialCode: "MAT-LEAD",
+    materialName: "납판",
+    lotNo: "LOT-202601-001",
+    type: "IN",
+    qty: 500,
+    remainQty: 500, // 잔량
+    unit: "EA",
+    fromLocation: "협력사(ABC메탈)", // 출발지
+    toLocation: "자재창고 A-01",     // 도착지
+    operator: "WK-101",
+    note: "정기 입고",
+  },
+  {
+    id: 6,
+    occurredAt: "2026-01-20 11:40",
+    materialCode: "MAT-LEAD",
+    materialName: "납판",
+    lotNo: "LOT-202601-001",
+    type: "USE",
+    qty: -120,
+    remainQty: 380, // 500 - 120
+    unit: "EA",
+    fromLocation: "자재창고 A-01",
+    toLocation: "생산 1라인",
+    operator: "WK-103",
+    note: "",
+  },
+  {
+    id: 7,
+    occurredAt: "2026-01-21 14:05",
+    materialCode: "MAT-ELEC",
+    materialName: "전해액",
+    lotNo: "LOT-202601-014",
+    type: "IN",
+    qty: 1000,
+    remainQty: 1000,
+    unit: "L",
+    fromLocation: "협력사(케미칼X)",
+    operator: "WK-104",
+    toLocation: "위험물 창고 B-02",
+    note: "",
+  },
+  {
+    id: 8,
+    occurredAt: "2026-01-21 16:30",
+    materialCode: "MAT-ELEC",
+    materialName: "전해액",
+    lotNo: "LOT-202601-014",
+    type: "USE",
+    qty: -300,
+    remainQty: 700,
+    unit: "L",
+    fromLocation: "위험물 창고 B-02",
+    toLocation: "생산 2라인",
+    operator: "WK-104",
+    note: "",
   },
 ];
 
@@ -100,7 +175,7 @@ export default function MaterialLog() {
     });
   }, [rows, keyword, dateRange]);
 
-  // [정렬 로직 (필터링된 데이터를 정렬)
+  // 정렬 로직 (필터링된 데이터를 정렬)
   const sortedRows = useMemo(() => {
     let sortableItems = [...filtered];
     if (sortConfig.key !== null) {
@@ -131,20 +206,24 @@ export default function MaterialLog() {
 
   // Summary 계산
   const summary = useMemo(() => {
-
     const targetData = filtered;
-
     const total = targetData.length;
 
+    // 입고 수량
     const inQty = targetData
       .filter((r) => r.type === "IN")
       .reduce((a, b) => a + b.qty, 0);
 
+    // 출고/투입 수량
     const outUseQty = targetData
       .filter((r) => r.type !== "IN")
       .reduce((a, b) => a + Math.abs(b.qty), 0);
 
-    return { total, inQty, outUseQty };
+    // [계산] 입출고 비율 (투입 / 입고 * 100)
+    // 입고가 0일 경우 0% 처리하여 에러 방지
+    const rate = inQty === 0 ? 0 : ((outUseQty / inQty) * 100).toFixed(1);
+
+    return { total, inQty, outUseQty, rate };
   }, [filtered]);
 
   //  정렬 핸들러
@@ -156,20 +235,28 @@ export default function MaterialLog() {
     setSortConfig({ key, direction });
   };
 
-  // 테이블
+
   const columns = [
-    { key: "occurredAt", label: "일시", width: 160 },
-    { key: "materialCode", label: "자재코드", width: 140 },
-    { key: "materialName", label: "자재명", width: 140 },
-    { key: "lotNo", label: "LOT 번호", width: 160 },
+    { key: "occurredAt", label: "일시", width: 150 },
     {
       key: "type",
-      label: "유형",
-      width: 100,
-      render: (v) => TYPES[v],
+      label: "구분",
+      width: 120,
+      render: (value) => {
+
+        const statusKey = value === "IN" ? "MATIN" : "MATOUT";
+        return <Status status={statusKey} type="basic" />;
+      }
     },
-    { key: "qty", label: "수량", width: 100 },
-    { key: "operator", label: "작업자", width: 100 },
+    { key: "materialName", label: "자재명", width: 130 },
+    { key: "lotNo", label: "LOT 번호", width: 150 },
+    { key: "qty", label: "이동수량", width: 90, render: (v) => v.toLocaleString() },
+
+    { key: "unit", label: "단위", width: 60 },
+    { key: "fromLocation", label: "출발지 (From)", width: 140 },
+    { key: "toLocation", label: "도착지 (To)", width: 140 },
+
+    { key: "operator", label: "작업자", width: 90 },
   ];
 
   const handleDateChange = (start, end) => {
@@ -189,12 +276,6 @@ export default function MaterialLog() {
 
       <SummaryGrid>
         <SummaryCard
-          icon={<FiArchive />}
-          label="자재 이동 이력"
-          value={summary.total.toLocaleString()}
-          color="var(--main)"
-        />
-        <SummaryCard
           icon={<FiLogIn />}
           label="입고된 자재 수량"
           value={summary.inQty.toLocaleString()}
@@ -202,9 +283,15 @@ export default function MaterialLog() {
         />
         <SummaryCard
           icon={<FiLogOut />}
-          label="출고 · 공정 투입"
+          label="공정 투입"
           value={summary.outUseQty.toLocaleString()}
           color="var(--waiting)"
+        />
+        <SummaryCard
+          icon={<FiArchive />}
+          label="입출고 비율 (투입/입고)"
+          value={`${summary.rate}%`}
+          color="var(--main)"
         />
       </SummaryGrid>
 

@@ -767,4 +767,5 @@ const SearchIcon = styled.div`
 const Content = styled.section`
   padding: 25px;
   background-color: var(--background);
+  height: 100%;
 `;
