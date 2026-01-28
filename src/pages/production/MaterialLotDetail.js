@@ -180,9 +180,6 @@ const FullItem = styled(Item)`
   grid-column: 1 / -1;
 `;
 
-const SmallItem = styled(Item)`
-  grid-column: 1 / -2;
-`;
 
 const Value = styled.div`
   display: flex;
@@ -201,18 +198,8 @@ const Value = styled.div`
   }
 `;
 
-
-const HighlightValue = styled(Value)`
-  color: var(--main); font-weight: var(--bold); font-size: var(--fontMd);
-`;
-
 const Unit = styled.span`
   font-size: var(--fontXs); color: var(--font2); font-weight: normal; margin-left: 4px;
-`;
-
-const Footer = styled.div`
-  margin-top: auto; display: flex; justify-content: flex-end;
-  padding-top: 20px; border-top: 1px solid var(--border);
 `;
 
 const Button = styled.button`

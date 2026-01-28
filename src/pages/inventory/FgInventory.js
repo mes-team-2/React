@@ -1,247 +1,241 @@
-import styled from "styled-components";
-import { useMemo, useState } from "react";
-import Table from "../../components/TableStyle";
-import SearchBar from "../../components/SearchBar";
-import SideDrawer from "../../components/SideDrawer";
-import InventoryDetail from "./FgInventoryDetail";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import React, { useState, useEffect, useMemo } from 'react';
+import styled from 'styled-components';
+import { AlertTriangle } from 'lucide-react';
+import { FiCheckCircle, } from "react-icons/fi";
+import { AiFillSafetyCertificate } from "react-icons/ai";
 
-/* =========================
-   색상
-========================= */
-const COLORS = ["#22c55e", "#f59e0b", "#ef4444"];
+import TableStyle from '../../components/TableStyle';
+import SearchBar from '../../components/SearchBar';
+import SearchDate from '../../components/SearchDate';
+import Status from '../../components/Status';
+import SummaryCard from '../../components/SummaryCard';
 
-export default function FgInventory() {
-  const [keyword, setKeyword] = useState("");
-  const [selectedInventory, setSelectedInventory] = useState(null);
-  const [open, setOpen] = useState(false);
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
-  });
 
-  /* =========================
-     재고 데이터
-  ========================= */
-  const tableData = useMemo(
-    () =>
-      Array.from({ length: 15 }).map((_, i) => ({
-        id: i + 1,
-        productCode: `FG-12V-${i + 1}`,
-        productName: `12V 배터리 ${
-          i % 3 === 0 ? "소형" : i % 3 === 1 ? "중형" : "대형"
-        }`,
-        stockQty: 800 - i * 20,
-        safeQty: 300,
-        status:
-          800 - i * 20 > 400
-            ? "SAFE"
-            : 800 - i * 20 > 200
-              ? "WARNING"
-              : "DANGER",
-        updatedAt: "2026-01-05 16:00",
-      })),
-    [],
-  );
 
-  /* =========================
-     검색
-  ========================= */
-  const filteredData = useMemo(() => {
-    if (!keyword.trim()) return tableData;
-    const lower = keyword.toLowerCase();
+const FgInventory = () => {
+  // 상태 관리
+  const [inventoryData, setInventoryData] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]); // 체크박스 선택된 ID들
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: null }); // 정렬 설정
 
-    return tableData.filter(
-      (row) =>
-        row.productCode.toLowerCase().includes(lower) ||
-        row.productName.toLowerCase().includes(lower),
-    );
-  }, [keyword, tableData]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchDateRange, setSearchDateRange] = useState({ start: null, end: null });
 
-  /* =========================
-     정렬
-  ========================= */
-  const sortedData = useMemo(() => {
-    if (!sortConfig.key) return filteredData;
+  // 초기 데이터
+  useEffect(() => {
+    const dummyData = [
+      { id: 1, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260120-01', qty: 450, safe_qty: 100, unit: 'EA', loc: 'A-101', date: '2026-01-28' },
+      { id: 2, p_code: 'BAT-12V-120A', p_name: '리튬이온 배터리 (120Ah)', lot: 'LOT260120-05', qty: 80, safe_qty: 100, unit: 'EA', loc: 'B-202', date: '2026-01-28' },
+      { id: 3, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260121-02', qty: 300, safe_qty: 150, unit: 'EA', loc: 'A-103', date: '2026-01-28' },
+      { id: 4, p_code: 'BAT-12V-080A', p_name: '납축전지 (80Ah)', lot: 'LOT260122-01', qty: -5, safe_qty: 50, unit: 'SET', loc: 'C-001', date: '2026-01-27' },
+      { id: 5, p_code: 'BAT-12V-200A', p_name: '산업용 배터리 (200Ah)', lot: 'LOT260123-11', qty: 20, safe_qty: 30, unit: 'EA', loc: 'A-105', date: '2026-01-26' },
+    ];
+    setInventoryData(dummyData);
+  }, []);
 
-    return [...filteredData].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (typeof aVal === "string") {
-        return sortConfig.direction === "asc"
-          ? aVal.localeCompare(bVal, "ko", { numeric: true })
-          : bVal.localeCompare(aVal, "ko", { numeric: true });
-      }
-
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
-    });
-  }, [filteredData, sortConfig]);
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
+  // 헬퍼 함수
+  // 현재 재고가 0보다 작으면 위험 (DANGER)
+  // 현재 재고가 안전재고보다 적으면 주의 (CAUTION)
+  // 그 외 안전 (SAFE)
+  const getStockStatus = (currentQty, safeQty) => {
+    if (currentQty < 0) return 'DANGER';
+    if (currentQty < safeQty) return 'CAUTION';
+    return 'SAFE';
   };
 
-  /* =========================
-     차트 데이터
-  ========================= */
-  const statusChart = useMemo(() => {
-    const map = {};
-    tableData.forEach((row) => {
-      map[row.status] = (map[row.status] || 0) + 1;
+  // 필터링 및 정렬 로직 
+  // 원본 데이터(inventoryData) + 검색어(searchTerm) + 날짜(searchDateRange) + 정렬(sortConfig)
+  const filteredData = useMemo(() => {
+    let data = [...inventoryData];
+
+    // 날짜 검색
+    if (searchDateRange.start && searchDateRange.end) {
+      data = data.filter(item => {
+        const itemDate = new Date(item.date);
+        const start = new Date(searchDateRange.start);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(searchDateRange.end);
+        end.setHours(23, 59, 59, 999);
+
+        return itemDate >= start && itemDate <= end;
+      });
+    }
+
+    // 텍스트 검색 (제품코드, 제품명, LOT 번호)
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      data = data.filter(item =>
+        item.p_code.toLowerCase().includes(lowerTerm) ||
+        item.p_name.toLowerCase().includes(lowerTerm) ||
+        item.lot.toLowerCase().includes(lowerTerm)
+      );
+    }
+
+    // 정렬
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return data;
+  }, [inventoryData, searchTerm, searchDateRange, sortConfig]);
+
+  /// Summary 데이터 계산
+  const summaryMetrics = useMemo(() => {
+    let safeCount = 0;
+    let cautionCount = 0;
+    let dangerCount = 0;
+
+    filteredData.forEach((item) => {
+      const status = getStockStatus(item.qty, item.safe_qty);
+      if (status === 'SAFE') safeCount++;
+      else if (status === 'CAUTION') cautionCount++;
+      else if (status === 'DANGER') dangerCount++;
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [tableData]);
 
-  const stockChart = useMemo(() => {
-    return tableData.map((row) => ({
-      name: row.productName,
-      stock: row.stockQty,
-    }));
-  }, [tableData]);
+    return { safeCount, cautionCount, dangerCount };
+  }, [filteredData]);
 
-  /* =========================
-     컬럼
-  ========================= */
-  const columns = [
-    { key: "productCode", label: "제품 코드", width: 160 },
-    { key: "productName", label: "제품명", width: 200 },
-    { key: "stockQty", label: "재고 수량", width: 120 },
-    { key: "safeQty", label: "안전 재고", width: 120 },
-    { key: "status", label: "상태", width: 120 },
-    { key: "updatedAt", label: "갱신 시각", width: 160 },
-  ];
+
+  // 테이블 컬럼 정의 
+  const columns = useMemo(() => [
+    { key: 'id', label: 'No', width: 50, render: (val) => val },
+    { key: 'p_code', label: '제품코드', width: 130, render: (val) => <span>{val}</span> },
+    { key: 'p_name', label: '제품명', width: 180 },
+    { key: 'unit', label: '단위', width: 60, render: (val) => <span>{val}</span> },
+    { key: 'safe_qty', label: '안전 재고', width: 100, render: (val) => val.toLocaleString() },
+    { key: 'qty', label: '현재 재고', width: 100, render: (val) => <strong>{val.toLocaleString()}</strong> },
+    {
+      key: 'stock_status',
+      label: '재고 상태',
+      width: 100,
+      render: (_, row) => <Status status={getStockStatus(row.qty, row.safe_qty)} />
+    },
+    { key: 'date', label: '최종 입고일', width: 110 },
+    { key: 'loc', label: '적치 위치', width: 90 },
+    { key: 'lot', label: 'LOT NO', width: 140, render: (val) => <span >{val}</span> },
+
+  ], []);
+
+  // 이벤트 핸들러
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // 이벤트 핸들러: 검색어 상태 업데이트
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+  };
+
+  // 이벤트 핸들러: 날짜 상태 업데이트
+  const handleDateSearch = (start, end) => {
+    setSearchDateRange({ start, end });
+  };
+
+  const handleRowClick = (row) => {
+    console.log("선택된 행:", row);
+  };
 
   return (
     <Wrapper>
       <Header>
-        <h2>완제품 재고</h2>
+        <h2>제품 재고 조회</h2>
       </Header>
 
-      {/* ===== 차트 ===== */}
-      <ChartGrid>
-        <Card>
-          <h4>재고 상태 분포</h4>
-          <ChartBox>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie data={statusChart} dataKey="value" outerRadius={80}>
-                  {statusChart.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartBox>
-        </Card>
+      <Summary>
+        {/* SAFE: 안전 재고 이상 */}
+        <SummaryCard
+          icon={<AiFillSafetyCertificate />}
+          label="안전 (적정 재고)"
+          value={`${summaryMetrics.safeCount} 건`}
+          color="var(--run)"
+        />
+        {/* CAUTION: 안전 재고 미만 */}
+        <SummaryCard
+          icon={<FiCheckCircle />}
+          label="주의 (재고 부족)"
+          value={`${summaryMetrics.cautionCount} 건`}
+          color="var(--waiting)"
+        />
+        {/* DANGER: 0 미만 */}
+        <SummaryCard
+          icon={<AlertTriangle />}
+          label="위험 (재고 부족)"
+          value={`${summaryMetrics.dangerCount} 건`}
+          color="var(--error)"
+        />
+      </Summary>
 
-        <Card>
-          <h4>제품별 재고 수량</h4>
-          <ChartBox>
-            <ResponsiveContainer>
-              <BarChart data={stockChart}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="stock" fill="#6366f1" />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartBox>
-        </Card>
-      </ChartGrid>
-
-      {/* ===== 검색 ===== */}
       <FilterBar>
+        <SearchDate
+          width="m"
+          onChange={handleDateSearch}
+        />
         <SearchBar
-          value={keyword}
-          onChange={setKeyword}
-          placeholder="제품 코드 / 제품명 검색"
+          width="l"
+          placeholder="제품코드, 명, LOT No 입력"
+          onSearch={handleSearch}
+          onChange={(val) => {
+          }}
         />
       </FilterBar>
 
-      {/* ===== 테이블 ===== */}
-      <Table
+      <TableStyle
+        data={filteredData}
         columns={columns}
-        data={sortedData}
+        selectable={true}
+        selectedIds={selectedIds}
+        onSelectChange={setSelectedIds}
         sortConfig={sortConfig}
         onSort={handleSort}
-        selectable={false}
-        onRowClick={(row) => {
-          setSelectedInventory(row);
-          setOpen(true);
-        }}
+        onRowClick={handleRowClick}
       />
 
-      <SideDrawer open={open} onClose={() => setOpen(false)}>
-        <InventoryDetail inventory={selectedInventory} />
-      </SideDrawer>
+
     </Wrapper>
   );
-}
+};
 
-/* =========================
-   styled
-========================= */
+export default FgInventory;
+
 
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
 `;
 
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
-  }
-`;
-
-const ChartGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const Card = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-
-  h4 {
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-`;
-
-const ChartBox = styled.div`
-  height: 220px;
-
-  svg:focus,
-  svg *:focus {
-    outline: none;
+    font-size: var(--fontXl);
+    font-weight: var(--bold);
+    color: var(--font);
   }
 `;
 
 const FilterBar = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+`;
+
+
+
+const Summary = styled.footer`
+  display: grid; 
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 20px;
 `;
