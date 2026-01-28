@@ -2,7 +2,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import logo from "../images/logo.png";
-
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 const IconHome = () => (
   <svg
     width="20"
@@ -78,6 +79,7 @@ const IconUser = () => (
     <circle cx="12" cy="7" r="4"></circle>
   </svg>
 );
+
 /* =========================
    최근 페이지 라벨
 ========================= */
@@ -196,11 +198,17 @@ export default function SideBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const tabsRef = useRef(null);
+  const { logout } = useContext(AuthContext);
 
   const [recentPages, setRecentPages] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
   });
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   useEffect(() => {
     const path = location.pathname;
@@ -360,6 +368,9 @@ export default function SideBar() {
             </UserInfo>
           </UserProfile>
         </ScrollContainer>
+        <LogoutArea>
+          <LogoutButton onClick={handleLogout}>로그아웃</LogoutButton>
+        </LogoutArea>
       </Sidebar>
 
       <Main>
@@ -767,4 +778,24 @@ const SearchIcon = styled.div`
 const Content = styled.section`
   padding: 25px;
   background-color: var(--background);
+`;
+const LogoutArea = styled.div`
+  padding: 16px;
+  border-top: 1px solid var(--border);
+`;
+
+const LogoutButton = styled.button`
+  width: 100%;
+  padding: 12px 0;
+  border-radius: 999px;
+  border: none;
+  background: #004dfc;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #003ad6;
+  }
 `;
