@@ -112,6 +112,11 @@ const PROCESS_EFF = {
 
 export default function Dashboard() {
   const [time, setTime] = useState(getNowTime());
+  const [weather, setWeather] = useState({
+    description: "-",
+    temp: "-",
+    humidity: "-",
+  });
 
   const [progress, setProgress] = useState({
     electrode: 0,
@@ -120,6 +125,35 @@ export default function Dashboard() {
     pack: 0,
     final: 0,
   });
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const API_KEY = "5c76dcc2e466465eb8990218262801";
+        const CITY = "Cheonan";
+
+        const res = await fetch(
+          `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${CITY}&aqi=no`,
+        );
+
+        if (!res.ok) {
+          throw new Error(`WeatherAPI error: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        setWeather({
+          description: data.current.condition.text,
+          temp: `${data.current.temp_c} ℃`,
+          humidity: `${data.current.humidity} %`,
+        });
+      } catch (err) {
+        console.error("날씨 정보 조회 실패", err);
+      }
+    };
+
+    fetchWeather();
+  }, []);
 
   useEffect(() => {
     const clock = setInterval(() => setTime(getNowTime()), 1000);
@@ -155,13 +189,23 @@ export default function Dashboard() {
       <Section>
         <Grid cols={4}>
           <SummaryCard label="현재 시각" value={time} icon={<FaClock />} />
-          <SummaryCard label="외부 날씨" value="맑음" icon={<FaCloudSun />} />
           <SummaryCard
-            label="평균 온도"
-            value="38.2 ℃"
+            label="외부 날씨"
+            value={weather.description}
+            icon={<FaCloudSun />}
+          />
+
+          <SummaryCard
+            label="현재 온도"
+            value={weather.temp}
             icon={<FaTemperatureHigh />}
           />
-          <SummaryCard label="평균 습도" value="71 %" icon={<FaTint />} />
+
+          <SummaryCard
+            label="현재 습도"
+            value={weather.humidity}
+            icon={<FaTint />}
+          />
         </Grid>
       </Section>
 
