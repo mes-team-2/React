@@ -1,13 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import {
-  FiSearch, FiEdit, FiRefreshCw, FiClock, FiAlertCircle, FiArchive, FiLayers
+  FiSearch, FiEdit, FiRefreshCw, FiClock, FiAlertCircle, FiArchive, FiLayers, FiAlertTriangle
 } from 'react-icons/fi';
+import { LuHourglass } from "react-icons/lu";
 import Status from '../../components/Status';
 import TableStyle from '../../components/TableStyle';
 import SearchBar from '../../components/SearchBar';
 import SearchDate from '../../components/SearchDate';
 import SummaryCard from "../../components/SummaryCard";
+import SideDrawer from "../../components/SideDrawer";
+import MaterialLotDetail from "./MaterialLotDetail";
 
 
 
@@ -141,6 +144,9 @@ export default function MaterialLot() {
   const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 상태
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // 테이블 오름내림차순 상태
 
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
   // 필터링 로직 (SearchDate + SearchBar 적용)
   const filteredList = useMemo(() => {
     return MATERIAL_DATA.filter(item => {
@@ -220,6 +226,18 @@ export default function MaterialLot() {
     setDateRange({ start, end });
   };
 
+  // 행 클릭 핸들러
+  const handleRowClick = (row) => {
+    setSelectedRow(row);
+    setDrawerOpen(true);
+  };
+
+  // Drawer 닫기 핸들러
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedRow(null);
+  };
+
   // 테이블 컬럼 정의
   const columns = [
     {
@@ -235,9 +253,9 @@ export default function MaterialLot() {
       width: 150,
       render: (v) => {
         let statusKey = "DEFAULT";
-        if (v === "WAITING") statusKey = "WAITING";
-        else if (v === "RUNNING") statusKey = "RUN";
-        else if (v === "EMPTY") statusKey = "FAIL"; // 혹은 DANGER
+        if (v === "WAITING") statusKey = "LOT_WAIT";      // 대기중
+        else if (v === "RUNNING") statusKey = "LOT_RUN";  // 생산중(투입)
+        else if (v === "EMPTY") statusKey = "LOT_ERR";    // 품절/불량
 
         return <Status status={statusKey} type="basic" />;
       }
@@ -271,13 +289,13 @@ export default function MaterialLot() {
           color="var(--run)"
         />
         <SummaryCard
-          icon={<FiClock />}
+          icon={<LuHourglass />}
           label="대기중"
           value={stats.waiting}
           color="var(--waiting)"
         />
         <SummaryCard
-          icon={<FiAlertCircle />}
+          icon={<FiAlertTriangle />}
           label="품절/불량"
           value={stats.error}
           color="var(--error)"
@@ -302,11 +320,21 @@ export default function MaterialLot() {
         <TableStyle
           columns={columns}
           data={sortedList}
-          selectable={false}
+          selectable={true}
+          onRowClick={handleRowClick}
           sortConfig={sortConfig}
           onSort={handleSort}
         />
       </TableContainer>
+
+      <SideDrawer open={drawerOpen} onClose={handleCloseDrawer}>
+        {selectedRow && (
+          <MaterialLotDetail
+            row={selectedRow}
+            onClose={handleCloseDrawer}
+          />
+        )}
+      </SideDrawer>
     </Container>
   );
 }
