@@ -125,10 +125,11 @@ const MENU = [
     items: [
       { to: "/mes/master/machine", label: "설비 관리" },
       { to: "/mes/master/process", label: "공정 관리" },
+      { to: "/mes/master/product", label: "제품 관리" },
+      { to: "/mes/master/material", label: "자재 관리" },
       { to: "/mes/master/bom", label: "BOM 관리" },
       { to: "/mes/master/worker", label: "작업자 관리" },
-      { to: "/mes/master/material", label: "자재 관리" },
-      { to: "/mes/master/product", label: "제품 관리" },
+
     ],
   },
   {
@@ -157,17 +158,16 @@ const MENU = [
         key: "material",
         title: "자재 관리",
         items: [
-          { to: "/mes/material", label: "자재 관리" },
-          { to: "/mes/material-tx", label: "자재 이력 조회" },
+          { to: "/mes/material", label: "자재 재고 조회" },
+          { to: "/mes/material-tx", label: "자재 입출고 이력 조회" },
         ],
       },
       {
         key: "product",
         title: "제품 관리",
         items: [
-          { to: "/mes/product", label: "제품 관리" },
-          { to: "/mes/inventory", label: "제품 재고 관리" },
-          { to: "/mes/shipment", label: "제품 출하 관리" },
+          { to: "/mes/inventory", label: "제품 재고 조회" },
+          { to: "/mes/shipment", label: "제품 입출고 이력 조회" },
         ],
       },
     ],
