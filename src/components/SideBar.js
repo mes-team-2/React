@@ -122,6 +122,11 @@ const STORAGE_KEY = "mes_recent_pages";
 ========================= */
 const MENU = [
   {
+    key: "monitoring",
+    title: "모니터링",
+    items: [{ to: "/mes/dashboard", label: "대시보드" }],
+  },
+  {
     key: "master",
     title: "기준 정보 관리",
     items: [
