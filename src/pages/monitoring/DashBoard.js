@@ -130,7 +130,7 @@ export default function Dashboard() {
     const fetchWeather = async () => {
       try {
         const API_KEY = "5c76dcc2e466465eb8990218262801";
-        const CITY = "Cheonan";
+        const CITY = "Seoul";
 
         const res = await fetch(
           `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${CITY}&aqi=no`,
@@ -152,7 +152,14 @@ export default function Dashboard() {
       }
     };
 
+    // 🔹 최초 1회 실행
     fetchWeather();
+
+    // 🔹 10분마다 재조회
+    const intervalId = setInterval(fetchWeather, 600000);
+
+    // 🔹 컴포넌트 언마운트 시 정리 (중요)
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
