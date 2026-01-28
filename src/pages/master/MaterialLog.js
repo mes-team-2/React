@@ -12,7 +12,6 @@ import { FiArchive, FiLogIn, FiLogOut } from "react-icons/fi";
 
 const TYPES = {
   IN: "입고",
-  OUT: "출고",
   USE: "공정투입",
 };
 
@@ -53,7 +52,7 @@ const MATERIAL_LOGS = [
     materialCode: "MAT-ELEC",
     materialName: "전해액",
     lotNo: "LOT-202601-014",
-    type: "OUT",
+    type: "USE",
     qty: -300,
     operator: "WK-104",
   },
@@ -65,6 +64,7 @@ export default function MaterialLog() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 검색상태
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // 테이블 정렬 상태 관리
 
   // 필터 로직 (키워드 + 날짜)
   const filtered = useMemo(() => {
@@ -100,6 +100,35 @@ export default function MaterialLog() {
     });
   }, [rows, keyword, dateRange]);
 
+  // [정렬 로직 (필터링된 데이터를 정렬)
+  const sortedRows = useMemo(() => {
+    let sortableItems = [...filtered];
+    if (sortConfig.key !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // 숫자일 경우 비교 처리 (문자열 숫자가 있다면 Number() 변환 필요)
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          // 그대로 비교
+        } else {
+          // 문자열 비교
+          aValue = String(aValue);
+          bValue = String(bValue);
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filtered, sortConfig]);
+
   // Summary 계산
   const summary = useMemo(() => {
 
@@ -117,6 +146,15 @@ export default function MaterialLog() {
 
     return { total, inQty, outUseQty };
   }, [filtered]);
+
+  //  정렬 핸들러
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
 
   // 테이블
   const columns = [
@@ -146,7 +184,7 @@ export default function MaterialLog() {
   return (
     <Wrapper>
       <Header>
-        <h2>자재 이력 조회</h2>
+        <h2>자재 입출고 이력 조회</h2>
       </Header>
 
       <SummaryGrid>
@@ -183,9 +221,11 @@ export default function MaterialLog() {
       <TableWrap>
         <TableStyle
           columns={columns}
-          data={filtered}
+          data={sortedRows}
           selectable={false}
           onRowClick={onRowClick}
+          sortConfig={sortConfig}
+          onSort={handleSort}
         />
       </TableWrap>
 
