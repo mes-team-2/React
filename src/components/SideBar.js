@@ -94,7 +94,7 @@ const PAGE_LABEL = {
 
   // 생산
   "/mes/workorders": "작업지시 관리",
-  "/mes/process-log": "공정 로그",
+  "/mes/process-log": "공정 이력",
   "/mes/lot": "LOT 관리",
 
   // 품질
@@ -138,7 +138,7 @@ const MENU = [
     title: "생산 관리",
     items: [
       { to: "/mes/workorders", label: "작업지시 관리" },
-      { to: "/mes/process-log", label: "공정 로그" },
+      { to: "/mes/process-log", label: "공정 이력" },
 
       { to: "/mes/lot", label: "제품 LOT 관리" },
     ],

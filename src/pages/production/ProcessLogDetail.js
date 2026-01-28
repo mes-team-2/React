@@ -1,8 +1,6 @@
 import styled from "styled-components";
 
 export default function ProcessLogDetail({ log }) {
-  if (!log) return <Empty>공정 이력을 선택하세요.</Empty>;
-
   return (
     <Wrapper>
       <h3>공정 이력 상세</h3>
@@ -25,12 +23,16 @@ export default function ProcessLogDetail({ log }) {
           <strong>{log.status}</strong>
         </Item>
         <Item>
-          <label>시작</label>
+          <label>시작 시간</label>
           <strong>{log.startTime}</strong>
         </Item>
         <Item>
-          <label>종료</label>
+          <label>종료 시간</label>
           <strong>{log.endTime}</strong>
+        </Item>
+        <Item>
+          <label>작업자 사번</label>
+          <strong>{log.workerCode}</strong>
         </Item>
       </Grid>
     </Wrapper>

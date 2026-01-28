@@ -21,8 +21,9 @@ export default function ProcessLog() {
     { key: "processStep", label: "공정", width: 160 },
     { key: "machine", label: "설비", width: 160 },
     { key: "status", label: "상태", width: 120 },
-    { key: "startTime", label: "시작 시각", width: 160 },
-    { key: "endTime", label: "종료 시각", width: 160 },
+    { key: "startTime", label: "시작 시간", width: 200 },
+    { key: "endTime", label: "종료 시간", width: 200 },
+    { key: "workerCode", label: "작업자 사번" },
   ];
 
   /* =========================
@@ -47,6 +48,7 @@ export default function ProcessLog() {
         status: i % 3 === 0 ? "DONE" : i % 3 === 1 ? "IN_PROGRESS" : "WAIT",
         startTime: "2026-01-06 09:00",
         endTime: i % 3 === 0 ? "2026-01-06 10:20" : "-",
+        workerCode: "OP-00" + i,
       })),
     [],
   );
