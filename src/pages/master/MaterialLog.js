@@ -241,7 +241,7 @@ export default function MaterialLog() {
     {
       key: "type",
       label: "구분",
-      width: 120,
+      width: 150,
       render: (value) => {
 
         const statusKey = value === "IN" ? "MATIN" : "MATOUT";
@@ -250,7 +250,13 @@ export default function MaterialLog() {
     },
     { key: "materialName", label: "자재명", width: 130 },
     { key: "lotNo", label: "LOT 번호", width: 150 },
-    { key: "qty", label: "이동수량", width: 90, render: (v) => v.toLocaleString() },
+    {
+      key: "qty", label: "이동수량", width: 90, render: (val) => (
+        <QtyText $isPositive={val > 0}>
+          {val > 0 ? `+${val.toLocaleString()}` : val.toLocaleString()}
+        </QtyText>
+      )
+    },
 
     { key: "unit", label: "단위", width: 60 },
     { key: "fromLocation", label: "출발지 (From)", width: 140 },
@@ -352,4 +358,9 @@ const FilterBar = styled.div`
 const TableWrap = styled.div`
   width: 100%;
   overflow-x: auto;
+`;
+
+const QtyText = styled.span`
+  font-weight: var(--bold);
+  color: ${props => props.$isPositive ? 'var(--main)' : 'var(--error)'};
 `;

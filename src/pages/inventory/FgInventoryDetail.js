@@ -1,100 +1,108 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import Table from "../../components/TableStyle";
-import Status from "../../components/Status";
+import TableStyle from "../../components/TableStyle";
+
 
 export default function FgInventoryDetail({ inventory }) {
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
-  });
+  const [lotSort, setLotSort] = useState({ key: null, direction: "asc" });
+  const [histSort, setHistSort] = useState({ key: null, direction: "desc" });
 
-
-  const detailInfo = useMemo(() => {
-    if (!inventory) return null;
-
-    return {
-      ...inventory,
-      productCode: "BAT-12V-100A", // 예시 코드
-      regDate: "2025-11-01", // 제품 등록일
-      inDate: "2026-01-28", // 입고일
-      unit: "EA",
-      mfgDate: "2026-01-20 14:00", // 제조일자
-      process: "조립 (Assembly)", // 공정
-      line: "Line #2", // 라인
-      workOrder: "WO-260120-05", // 작업지시번호
-      worker: "김생산 (OP-102)" // 작업자
-    };
-  }, [inventory]);
-
-  const historyData = useMemo(() => {
+  // LOT 정보 데이터 
+  const lotList = useMemo(() => {
     if (!inventory) return [];
     return [
-      {
-        id: 1,
-        type: "생산입고",
-        qty: 500,
-        ref: "WO-260120-05",
-        time: "2026-01-05 14:00",
-        worker: "김생산"
-      },
-      {
-        id: 2,
-        type: "출하출고",
-        qty: -200,
-        ref: "DO-260105-01",
-        time: "2026-01-05 16:30",
-        worker: "이물류"
-      },
+      { id: 1, lotNo: "LOT-260128-01", qty: 450, date: "2026-01-28", workOrder: "WO-260128-05", worker: "김생산" },
+      { id: 2, lotNo: "LOT-260127-05", qty: 200, date: "2026-01-27", workOrder: "WO-260127-02", worker: "박조립" },
+      { id: 3, lotNo: "LOT-260125-11", qty: 150, date: "2026-01-25", workOrder: "WO-260125-01", worker: "이공정" },
+      { id: 4, lotNo: "LOT-260120-99", qty: 50, date: "2026-01-20", workOrder: "WO-260120-03", worker: "최반장" },
+      { id: 5, lotNo: "LOT-260115-02", qty: 0, date: "2026-01-15", workOrder: "WO-260115-01", worker: "김생산" },
     ];
   }, [inventory]);
 
-  const sortedHistory = useMemo(() => {
-    if (!sortConfig.key) return historyData;
-
-    return [...historyData].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
+  // LOT 정렬 로직
+  const sortedLotList = useMemo(() => {
+    if (!lotSort.key) return lotList;
+    return [...lotList].sort((a, b) => {
+      const aVal = a[lotSort.key];
+      const bVal = b[lotSort.key];
       if (typeof aVal === "string") {
-        return sortConfig.direction === "asc"
+        return lotSort.direction === "asc"
           ? aVal.localeCompare(bVal, "ko", { numeric: true })
           : bVal.localeCompare(aVal, "ko", { numeric: true });
       }
-
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+      return lotSort.direction === "asc" ? aVal - bVal : bVal - aVal;
     });
-  }, [historyData, sortConfig]);
+  }, [lotList, lotSort]);
+
+
+  // 제품 상세 정보
+  const detailInfo = useMemo(() => {
+    if (!inventory) return null;
+    const totalStock = lotList.reduce((acc, cur) => acc + cur.qty, 0);
+    return {
+      ...inventory,
+      productCode: "BAT-12V-100A",
+      regDate: "2025-11-01",
+      inDate: "2026-01-28",
+      unit: "EA",
+      stockQty: totalStock,
+    };
+  }, [inventory]);
+
+
+  // 입출고 이력 데이터 
+  const historyList = useMemo(() => {
+    if (!inventory) return [];
+    return [
+      { id: 101, time: "2026-01-28 14:00", type: "생산입고", qty: 450, location: "A-101", lotNo: "LOT-260128-01" },
+      { id: 102, time: "2026-01-28 16:30", type: "제품출하", qty: -100, location: "현대모비스", lotNo: "LOT-260120-99" },
+      { id: 103, time: "2026-01-27 09:00", type: "생산입고", qty: 200, location: "B-202", lotNo: "LOT-260127-05" },
+      { id: 104, time: "2026-01-26 11:20", type: "창고이동", qty: 0, location: "A-101 -> B-202", lotNo: "LOT-260125-11" },
+      { id: 105, time: "2026-01-25 15:45", type: "반품입고", qty: 10, location: "R-001", lotNo: "LOT-260115-02" },
+    ];
+  }, [inventory]);
+
+  // 이력 정렬 로직
+  const sortedHistoryList = useMemo(() => {
+    if (!histSort.key) return historyList;
+    return [...historyList].sort((a, b) => {
+      const aVal = a[histSort.key];
+      const bVal = b[histSort.key];
+      if (typeof aVal === "string") {
+        return histSort.direction === "asc"
+          ? aVal.localeCompare(bVal, "ko", { numeric: true })
+          : bVal.localeCompare(aVal, "ko", { numeric: true });
+      }
+      return histSort.direction === "asc" ? aVal - bVal : bVal - aVal;
+    });
+  }, [historyList, histSort]);
 
   if (!detailInfo) {
     return <Empty>재고를 선택하세요.</Empty>;
   }
 
-  // 상태값 매핑 헬퍼 함수
-  const getStockStatus = (qty, safeQty) => {
-    if (qty < 0) return 'DANGER';
-    if (qty < safeQty) return 'CAUTION';
-    return 'SAFE';
-  };
+  // LOT 테이블 컬럼 정의
+  const lotColumns = [
+    { key: "lotNo", label: "LOT 번호", width: 140, },
+    { key: "qty", label: "재고", width: 80, render: (val) => val.toLocaleString() },
+    { key: "date", label: "생산일", width: 100 },
+    { key: "workOrder", label: "작업지시", width: 120, },
+    { key: "worker", label: "담당자", width: 80 },
+  ];
 
-  const columns = [
+  // 입출고 이력 테이블 컬럼 정의
+  const historyColumns = [
     { key: "time", label: "일시", width: 140 },
-    { key: "type", label: "구분", width: 100 },
+    { key: "type", label: "구분", width: 100, },
     {
       key: "qty",
       label: "수량",
       width: 80,
-      render: (val) => (
-        <span>
-          {val > 0 ? `+${val.toLocaleString()}` : val.toLocaleString()}
-        </span>
-      )
+      render: (val) => <QtyText $isPositive={val >= 0}>{val > 0 ? `+${val}` : val}</QtyText>
     },
-    { key: "ref", label: "작업지시", width: 150 },
-    { key: "worker", label: "담당자", width: 80 },
+    { key: "location", label: "입·출고지", width: 140 },
+    { key: "lotNo", label: "LOT 번호", width: 140, },
   ];
-
-
 
   return (
     <Container>
@@ -115,86 +123,41 @@ export default function FgInventoryDetail({ inventory }) {
               <Value>{detailInfo.productName}</Value>
             </FullItem>
             <FullItem>
-              <label>제품등록일자</label>
-              <Value>{detailInfo.regDate}</Value>
-            </FullItem>
-          </Grid>
-        </Section>
-
-        <Section>
-          <SectionTitle>재고 정보</SectionTitle>
-          <Grid>
-            <FullItem>
-              <label>입고일자</label>
-              <Value>{detailInfo.inDate}</Value>
-            </FullItem>
-            <Item>
-              <label>재고 수량</label>
+              <label>총 재고</label>
               <Value>
-                <strong>{detailInfo.stockQty?.toLocaleString()}</strong>
-                <Unit>EA</Unit>
+                <strong>{detailInfo.stockQty.toLocaleString()}</strong>
+                <Unit>{detailInfo.unit}</Unit>
               </Value>
-            </Item>
-            <Item>
-              <label>안전 재고</label>
-              <Value>
-                <strong>{detailInfo.safeQty?.toLocaleString()}</strong>
-                <Unit>EA</Unit>
-              </Value>
-            </Item>
-            <Item>
-              <label>단위</label>
-              <Value>{detailInfo.unit}</Value>
-            </Item>
-            <Item>
-              <label>재고상태</label>
-
-              <Status type="wide"
-                status={getStockStatus(detailInfo.stockQty, detailInfo.safeQty)}
-              />
-
-            </Item>
-          </Grid>
-        </Section>
-
-        <Section>
-          <SectionTitle>생산 정보</SectionTitle>
-          <Grid>
-            <FullItem>
-              <label>제조일자</label>
-              <Value>{detailInfo.mfgDate}</Value>
             </FullItem>
-
-            <Item>
-              <label>생산공정</label>
-              <Value>{detailInfo.process}</Value>
-            </Item>
-            <Item>
-              <label>생산라인</label>
-              <Value>{detailInfo.line}</Value>
-            </Item>
-            <Item>
-              <label>작업지시</label>
-              <Value>{detailInfo.workOrder}</Value>
-            </Item>
-            <Item>
-              <label>담당자</label>
-              <Value>{detailInfo.worker}</Value>
-            </Item>
           </Grid>
         </Section>
 
         <Section>
-          <SectionTitle>입 / 출고 이력</SectionTitle>
-          <Table
-            columns={columns}
-            data={sortedHistory}
-            sortConfig={sortConfig}
+          <SectionTitle>LOT 정보</SectionTitle>
+          <TableStyle
+            columns={lotColumns}
+            data={sortedLotList}
+            sortConfig={lotSort}
             onSort={(key) =>
-              setSortConfig((p) => ({
+              setLotSort((p) => ({
                 key,
-                direction:
-                  p.key === key && p.direction === "asc" ? "desc" : "asc",
+                direction: p.key === key && p.direction === "asc" ? "desc" : "asc",
+              }))
+            }
+            selectable={false}
+          />
+        </Section>
+
+        <Section>
+          <SectionTitle>입출고 이력</SectionTitle>
+          <TableStyle
+            columns={historyColumns}
+            data={sortedHistoryList}
+            sortConfig={histSort}
+            onSort={(key) =>
+              setHistSort((p) => ({
+                key,
+                direction: p.key === key && p.direction === "asc" ? "desc" : "asc",
               }))
             }
             selectable={false}
@@ -204,7 +167,6 @@ export default function FgInventoryDetail({ inventory }) {
     </Container>
   );
 }
-
 const Container = styled.div`
   padding: 20px;
   display: flex;
@@ -224,12 +186,10 @@ const Header = styled.div`
   }
 `;
 
-
-
 const Content = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 30px;
   overflow-y: auto;
   padding-right: 15px;
 
@@ -240,6 +200,12 @@ const Content = styled.div`
     background-color: var(--background2);
     border-radius: 3px;
   }
+`;
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
 
 const SectionTitle = styled.h4`
@@ -264,19 +230,10 @@ const SectionTitle = styled.h4`
   }
 `;
 
-
-const Section = styled.div`
-  h4 {
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 600;
-  }
-`;
-
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 10px;
 `;
 
 const Item = styled.div`
@@ -295,22 +252,18 @@ const FullItem = styled(Item)`
   grid-column: 1 / -1;
 `;
 
-
 const Value = styled.div`
   display: flex;
   align-items: center;
+  gap: 5px;
   padding: 10px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--background);
   height: 38px;
-
   
-  strong {
-    font-weight: var(--normal);
-    color: var(--font);
-    font-size: var(--fontXs);
-  }
+  font-size: var(--fontSm);
+  color: var(--font);
 `;
 
 const Empty = styled.div`
@@ -319,9 +272,18 @@ const Empty = styled.div`
   opacity: 0.6;
 `;
 
+const MonoText = styled.span`
+  font-family: monospace;
+  color: var(--font);
+`;
+
+
+const QtyText = styled.span`
+  font-weight: var(--bold);
+  color: ${props => props.$isPositive ? 'var(--run)' : 'var(--error)'};
+`;
 const Unit = styled.span`
   font-size: var(--fontXs); 
   color: var(--font2); 
-  font-weight: normal; 
-  margin-left: 4px;
+  font-weight: var(--normal); 
 `;
