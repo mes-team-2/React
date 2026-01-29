@@ -50,6 +50,27 @@ const STATUS_CONFIG = {
     bg: "var(--bgError)",
     icon: <IoArrowForwardCircleOutline />,
   },
+  IN: {
+    label: "생산입고",
+    iconColor: "var(--run)",
+    textColor: "var(--font)",
+    bg: "var(--bgRun)",
+    icon: <IoArrowBackCircleOutline />,
+  },
+  OUT: {
+    label: "출고",
+    iconColor: "var(--error)",
+    textColor: "var(--font)",
+    bg: "var(--bgError)",
+    icon: <IoArrowForwardCircleOutline />,
+  },
+  FAILOUT: {
+    label: "폐기",
+    iconColor: "var(--waiting)",
+    textColor: "var(--font)",
+    bg: "var(--bgWaiting)",
+    icon: <FiCheckCircle />,
+  },
   COMPLETE: {
     label: "COMPLETE",
     iconColor: "var(--complete)",

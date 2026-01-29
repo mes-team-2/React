@@ -1,336 +1,264 @@
-import styled from "styled-components";
-import { useMemo, useState } from "react";
-import SummaryCard from "../../components/SummaryCard";
-import SearchBar from "../../components/SearchBar";
-import Table from "../../components/TableStyle";
-import { LuHourglass } from "react-icons/lu";
-
+import React, { useState, useEffect, useMemo } from 'react';
+import styled from 'styled-components';
 import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  LineChart,
-  Line,
-} from "recharts";
-
+  History,
+} from 'lucide-react';
 import {
-  FiTruck,
-  FiCheckCircle,
-  FiClock,
-  FiXCircle,
-  FiPackage,
-} from "react-icons/fi";
+  IoArrowForwardCircleOutline,
+  IoArrowBackCircleOutline,
+} from "react-icons/io5";
+import { FiEdit, } from "react-icons/fi";
 
-const STATUS = {
-  READY: "출하대기",
-  SHIPPING: "출하중",
-  DONE: "출하완료",
-  HOLD: "보류",
-};
+import TableStyle from '../../components/TableStyle';
+import SearchBar from '../../components/SearchBar';
+import SearchDate from '../../components/SearchDate';
+import SummaryCard from '../../components/SummaryCard';
+import Status from '../../components/Status';
 
-const STATUS_COLOR = {
-  READY: "var(--waiting)",
-  SHIPPING: "var(--main)",
-  DONE: "var(--run)",
-  HOLD: "var(--error)",
-};
+const Shipment = () => {
+  // 상태 관리
+  const [historyData, setHistoryData] = useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: 'tx_time', direction: 'desc' });
 
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+  // 검색 필터 상태
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchDateRange, setSearchDateRange] = useState({ start: null, end: null });
+  const [txTypeFilter, setTxTypeFilter] = useState("ALL"); // ALL, IN, OUT
 
-function makeShipments() {
-  const rows = [];
-  let id = 1;
-  const customers = ["현대모비스", "LG에너지솔루션", "삼성SDI", "SK온"];
-  const products = [
-    { code: "BAT-12V-60Ah", name: "자동차 납축전지 12V 60Ah" },
-    { code: "BAT-12V-80Ah", name: "자동차 납축전지 12V 80Ah" },
-  ];
+  // 2. 초기 데이터 로드 (DB 구조 기반 시뮬레이션)
+  useEffect(() => {
+    const dummyData = [
+      {
+        id: 101,
+        tx_time: '2026-01-28 14:30:00',
+        tx_type: 'PRODUCTION_IN', // 입고 (생산)
+        status_key: 'MATIN',
+        product_code: 'BAT-12V-100A',
+        product_name: '리튬이온 배터리 (100Ah)',
+        qty: 500,
+        unit: 'EA',
+        location: 'A-101',
+        note: 'WO-260128-05'
+      },
+      {
+        id: 102,
+        tx_time: '2026-01-28 16:00:00',
+        tx_type: 'SHIPMENT_OUT', // 출고 (출하)
+        status_key: 'MATOUT',
+        product_code: 'BAT-12V-100A',
+        product_name: '리튬이온 배터리 (100Ah)',
+        qty: -200,
+        unit: 'EA',
+        location: '현대모비스', // 출고처
+        note: 'SH-260128-01'
+      },
+      {
+        id: 103,
+        tx_time: '2026-01-27 09:15:00',
+        tx_type: 'PRODUCTION_IN',
+        status_key: 'MATIN',
+        product_code: 'BAT-12V-120A',
+        product_name: '리튬이온 배터리 (120Ah)',
+        qty: 300,
+        unit: 'EA',
+        location: 'B-202',
+        note: 'WO-260127-02'
+      },
+      {
+        id: 104,
+        tx_time: '2026-01-26 15:20:00',
+        tx_type: 'ADJUSTMENT', // 재고 조정
+        status_key: 'CAUTION',
+        product_code: 'BAT-12V-200A',
+        product_name: '산업용 배터리 (200Ah)',
+        qty: -2,
+        unit: 'EA',
+        location: 'A-105',
+        note: '정기 재고실사 차이 반영'
+      },
+    ];
+    setHistoryData(dummyData);
+  }, []);
 
-  for (let d = 12; d >= 0; d--) {
-    const day = new Date();
-    day.setDate(day.getDate() - d);
-    const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(day.getDate()).padStart(2, "0")}`;
+  // 필터링 로직
+  const filteredData = useMemo(() => {
+    let data = [...historyData];
 
-    const cnt = rand(4, 10);
-    for (let i = 0; i < cnt; i++) {
-      const p = products[rand(0, products.length - 1)];
-      const stKeys = Object.keys(STATUS);
-      const st = stKeys[rand(0, stKeys.length - 1)];
+    // 날짜 필터
+    if (searchDateRange.start && searchDateRange.end) {
+      const start = new Date(searchDateRange.start);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(searchDateRange.end);
+      end.setHours(23, 59, 59, 999);
 
-      const qty = rand(50, 300);
-      const shippedQty =
-        st === "DONE" ? qty : st === "SHIPPING" ? rand(1, qty - 1) : 0;
-
-      const orderNo = `SO-202601-${String(rand(1, 99)).padStart(3, "0")}`;
-      const shipmentNo = `SHIP-202601-${String(id).padStart(4, "0")}`;
-
-      rows.push({
-        id: id++,
-        planDate: dateStr,
-        shipmentNo,
-        orderNo,
-        customer: customers[rand(0, customers.length - 1)],
-        productCode: p.code,
-        productName: p.name,
-        qty,
-        shippedQty,
-        status: st,
-        carrier: ["CJ대한통운", "로젠", "한진", "자체"][rand(0, 3)],
-        trackingNo:
-          st === "DONE" || st === "SHIPPING"
-            ? `${rand(1000, 9999)}-${rand(1000, 9999)}-${rand(1000, 9999)}`
-            : "-",
-        palletCount: Math.max(1, Math.floor(qty / 80)),
-        note: st === "HOLD" ? "거래처 요청 보류" : "",
+      data = data.filter(item => {
+        const itemTime = new Date(item.tx_time);
+        return itemTime >= start && itemTime <= end;
       });
     }
-  }
 
-  return rows;
-}
-
-export default function Shipment() {
-  const [rows] = useState(() => makeShipments());
-
-  const [keyword, setKeyword] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-
-  const filtered = useMemo(() => {
-    let data = rows;
-    if (statusFilter !== "ALL")
-      data = data.filter((r) => r.status === statusFilter);
-
-    if (keyword.trim()) {
-      const k = keyword.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.shipmentNo.toLowerCase().includes(k) ||
-          r.orderNo.toLowerCase().includes(k) ||
-          r.customer.toLowerCase().includes(k) ||
-          r.productCode.toLowerCase().includes(k) ||
-          r.productName.toLowerCase().includes(k) ||
-          (r.trackingNo || "").toLowerCase().includes(k),
+    // 텍스트 검색
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      data = data.filter(item =>
+        item.product_code.toLowerCase().includes(lower) ||
+        item.product_name.toLowerCase().includes(lower) ||
+        item.note.toLowerCase().includes(lower) ||
+        item.location.toLowerCase().includes(lower)
       );
     }
+
+    // 입출고 타입 필터
+    if (txTypeFilter !== "ALL") {
+      if (txTypeFilter === "IN") {
+        data = data.filter(item => item.qty > 0);
+      } else if (txTypeFilter === "OUT") {
+        data = data.filter(item => item.qty < 0);
+      }
+    }
+
+    // 정렬
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
     return data;
-  }, [rows, keyword, statusFilter]);
+  }, [historyData, searchTerm, searchDateRange, txTypeFilter, sortConfig]);
 
+  //  Summary 통계 계산 (총 건수, 입고, 출고, 재고조정)
   const summary = useMemo(() => {
-    const total = filtered.length;
-    const ready = filtered.filter((r) => r.status === "READY").length;
-    const shipping = filtered.filter((r) => r.status === "SHIPPING").length;
-    const done = filtered.filter((r) => r.status === "DONE").length;
-    const hold = filtered.filter((r) => r.status === "HOLD").length;
+    let totalIn = 0;
+    let totalOut = 0;
+    let adjustmentQty = 0;
+    let totalCount = filteredData.length;
 
-    const planQty = filtered.reduce((a, b) => a + b.qty, 0);
-    const shippedQty = filtered.reduce((a, b) => a + b.shippedQty, 0);
-    const fillRate =
-      planQty === 0 ? 0 : Math.round((shippedQty / planQty) * 100);
-
-    return {
-      total,
-      ready,
-      shipping,
-      done,
-      hold,
-      planQty,
-      shippedQty,
-      fillRate,
-    };
-  }, [filtered]);
-
-  const dailyChart = useMemo(() => {
-    const map = {};
-    filtered.forEach((r) => {
-      const day = r.planDate.slice(5, 10);
-      if (!map[day]) map[day] = { day, plan: 0, shipped: 0 };
-      map[day].plan += r.qty;
-      map[day].shipped += r.shippedQty;
+    filteredData.forEach(item => {
+      if (item.tx_type === 'ADJUSTMENT') {
+        adjustmentQty += item.qty;
+      } else if (item.qty > 0) {
+        totalIn += item.qty;
+      } else {
+        totalOut += Math.abs(item.qty);
+      }
     });
-    return Object.values(map);
-  }, [filtered]);
 
-  const statusBar = useMemo(() => {
-    const obj = { READY: 0, SHIPPING: 0, DONE: 0, HOLD: 0 };
-    filtered.forEach((r) => (obj[r.status] += 1));
-    return Object.entries(obj).map(([k, v]) => ({
-      name: STATUS[k],
-      count: v,
-      key: k,
-    }));
-  }, [filtered]);
+    return { totalCount, totalIn, totalOut, adjustmentQty };
+  }, [filteredData]);
 
-  const columns = [
-    { key: "shipmentNo", label: "출하번호", width: 150 },
-    { key: "customer", label: "거래처", width: 140 },
-    { key: "productCode", label: "제품코드", width: 140 },
-    { key: "shippedQty", label: "출하수량", width: 90 },
+  // 테이블 컬럼 정의
+  const columns = useMemo(() => [
+    { key: 'tx_time', label: '일시', width: 150 },
     {
-      key: "status",
-      label: "상태",
-      width: 110,
-      render: (v) => STATUS[v],
+      key: 'status_key',
+      label: '구분',
+      width: 150,
+      render: (val, row) => {
+        return <Status status={val} />;
+      }
     },
-  ];
+    {
+      key: 'product_code',
+      label: '제품코드',
+      width: 130,
 
+    },
+    { key: 'product_name', label: '제품명', width: 180 },
+    {
+      key: 'qty',
+      label: '수량',
+      width: 90,
+      render: (val) => (
+        <QtyText $isPositive={val > 0}>
+          {val > 0 ? `+${val.toLocaleString()}` : val.toLocaleString()}
+        </QtyText>
+      )
+    },
+    {
+      key: 'unit',
+      label: '단위',
+      width: 60,
+    },
+    { key: 'location', label: '위치/출고처', width: 120 },
+    {
+      key: 'note',
+      label: '비고',
+      width: 140,
+    },
+  ], []);
+
+  // 이벤트 핸들러
   const handleSort = (key) => {
-    setSortConfig((prev) =>
-      prev.key === key
-        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
-        : { key, direction: "asc" },
-    );
-  };
-
-  const sorted = useMemo(() => {
-    if (!sortConfig.key) return filtered;
-    return [...filtered].sort((a, b) => {
-      const av = a[sortConfig.key];
-      const bv = b[sortConfig.key];
-      if (typeof av === "string")
-        return sortConfig.direction === "asc"
-          ? av.localeCompare(bv, "ko", { numeric: true })
-          : bv.localeCompare(av, "ko", { numeric: true });
-      return sortConfig.direction === "asc" ? av - bv : bv - av;
-    });
-  }, [filtered, sortConfig]);
-
-  const onRowClick = (row) => {
-    setSelected(row);
-    setDrawerOpen(true);
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
   };
 
   return (
     <Wrapper>
       <Header>
-        <h2>제품 출하 관리</h2>
+        <h2>제품 입출고 이력 조회</h2>
       </Header>
 
       <SummaryGrid>
         <SummaryCard
-          icon={<FiPackage />}
-          label="출하 건수"
-          value={summary.total.toLocaleString()}
-          color="var(--main)"
+          icon={<FiEdit />}
+          label="총 조회 건수"
+          value={`${summary.totalCount.toLocaleString()} 건`}
+          color="var(--font)"
         />
         <SummaryCard
-          icon={<LuHourglass />}
-          label="출하대기"
-          value={summary.ready.toLocaleString()}
-          color="var(--waiting)"
-        />
-        <SummaryCard
-          icon={<FiTruck />}
-          label="출하중"
-          value={summary.shipping.toLocaleString()}
-          color="var(--main)"
-        />
-        <SummaryCard
-          icon={<FiCheckCircle />}
-          label="출하완료"
-          value={summary.done.toLocaleString()}
+          icon={<IoArrowBackCircleOutline />}
+          label="총 입고 수량"
+          value={`${summary.totalIn.toLocaleString()}`}
           color="var(--run)"
         />
         <SummaryCard
-          icon={<FiXCircle />}
-          label="보류"
-          value={summary.hold.toLocaleString()}
+          icon={<IoArrowForwardCircleOutline />}
+          label="총 출고 수량"
+          value={`${summary.totalOut.toLocaleString()}`}
           color="var(--error)"
+        />
+        <SummaryCard
+          icon={<IoArrowForwardCircleOutline />}
+          label="폐기"
+          value={`${summary.adjustmentQty.toLocaleString()}`}
+          color="var(--waiting)"
         />
       </SummaryGrid>
 
-      <ChartGrid>
-        <ChartCard>
-          <h4>일자별 출하(계획 vs 실적)</h4>
-          <ChartBox>
-            <ResponsiveContainer>
-              <LineChart data={dailyChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  dataKey="plan"
-                  stroke="var(--main)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  dataKey="shipped"
-                  stroke="var(--run)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartBox>
-        </ChartCard>
-
-        <ChartCard>
-          <h4>상태 분포</h4>
-          <ChartBox>
-            <ResponsiveContainer>
-              <BarChart data={statusBar}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="var(--main)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartBox>
-        </ChartCard>
-      </ChartGrid>
-
+      {/* 검색 필터 */}
       <FilterBar>
-        <SearchWrap>
-          <SearchBar
-            value={keyword}
-            onChange={setKeyword}
-            placeholder="출하번호/주문번호/거래처/제품/운송장 검색"
-          />
-        </SearchWrap>
+        <SearchDate
+          width="m"
+          onChange={(start, end) => setSearchDateRange({ start, end })}
+        />
 
-        <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="ALL">전체 상태</option>
-          {Object.keys(STATUS).map((k) => (
-            <option key={k} value={k}>
-              {STATUS[k]}
-            </option>
-          ))}
-        </Select>
+        <SearchBar
+          width="l"
+          placeholder="제품코드, 명, 위치, 비고 검색"
+          onSearch={(val) => setSearchTerm(val)}
+        />
       </FilterBar>
 
-      <TableWrap>
-        <Table
+      <TableContainer>
+        <TableStyle
+          data={filteredData}
           columns={columns}
-          data={sorted}
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
-          onRowClick={onRowClick}
-          rowStyle={(row) => ({
-            color: STATUS_COLOR[row.status] || "inherit",
-          })}
         />
-      </TableWrap>
+      </TableContainer>
     </Wrapper>
   );
-}
+};
+
+export default Shipment;
+
 
 const Wrapper = styled.div`
   display: flex;
@@ -340,14 +268,16 @@ const Wrapper = styled.div`
 
 const Header = styled.div`
   h2 {
-    font-size: var(--fontHd);
+    font-size: var(--fontXl);
     font-weight: var(--bold);
+    color: var(--font);
+    margin: 0;
   }
 `;
 
 const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 `;
 
@@ -357,49 +287,15 @@ const FilterBar = styled.div`
   gap: 10px;
 `;
 
-const ChartGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const ChartCard = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-
-  h4 {
-    font-size: 14px;
-    margin: 0 0 10px 0;
-  }
-`;
-
-const ChartBox = styled.div`
-  height: 260px;
-`;
-
-
-const SearchWrap = styled.div`
+const TableContainer = styled.div`
   flex: 1;
-`;
-
-const Select = styled.select`
-  padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: white;
-  font-size: 13px;
-  min-width: 160px;
+  overflow: hidden;
 `;
 
-const TableWrap = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+
+const QtyText = styled.span`
+  font-weight: var(--bold);
+  color: ${props => props.$isPositive ? 'var(--main)' : 'var(--error)'};
 `;
+

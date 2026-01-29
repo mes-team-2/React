@@ -15,23 +15,21 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 
-/* =========================
-   상태 색상
-========================= */
+
 const LOT_STATUS_COLORS = {
-  사용중: "#3b82f6",
-  보관: "#22c55e",
-  소진: "#9ca3af",
-  HOLD: "#f59e0b",
+  사용중: "var(--main)",
+  보관: "var(--run)",
+  소진: "var(--stop)",
+  HOLD: "var(--waiting)",
 };
 
 export default function Lot() {
-  /* =========================
-     상태
-  ========================= */
-  const [viewMode, setViewMode] = useState("LOT"); // LOT | MATERIAL
+
+  // 상태관리
+  const [viewMode, setViewMode] = useState("LOT");
   const [keyword, setKeyword] = useState("");
   const [selectedMaterial, setSelectedMaterial] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -39,9 +37,6 @@ export default function Lot() {
   const [lotOpen, setLotOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState(null);
 
-  /* =========================
-     SearchBar onChange 대응
-  ========================= */
   const handleKeywordChange = (v) => {
     if (typeof v === "string") return setKeyword(v);
     if (v?.target?.value !== undefined) return setKeyword(v.target.value);
@@ -53,7 +48,7 @@ export default function Lot() {
   ========================= */
   const lotData = useMemo(
     () =>
-      Array.from({ length: 22 }).map((_, i) => {
+      Array.from({ length: 30 }).map((_, i) => {
         const materialCode =
           i % 4 === 0
             ? "MAT-CASE"
@@ -72,27 +67,37 @@ export default function Lot() {
                 ? "전해액"
                 : "분리막";
 
-        const remainQty = Math.max(0, 850 - i * 45);
+        //  차트용 수량 데이터 시뮬레이션
+        const initialQty = 1000; // 생산 실적 (Actual)
+        const plannedQty = 1000 + (i % 3 === 0 ? 100 : 0); // 생산 계획 (Plan) - 가끔 계획이 더 많음
+        const remainQty = Math.max(0, initialQty - i * 45); // 현재 잔량
+
         const status = i % 3 === 0 ? "사용중" : i % 3 === 1 ? "보관" : "소진";
+
+        // 날짜 생성 (최근 7일치 데이터가 나오도록 조정)
+        const dateObj = new Date();
+        dateObj.setDate(dateObj.getDate() - (i % 7));
+        const dateStr = `${dateObj.getFullYear()}/${String(dateObj.getMonth() + 1).padStart(2, "0")}/${String(dateObj.getDate()).padStart(2, "0")}`;
 
         return {
           id: i + 1,
           lotNo: `LOT-202601-${String(i + 1).padStart(3, "0")}`,
           materialCode,
           materialName,
-          inboundAt: `2026/01/${String((i % 7) + 1).padStart(2, "0")}`,
+          inboundAt: dateStr,
           remainQty,
+          initialQty,
+          plannedQty,
           status,
           workOrderNo: `WO-202601-00${(i % 5) + 1}`,
-          createdAt: `2026/01/${String((i % 7) + 1).padStart(2, "0")} 09:00`,
+          createdAt: `${dateStr} 09:00`,
         };
       }),
     [],
   );
 
-  /* =========================
-     자재 목록 (Select)
-  ========================= */
+
+  // 자재 목록 (Select)
   const materialOptions = useMemo(() => {
     const map = {};
     lotData.forEach((lot) => {
@@ -104,18 +109,14 @@ export default function Lot() {
     }));
   }, [lotData]);
 
-  /* =========================
-     LOT 필터링
-  ========================= */
+  // LOT 필터링
   const filteredLots = useMemo(() => {
     let rows = lotData;
 
-    // 자재 LOT 보기
     if (viewMode === "MATERIAL" && selectedMaterial) {
       rows = rows.filter((lot) => lot.materialCode === selectedMaterial);
     }
 
-    // 검색
     if (keyword.trim()) {
       const lower = keyword.toLowerCase();
       rows = rows.filter(
@@ -130,9 +131,7 @@ export default function Lot() {
     return rows;
   }, [lotData, viewMode, selectedMaterial, keyword]);
 
-  /* =========================
-     정렬
-  ========================= */
+  // 정렬
   const handleSort = (key) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -177,31 +176,33 @@ export default function Lot() {
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [lotData]);
 
-  const dailyChart = useMemo(() => {
+  const dailyPerformanceChart = useMemo(() => {
     const map = {};
-    lotData.forEach((lot) => {
-      const day = lot.createdAt.slice(5, 10);
-      map[day] = (map[day] || 0) + 1;
+    // 날짜순 정렬을 위해
+    const sortedData = [...lotData].sort((a, b) => a.inboundAt.localeCompare(b.inboundAt));
+
+    sortedData.forEach((lot) => {
+      const date = lot.inboundAt.slice(5, 10); // MM/DD
+      if (!map[date]) map[date] = { date, plan: 0, actual: 0 };
+
+      map[date].plan += lot.plannedQty;  // 계획 수량 누적
+      map[date].actual += lot.initialQty; // 실적 수량 누적
     });
-    return Object.entries(map).map(([date, count]) => ({ date, count }));
+    return Object.values(map);
   }, [lotData]);
 
-  /* =========================
-     컬럼 (LOT 기준)
-  ========================= */
+  // 컬럼 
   const columns = [
     { key: "lotNo", label: "LOT 번호", width: 180 },
     { key: "materialCode", label: "제품코드", width: 140 },
     { key: "materialName", label: "제품명", width: 160 },
-    { key: "remainQty", label: "잔량", width: 100 },
+    { key: "initialQty", label: "생산수량", width: 100 }, // 잔량 대신 생산량 표시 (필요시 잔량도 표기가능)
     { key: "status", label: "상태", width: 110 },
     { key: "workOrderNo", label: "작업지시", width: 160 },
-    { key: "inboundAt", label: "입고일", width: 140 },
+    { key: "inboundAt", label: "생산일", width: 140 },
   ];
 
-  /* =========================
-     Row 클릭
-  ========================= */
+  // Row 클릭 핸들러
   const handleRowClick = (row) => {
     setSelectedLot(row);
     setLotOpen(true);
@@ -210,12 +211,41 @@ export default function Lot() {
   return (
     <Wrapper>
       <Header>
-        <h2>LOT 관리</h2>
+        <h2>LOT 및 생산 관리</h2>
       </Header>
 
-      {/* ===== 차트 ===== */}
       {viewMode === "LOT" && (
         <ChartGrid>
+          <Card>
+            <h4>일자별 생산 계획 vs 실적</h4>
+            <ChartBox>
+              <ResponsiveContainer>
+                <LineChart data={dailyPerformanceChart}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="plan"
+                    name="계획수량"
+                    stroke="var(--main)" // 파란색 계열
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="actual"
+                    name="생산실적"
+                    stroke="var(--run)" // 초록색 계열
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartBox>
+          </Card>
+
           <Card>
             <h4>LOT 상태 분포</h4>
             <ChartBox>
@@ -239,29 +269,9 @@ export default function Lot() {
               </ResponsiveContainer>
             </ChartBox>
           </Card>
-
-          <Card>
-            <h4>일자별 LOT 생성</h4>
-            <ChartBox>
-              <ResponsiveContainer>
-                <LineChart data={dailyChart}>
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    dataKey="count"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartBox>
-          </Card>
         </ChartGrid>
       )}
 
-      {/* ===== 필터 ===== */}
       <FilterBar>
         <ViewSelect
           value={viewMode}
@@ -294,7 +304,6 @@ export default function Lot() {
         </SearchWrap>
       </FilterBar>
 
-      {/* ===== 테이블 ===== */}
       <Table
         columns={columns}
         data={sortedLots}
@@ -304,7 +313,6 @@ export default function Lot() {
         onRowClick={handleRowClick}
       />
 
-      {/* ===== LOT 상세 ===== */}
       <SideDrawer open={lotOpen} onClose={() => setLotOpen(false)}>
         <LotDetail lot={selectedLot} />
       </SideDrawer>
@@ -312,9 +320,6 @@ export default function Lot() {
   );
 }
 
-/* =========================
-   styled
-========================= */
 
 const Wrapper = styled.div`
   display: flex;
@@ -324,8 +329,8 @@ const Wrapper = styled.div`
 
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
 `;
 
@@ -339,6 +344,8 @@ const ChartGrid = styled.div`
   }
 `;
 
+
+
 const Card = styled.div`
   background: white;
   border-radius: 16px;
@@ -348,6 +355,7 @@ const Card = styled.div`
   h4 {
     font-size: 14px;
     margin-bottom: 10px;
+    font-weight: 600;
   }
 `;
 
@@ -362,8 +370,8 @@ const ChartBox = styled.div`
 
 const FilterBar = styled.div`
   display: flex;
-  gap: 12px;
   align-items: center;
+  gap: 10px;
 `;
 
 const ViewSelect = styled.select`
