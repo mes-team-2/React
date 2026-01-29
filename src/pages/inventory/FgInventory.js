@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import { AlertTriangle } from 'lucide-react';
 import { FiCheckCircle, } from "react-icons/fi";
 import { AiFillSafetyCertificate } from "react-icons/ai";
+import SideDrawer from '../../components/SideDrawer';
+import FgInventoryDetail from './FgInventoryDetail';
 
 import TableStyle from '../../components/TableStyle';
 import SearchBar from '../../components/SearchBar';
@@ -18,8 +20,13 @@ const FgInventory = () => {
   const [selectedIds, setSelectedIds] = useState([]); // 체크박스 선택된 ID들
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null }); // 정렬 설정
 
+  // 검색 필터 상태관리
   const [searchTerm, setSearchTerm] = useState("");
   const [searchDateRange, setSearchDateRange] = useState({ start: null, end: null });
+
+  // 사이드 드로어 상태 관리
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState(null);
 
   // 초기 데이터
   useEffect(() => {
@@ -116,7 +123,7 @@ const FgInventory = () => {
     {
       key: 'stock_status',
       label: '재고 상태',
-      width: 100,
+      width: 150,
       render: (_, row) => <Status status={getStockStatus(row.qty, row.safe_qty)} />
     },
     { key: 'date', label: '최종 입고일', width: 110 },
@@ -145,7 +152,20 @@ const FgInventory = () => {
   };
 
   const handleRowClick = (row) => {
-    console.log("선택된 행:", row);
+    const detailData = {
+      productName: row.p_name,
+      stockQty: row.qty,
+      safeQty: row.safe_qty,
+      status: row.status,
+    };
+    setSelectedDetail(detailData);
+    setIsDrawerOpen(true);
+  };
+
+  // 사이드 드로워 닫기 핸들러
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setSelectedDetail(null);
   };
 
   return (
@@ -203,6 +223,9 @@ const FgInventory = () => {
         onRowClick={handleRowClick}
       />
 
+      <SideDrawer open={isDrawerOpen} onClose={handleCloseDrawer}>
+        <FgInventoryDetail inventory={selectedDetail} />
+      </SideDrawer>
 
     </Wrapper>
   );
@@ -238,4 +261,55 @@ const Summary = styled.footer`
   display: grid; 
   grid-template-columns: repeat(3, 1fr); 
   gap: 20px;
+`;
+
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* 반투명 검정 배경 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px); /* 배경 흐림 효과 */
+`;
+
+const ModalContainer = styled.div`
+  background: white;
+  width: 600px;
+  max-width: 90%;
+  max-height: 90vh;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow-y: auto;
+  
+  /* 스크롤바 커스텀 */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+  }
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--font2);
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--font);
+  }
 `;
