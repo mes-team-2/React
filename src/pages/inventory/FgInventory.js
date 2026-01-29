@@ -34,7 +34,7 @@ const FgInventory = () => {
       { id: 1, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260120-01', qty: 450, safe_qty: 100, unit: 'EA', loc: 'A-101', date: '2026-01-28' },
       { id: 2, p_code: 'BAT-12V-120A', p_name: '리튬이온 배터리 (120Ah)', lot: 'LOT260120-05', qty: 80, safe_qty: 100, unit: 'EA', loc: 'B-202', date: '2026-01-28' },
       { id: 3, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260121-02', qty: 300, safe_qty: 150, unit: 'EA', loc: 'A-103', date: '2026-01-28' },
-      { id: 4, p_code: 'BAT-12V-080A', p_name: '납축전지 (80Ah)', lot: 'LOT260122-01', qty: -5, safe_qty: 50, unit: 'SET', loc: 'C-001', date: '2026-01-27' },
+      { id: 4, p_code: 'BAT-12V-080A', p_name: '납축전지 (80Ah)', lot: 'LOT260122-01', qty: 5, safe_qty: 50, unit: 'SET', loc: 'C-001', date: '2026-01-27' },
       { id: 5, p_code: 'BAT-12V-200A', p_name: '산업용 배터리 (200Ah)', lot: 'LOT260123-11', qty: 20, safe_qty: 30, unit: 'EA', loc: 'A-105', date: '2026-01-26' },
     ];
     setInventoryData(dummyData);
@@ -114,22 +114,36 @@ const FgInventory = () => {
 
   // 테이블 컬럼 정의 
   const columns = useMemo(() => [
-    { key: 'id', label: 'No', width: 50, render: (val) => val },
-    { key: 'p_code', label: '제품코드', width: 130, render: (val) => <span>{val}</span> },
-    { key: 'p_name', label: '제품명', width: 180 },
-    { key: 'unit', label: '단위', width: 60, render: (val) => <span>{val}</span> },
-    { key: 'safe_qty', label: '안전 재고', width: 100, render: (val) => val.toLocaleString() },
-    { key: 'qty', label: '현재 재고', width: 100, render: (val) => <strong>{val.toLocaleString()}</strong> },
+    { key: 'id', label: 'No', width: 60, render: (val) => val },
+    {
+      key: 'p_code',
+      label: '제품코드',
+      width: 150,
+    },
+    { key: 'p_name', label: '제품명', width: 250 },
+    {
+      key: 'unit',
+      label: '단위',
+      width: 80,
+    },
+    {
+      key: 'safe_qty',
+      label: '안전 재고',
+      width: 120,
+      render: (val) => val.toLocaleString()
+    },
+    {
+      key: 'qty',
+      label: '현재 재고',
+      width: 120,
+    },
     {
       key: 'stock_status',
       label: '재고 상태',
       width: 150,
       render: (_, row) => <Status status={getStockStatus(row.qty, row.safe_qty)} />
     },
-    { key: 'date', label: '최종 입고일', width: 110 },
-    { key: 'loc', label: '적치 위치', width: 90 },
-    { key: 'lot', label: 'LOT NO', width: 140, render: (val) => <span >{val}</span> },
-
+    { key: 'date', label: '최종 입고일', width: 120 },
   ], []);
 
   // 이벤트 핸들러
@@ -157,6 +171,8 @@ const FgInventory = () => {
       stockQty: row.qty,
       safeQty: row.safe_qty,
       status: row.status,
+      lot: row.lot,
+      loc: row.loc
     };
     setSelectedDetail(detailData);
     setIsDrawerOpen(true);
