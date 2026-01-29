@@ -330,7 +330,7 @@ export default function MaterialLot() {
       <SideDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="자재 LOT 상세 조회" // ⭐ 여기서 타이틀 설정
+        title="자재 LOT 상세 조회"
       >
         {selectedRow && (
           <MaterialLotDetail

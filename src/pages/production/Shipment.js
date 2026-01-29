@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import SummaryCard from "../../components/SummaryCard";
 import SearchBar from "../../components/SearchBar";
 import Table from "../../components/TableStyle";
+import { LuHourglass } from "react-icons/lu";
 
 import {
   ResponsiveContainer,
@@ -224,7 +225,7 @@ export default function Shipment() {
           color="var(--main)"
         />
         <SummaryCard
-          icon={<FiClock />}
+          icon={<LuHourglass />}
           label="출하대기"
           value={summary.ready.toLocaleString()}
           color="var(--waiting)"
@@ -334,24 +335,26 @@ export default function Shipment() {
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 `;
 
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
 `;
 
 const SummaryGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  gap: 20px;
+`;
 
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+const FilterBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
 `;
 
 const ChartGrid = styled.div`
@@ -380,11 +383,6 @@ const ChartBox = styled.div`
   height: 260px;
 `;
 
-const FilterBar = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-`;
 
 const SearchWrap = styled.div`
   flex: 1;
