@@ -1,6 +1,6 @@
 import styled from "styled-components";
-import { useState, useContext } from "react";
-import { Navigate } from "react-router-dom";
+import { useState, useContext, useMemo } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import AxiosAPI from "../api/AxiosAPI";
 import { AuthContext } from "../context/AuthContext";
 
@@ -76,24 +76,29 @@ const LoginButton = styled.button`
   }
 `;
 
-/* =========================
-   컴포넌트
-========================= */
-
 const Login = () => {
   const { isLoggedIn, login } = useContext(AuthContext);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [id, setId] = useState("");
   const [pwd, setPwd] = useState("");
 
-  // 이미 로그인 상태면 로그인 페이지 접근 차단
+  // AuthGuard에서 넘어온 원래 목적지
+  const fromPath = useMemo(() => {
+    const p = location.state?.from?.pathname;
+    // 로그인 페이지로 되돌아가는 루프 방지
+    if (!p || p === "/login") return "/mes/dashboard";
+    return p;
+  }, [location.state]);
+
+  // 이미 로그인 상태면: from 있으면 from, 없으면 dashboard
   if (isLoggedIn) {
-    return <Navigate to="/mes/dashboard" replace />;
+    return <Navigate to={fromPath} replace />;
   }
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!id || !pwd) return;
 
     try {
@@ -104,9 +109,9 @@ const Login = () => {
 
       if (res.status === 200) {
         const { accessToken } = res.data;
-
-        //  토큰 저장, 이동은 AuthContext에서
         login(accessToken, id);
+        // ✅ 로그인 성공 후 원래 가려던 페이지로
+        navigate(fromPath, { replace: true });
       }
     } catch (err) {
       alert("사원번호 또는 비밀번호가 올바르지 않습니다.");

@@ -329,7 +329,16 @@ export default function SideBar() {
                         {group.items && (
                           <GroupItems>
                             {group.items.map((item) => (
-                              <MenuLink key={item.to} to={item.to}>
+                              <MenuLink
+                                key={item.to}
+                                to={item.to}
+                                onClick={(e) => {
+                                  if (location.pathname === item.to) {
+                                    e.preventDefault();
+                                    navigate(0); // 현재 페이지 강제 새로고침
+                                  }
+                                }}
+                              >
                                 {item.label}
                               </MenuLink>
                             ))}

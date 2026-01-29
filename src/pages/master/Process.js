@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import styled from "styled-components";
 
 import TableStyle from "../../components/TableStyle";
@@ -47,76 +47,36 @@ const PROCESS_STEPS = [
 
 export default function Process() {
   /* =========================
-     sort state
+     기본 정렬만 useMemo
+     (초기 seq 오름차순)
   ========================= */
-  const [sortConfig, setSortConfig] = useState({
-    key: "seq",
-    direction: "asc", // asc | desc
-  });
+  const data = useMemo(() => {
+    return [...PROCESS_STEPS].sort((a, b) => a.seq - b.seq);
+  }, []);
 
-  /* =========================
-     useMemo: sorted data
-  ========================= */
-  const sortedData = useMemo(() => {
-    const data = [...PROCESS_STEPS];
-
-    if (!sortConfig.key) return data;
-
-    return data.sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [sortConfig]);
-
-  /* =========================
-     column click handler
-  ========================= */
-  const handleSort = (key) => {
-    setSortConfig((prev) => {
-      if (prev.key === key) {
-        return {
-          key,
-          direction: prev.direction === "asc" ? "desc" : "asc",
-        };
-      }
-      return { key, direction: "asc" };
-    });
-  };
-
-  /* =========================
-     Table Columns
-  ========================= */
   const columns = [
     {
       key: "seq",
       label: "공정 순서",
       width: 120,
       sortable: true,
-      onSort: () => handleSort("seq"),
     },
     {
       key: "step_code",
       label: "공정 코드",
       width: 160,
       sortable: true,
-      onSort: () => handleSort("step_code"),
     },
     {
       key: "step_name",
       label: "공정명",
       sortable: true,
-      onSort: () => handleSort("step_name"),
     },
     {
       key: "is_active",
       label: "상태",
       width: 140,
       sortable: true,
-      onSort: () => handleSort("is_active"),
       render: (v) => <Status value={v ? "ACTIVE" : "INACTIVE"} />,
     },
   ];
@@ -125,10 +85,10 @@ export default function Process() {
     <Wrapper>
       <Header>
         <h2>공정 정보 (Master Data)</h2>
-        <Desc>생산 흐름의 기준이 되는 공정 단계 정의 정보입니다.</Desc>
+        <Desc>생산 흐름의 기준이 되는 공정 단계 정보입니다.</Desc>
       </Header>
 
-      <TableStyle columns={columns} data={sortedData} />
+      <TableStyle columns={columns} data={data} />
     </Wrapper>
   );
 }
