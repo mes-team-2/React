@@ -75,6 +75,7 @@ function App() {
               {/* ================= 기준정보 (Master) ================= */}
               <Route path="master">
                 <Route path="process" element={<Process />} />
+
                 <Route path="worker" element={<Worker />} />
                 <Route path="machine" element={<Machine />} />
                 <Route path="bom" element={<Bom />} />
