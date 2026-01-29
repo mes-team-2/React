@@ -215,7 +215,7 @@ const FgInventory = () => {
       <TableStyle
         data={filteredData}
         columns={columns}
-        selectable={true}
+        selectable={false}
         selectedIds={selectedIds}
         onSelectChange={setSelectedIds}
         sortConfig={sortConfig}

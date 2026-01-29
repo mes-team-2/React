@@ -320,7 +320,7 @@ export default function MaterialLot() {
         <TableStyle
           columns={columns}
           data={sortedList}
-          selectable={true}
+          selectable={false}
           onRowClick={handleRowClick}
           sortConfig={sortConfig}
           onSort={handleSort}
