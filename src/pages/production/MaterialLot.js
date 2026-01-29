@@ -1,18 +1,23 @@
-import React, { useState, useMemo } from 'react';
-import styled from 'styled-components';
+import React, { useState, useMemo } from "react";
+import styled from "styled-components";
 import {
-  FiSearch, FiEdit, FiRefreshCw, FiClock, FiAlertCircle, FiArchive, FiLayers, FiAlertTriangle
-} from 'react-icons/fi';
+  FiSearch,
+  FiEdit,
+  FiRefreshCw,
+  FiClock,
+  FiAlertCircle,
+  FiArchive,
+  FiLayers,
+  FiAlertTriangle,
+} from "react-icons/fi";
 import { LuHourglass } from "react-icons/lu";
-import Status from '../../components/Status';
-import TableStyle from '../../components/TableStyle';
-import SearchBar from '../../components/SearchBar';
-import SearchDate from '../../components/SearchDate';
+import Status from "../../components/Status";
+import TableStyle from "../../components/TableStyle";
+import SearchBar from "../../components/SearchBar";
+import SearchDate from "../../components/SearchDate";
 import SummaryCard from "../../components/SummaryCard";
 import SideDrawer from "../../components/SideDrawer";
 import MaterialLotDetail from "./MaterialLotDetail";
-
-
 
 const MATERIAL_DATA = [
   {
@@ -25,7 +30,7 @@ const MATERIAL_DATA = [
     current: 5000,
     production: 0,
     available: 5000,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 2,
@@ -37,7 +42,7 @@ const MATERIAL_DATA = [
     current: 8800,
     production: 500,
     available: 8300,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 3,
@@ -49,7 +54,7 @@ const MATERIAL_DATA = [
     current: 9900,
     production: 0,
     available: 9900,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 4,
@@ -61,7 +66,7 @@ const MATERIAL_DATA = [
     current: 0,
     production: 0,
     available: 0,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 5,
@@ -73,7 +78,7 @@ const MATERIAL_DATA = [
     current: 4500,
     production: 500,
     available: 4000,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 6,
@@ -85,7 +90,7 @@ const MATERIAL_DATA = [
     current: 5000,
     production: 0,
     available: 5000,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 7,
@@ -97,7 +102,7 @@ const MATERIAL_DATA = [
     current: 8800,
     production: 500,
     available: 8300,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 8,
@@ -109,7 +114,7 @@ const MATERIAL_DATA = [
     current: 9900,
     production: 0,
     available: 9900,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 9,
@@ -121,7 +126,7 @@ const MATERIAL_DATA = [
     current: 0,
     production: 0,
     available: 0,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
   {
     id: 10,
@@ -133,10 +138,9 @@ const MATERIAL_DATA = [
     current: 4500,
     production: 500,
     available: 4000,
-    date: "2026/01/01 12:23"
+    date: "2026/01/01 12:23",
   },
 ];
-
 
 export default function MaterialLot() {
   // 상태 관리
@@ -149,7 +153,7 @@ export default function MaterialLot() {
 
   // 필터링 로직 (SearchDate + SearchBar 적용)
   const filteredList = useMemo(() => {
-    return MATERIAL_DATA.filter(item => {
+    return MATERIAL_DATA.filter((item) => {
       // 키워드 검색
       const k = keyword.toLowerCase();
       const matchSearch =
@@ -183,9 +187,9 @@ export default function MaterialLot() {
   const stats = useMemo(() => {
     return {
       total: MATERIAL_DATA.length,
-      running: MATERIAL_DATA.filter(i => i.status === 'RUNNING').length,
-      waiting: MATERIAL_DATA.filter(i => i.status === 'WAITING').length,
-      error: MATERIAL_DATA.filter(i => i.status === 'EMPTY').length
+      running: MATERIAL_DATA.filter((i) => i.status === "RUNNING").length,
+      waiting: MATERIAL_DATA.filter((i) => i.status === "WAITING").length,
+      error: MATERIAL_DATA.filter((i) => i.status === "EMPTY").length,
     };
   }, []);
 
@@ -197,7 +201,7 @@ export default function MaterialLot() {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
+        if (typeof aValue === "number" && typeof bValue === "number") {
           // 숫자 비교
         } else {
           aValue = String(aValue);
@@ -244,7 +248,7 @@ export default function MaterialLot() {
       key: "id",
       label: "No",
       width: 50,
-      render: (v) => v
+      render: (v) => v,
     },
     { key: "inbound_date", label: "입고일자", width: 160 },
     {
@@ -253,23 +257,38 @@ export default function MaterialLot() {
       width: 150,
       render: (v) => {
         let statusKey = "DEFAULT";
-        if (v === "WAITING") statusKey = "LOT_WAIT";      // 대기중
-        else if (v === "RUNNING") statusKey = "LOT_RUN";  // 생산중(투입)
-        else if (v === "EMPTY") statusKey = "LOT_ERR";    // 품절/불량
+        if (v === "WAITING")
+          statusKey = "LOT_WAIT"; // 대기중
+        else if (v === "RUNNING")
+          statusKey = "LOT_RUN"; // 생산중(투입)
+        else if (v === "EMPTY") statusKey = "LOT_ERR"; // 품절/불량
 
         return <Status status={statusKey} type="basic" />;
-      }
+      },
     },
     { key: "lot_no", label: "LOT번호", width: 160 },
     { key: "code", label: "자재코드", width: 160 },
     { key: "name", label: "자재명", width: 180 },
-    { key: "current", label: "재고", width: 100, render: (v) => v.toLocaleString() },
-    { key: "production", label: "생산중", width: 100, render: (v) => v.toLocaleString() },
-    { key: "available", label: "가용재고", width: 100, render: (v) => v.toLocaleString() },
+    {
+      key: "current",
+      label: "재고",
+      width: 100,
+      render: (v) => v.toLocaleString(),
+    },
+    {
+      key: "production",
+      label: "생산중",
+      width: 100,
+      render: (v) => v.toLocaleString(),
+    },
+    {
+      key: "available",
+      label: "가용재고",
+      width: 100,
+      render: (v) => v.toLocaleString(),
+    },
     { key: "date", label: "상태변경일시", width: 160 },
   ];
-
-
 
   return (
     <Container>
@@ -312,7 +331,7 @@ export default function MaterialLot() {
           width="l"
           placeholder="LOT번호 / 자재명 / 코드 검색"
           onChange={setKeyword}
-          onSearch={() => { }}
+          onSearch={() => {}}
         />
       </FilterBar>
 
@@ -335,7 +354,7 @@ export default function MaterialLot() {
         {selectedRow && (
           <MaterialLotDetail
             row={selectedRow}
-          // onClose는 SideDrawer가 처리하므로 Detail에는 안 넘겨도 됨
+            // onClose는 SideDrawer가 처리하므로 Detail에는 안 넘겨도 됨
           />
         )}
       </SideDrawer>
@@ -344,8 +363,8 @@ export default function MaterialLot() {
 }
 
 const Container = styled.div`
-  display: flex; 
-  flex-direction: column; 
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 `;
 
@@ -355,11 +374,10 @@ const Title = styled.h2`
 `;
 
 const Cards = styled.div`
-  display: grid; 
-  grid-template-columns: repeat(4, 1fr); 
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 `;
-
 
 const FilterBar = styled.div`
   display: flex;
