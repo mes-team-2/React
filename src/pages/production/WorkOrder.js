@@ -1,86 +1,81 @@
-// src/pages/production/WorkOrder.js
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect } from "react";
 import styled from "styled-components";
 
 import TableStyle from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import SearchBar from "../../components/SearchBar";
-import Button from "../../components/Button";
 import Status from "../../components/Status";
 
 import WorkOrderDetail from "./WorkOrderDetail";
 import WorkOrderCreate from "./WorkOrderCreate";
-
-/* =========================
-   MOCK
-========================= */
-const MOCK_WORK_ORDERS = [
-  {
-    id: "WO-202601-001",
-    product: "12V 배터리 (소형)",
-    planQty: 500,
-    status: "WAIT",
-    startDate: "2026-01-28",
-    dueDate: "2026-01-31",
-  },
-  {
-    id: "WO-202601-002",
-    product: "12V 배터리 (중형)",
-    planQty: 300,
-    status: "IN_PROGRESS",
-    startDate: "2026-01-28",
-    dueDate: "2026-02-01",
-  },
-  {
-    id: "WO-202601-003",
-    product: "12V 배터리 (대형)",
-    planQty: 200,
-    status: "DONE",
-    startDate: "2026-01-25",
-    dueDate: "2026-01-27",
-  },
-];
+import { WorkOrderAPI } from "../../api/AxiosAPI";
 
 export default function WorkOrder() {
   const [keyword, setKeyword] = useState("");
+  const [workOrders, setWorkOrders] = useState([]);
 
   const [selected, setSelected] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
-
   const [createOpen, setCreateOpen] = useState(false);
 
+  // 데이터 로드
+  const loadData = async () => {
+    try {
+      const res = await WorkOrderAPI.getList();
+      setWorkOrders(res.data);
+      console.log(res.data);
+    } catch (err) {
+      console.error("작업지시 목록 로드 실패", err);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // 검색 필터링
   const data = useMemo(() => {
-    if (!keyword.trim()) return MOCK_WORK_ORDERS;
+    if (!keyword.trim()) return workOrders;
     const k = keyword.toLowerCase();
-    return MOCK_WORK_ORDERS.filter(
+    return workOrders.filter(
       (row) =>
         row.id.toLowerCase().includes(k) ||
         row.product.toLowerCase().includes(k) ||
         String(row.planQty).includes(k),
     );
-  }, [keyword]);
+  }, [keyword, workOrders]);
 
   const columns = useMemo(
     () => [
       { key: "id", label: "작업지시 번호", width: 160 },
       { key: "product", label: "제품", width: 200 },
-      { key: "planQty", label: "계획 수량", width: 120 },
+      { key: "planQty", label: "계획 수량", width: 100 },
       {
         key: "status",
         label: "상태",
         width: 120,
-        render: (row) => <Status value={row.status} />,
+        // [수정] 인자를 row가 아니라 status(값 자체)로 받음
+        render: (status) => {
+          console.log("Current Status Value:", status); // 이제 "WAIT", "IN_PROGRESS" 등이 찍힐 겁니다.
+
+          let statusKey = "DEFAULT";
+          // 객체 접근(row.status)이 아니라 값 자체(status)를 비교
+          if (status === "WAIT") statusKey = "WAITING";
+          else if (status === "IN_PROGRESS") statusKey = "RUN";
+          else if (status === "DONE") statusKey = "COMPLETE";
+
+          return <Status status={statusKey} />;
+        },
       },
-      { key: "startDate", label: "시작 시간", width: 140 },
-      { key: "dueDate", label: "종료 시간", width: 140 },
+      { key: "startDate", label: "시작 시간", width: 150 },
+      { key: "endDate", label: "종료 시간", width: 150 }, // [New] 실제 종료 시간
+      { key: "dueDate", label: "납기일", width: 120 }, // 계획(마감일)
     ],
     [],
   );
 
   return (
     <Wrapper>
-      {/* ===== 타이틀 영역 ===== */}
       <TitleRow>
         <div>
           <h2>작업지시 관리</h2>
@@ -88,7 +83,6 @@ export default function WorkOrder() {
         </div>
       </TitleRow>
 
-      {/* ===== 액션 바 (검색 + 등록 버튼) ===== */}
       <ActionBar>
         <SearchWrap>
           <SearchBar
@@ -101,7 +95,6 @@ export default function WorkOrder() {
         <CreateBtn onClick={() => setCreateOpen(true)}>작업지시 등록</CreateBtn>
       </ActionBar>
 
-      {/* ===== 목록 테이블 ===== */}
       <Card>
         <TableStyle
           columns={columns}
@@ -113,18 +106,16 @@ export default function WorkOrder() {
         />
       </Card>
 
-      {/* ===== 상세 Drawer ===== */}
       <SideDrawer open={detailOpen} onClose={() => setDetailOpen(false)}>
         <WorkOrderDetail workOrder={selected} />
       </SideDrawer>
 
-      {/* ===== 등록 Drawer ===== */}
       <SideDrawer open={createOpen} onClose={() => setCreateOpen(false)}>
         <WorkOrderCreate
           onSubmit={(payload) => {
-            console.log("CREATE WORK ORDER:", payload);
-            alert("작업지시가 등록되었습니다 (MOCK)");
+            console.log("Registered:", payload);
             setCreateOpen(false);
+            loadData(); // 목록 새로고침
           }}
         />
       </SideDrawer>

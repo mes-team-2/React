@@ -69,4 +69,20 @@ export const AuthAPI = {
   },
 };
 
+export const WorkOrderAPI = {
+  getProductList: async () => {
+    return await AxiosAPI.get("/api/master/products");
+  },
+
+  // 작업지시 생성
+  createWorkOrder: async (data) => {
+    return await AxiosAPI.post("/api/workorder", data);
+  },
+
+  // 작업지시 목록 조회
+  getList: async () => {
+    return await AxiosAPI.get("/api/workorder");
+  },
+};
+
 export default AxiosAPI;
