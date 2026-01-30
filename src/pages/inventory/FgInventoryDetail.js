@@ -280,7 +280,7 @@ const MonoText = styled.span`
 
 const QtyText = styled.span`
   font-weight: var(--bold);
-  color: ${props => props.$isPositive ? 'var(--run)' : 'var(--error)'};
+  color: ${props => props.$isPositive ? 'var(--main)' : 'var(--error)'};
 `;
 const Unit = styled.span`
   font-size: var(--fontXs); 
