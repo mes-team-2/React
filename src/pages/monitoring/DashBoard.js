@@ -190,6 +190,9 @@ export default function Dashboard() {
                   dataKey="value"
                   innerRadius={50}
                   outerRadius={85}
+                  isAnimationActive={true}
+                  animationDuration={400}
+                  animationEasing="ease-out"
                 >
                   {DEFECT_TYPE_CHART.map((_, i) => (
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
