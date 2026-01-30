@@ -112,6 +112,7 @@ const PAGE_LABEL = {
   "/mes/inventory/product": "제품 관리",
   "/mes/inventory/fg-inventory": "제품 재고 관리",
   "/mes/inventory/shipment": "제품 출하 관리",
+  "/mes/inventory/material-lot": "자재 LOT 관리",
 
   // 리포트
   "/mes/report/product-report": "생산 리포트",
@@ -216,6 +217,9 @@ export default function SideBar() {
   const navigate = useNavigate();
   const tabsRef = useRef(null);
   const { logout } = useContext(AuthContext);
+
+  const [draggingPinIndex, setDraggingPinIndex] = useState(null);
+  const [dragOverPinIndex, setDragOverPinIndex] = useState(null);
 
   const [recentPages, setRecentPages] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -392,6 +396,14 @@ export default function SideBar() {
     dragPinIndexRef.current = null;
   };
 
+  const unpinTab = (path) => {
+    setPinnedTabs((prev) => {
+      const next = prev.filter((t) => t.path !== path);
+      localStorage.setItem(PIN_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
   return (
     <Shell>
       <Sidebar>
@@ -509,15 +521,47 @@ export default function SideBar() {
                     key={`pin-${p.path}`}
                     $active={active}
                     draggable
-                    onDragStart={() => onPinDragStart(idx)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => onPinDrop(idx)}
+                    className={
+                      draggingPinIndex === idx
+                        ? "dragging"
+                        : dragOverPinIndex === idx
+                          ? "drag-over"
+                          : ""
+                    }
+                    onDragStart={() => {
+                      setDraggingPinIndex(idx);
+                      onPinDragStart(idx);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (idx !== draggingPinIndex) {
+                        setDragOverPinIndex(idx);
+                      }
+                    }}
+                    onDragLeave={() => setDragOverPinIndex(null)}
+                    onDrop={() => {
+                      onPinDrop(idx);
+                      setDragOverPinIndex(null);
+                      setDraggingPinIndex(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggingPinIndex(null);
+                      setDragOverPinIndex(null);
+                    }}
                     onClick={() => {
                       if (dragMovedRef.current) return;
                       navigate(p.path);
                     }}
                   >
                     <span>{p.label}</span>
+                    <PinnedStar
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unpinTab(p.path);
+                      }}
+                    >
+                      <IconStar />
+                    </PinnedStar>
                   </Tab>
                 );
               })}
@@ -842,45 +886,57 @@ const TabsContainer = styled.div`
 `;
 
 const Tab = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 100%;
-  width: 150px;
   min-width: 150px;
   padding: 0 16px;
-  font-size: 14px;
-  color: var(--font);
-  font-weight: ${({ $active }) => ($active ? "var(--bold)" : "var(--normal)")};
-  cursor: pointer;
-  position: relative;
-  white-space: nowrap;
-
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   border-right: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  position: relative; /* ⭐ underline 기준 */
+  transition:
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
 
+  /* =========================
+     ✅ 기존 활성 탭 스타일 (복구)
+  ========================= */
   &::after {
     content: "";
     position: absolute;
-    bottom: 0;
     left: 0;
+    bottom: 0;
     width: 100%;
     height: 3px;
-    background: ${({ $active }) => ($active ? "var(--main)" : "transparent")};
+    background: var(--main); /* 파란 포인트 */
+    opacity: ${({ $active }) => ($active ? 1 : 0)};
+    transition: opacity 0.15s ease;
   }
 
-  &:hover {
-    background-color: rgb(from var(--background2) r g b / 0.3);
+  font-weight: ${({ $active }) => ($active ? "600" : "400")};
+
+  /* =========================
+     드래그 중 피드백 (덮지 않음)
+  ========================= */
+  &.dragging {
+    opacity: ${({ $active }) => ($active ? 0.9 : 0.6)};
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    cursor: grabbing;
   }
 
-  button {
-    margin-left: 8px;
-    font-size: 14px;
-    color: var(--font2);
-    display: flex;
-    align-items: center;
-    &:hover {
-      color: var(--font);
-    }
+  /* =========================
+     드롭 위치 인디케이터
+  ========================= */
+  &.drag-over::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 15%;
+    height: 70%;
+    width: 3px;
+    background: var(--main);
+    border-radius: 2px;
   }
 `;
 
@@ -958,4 +1014,37 @@ const PinnedTabs = styled.div`
   height: 100%;
   border-right: 1px solid var(--border);
   user-select: none;
+`;
+
+const StarBtn = styled.button`
+  margin-left: 8px;
+  font-size: 14px;
+  color: ${({ $active }) => ($active ? "#FFD60A" : "var(--font2)")};
+  cursor: pointer;
+
+  &:hover {
+    color: #ffd60a;
+  }
+`;
+
+const PinnedStar = styled.button`
+  display: flex;
+  align-items: center;
+  margin-right: 6px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--main);
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  svg polygon,
+  svg path {
+    fill: var(--main);
+    stroke: var(--main);
+  }
 `;
