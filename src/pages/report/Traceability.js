@@ -46,7 +46,6 @@ function makeTraceRows() {
       producedAt: `2026-01-${String(rand(10, 22)).padStart(2, "0")} ${String(
         rand(8, 18),
       ).padStart(2, "0")}:${String(rand(0, 59)).padStart(2, "0")}`,
-      // 자재 LOT 예시(역추적)
       materialLots: [
         `MATLOT-AL-${String(rand(1, 30)).padStart(3, "0")}`,
         `MATLOT-PB-${String(rand(1, 30)).padStart(3, "0")}`,
@@ -59,18 +58,30 @@ function makeTraceRows() {
 
 export default function Traceability() {
   const [rows] = useState(() => makeTraceRows());
+
   const [keyword, setKeyword] = useState("");
   const [resultFilter, setResultFilter] = useState("ALL");
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
-  // 페이지네이션 상태
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 20; // 페이지당 20개씩
 
+  // 🔹 pagination
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 20;
+
+  // 🔹 sorting (핵심)
+  const [sortKey, setSortKey] = useState("producedAt");
+  const [sortOrder, setSortOrder] = useState("desc"); // asc | desc
+
+  /* =========================
+     FILTER
+  ========================= */
   const filtered = useMemo(() => {
     let data = rows;
-    if (resultFilter !== "ALL")
+
+    if (resultFilter !== "ALL") {
       data = data.filter((r) => r.testResult === resultFilter);
+    }
 
     if (keyword.trim()) {
       const k = keyword.toLowerCase();
@@ -84,18 +95,55 @@ export default function Traceability() {
           r.materialLots.some((m) => m.toLowerCase().includes(k)),
       );
     }
+
     return data;
   }, [rows, keyword, resultFilter]);
 
-  // 페이지네이션 데이터 슬라이싱
+  /* =========================
+     SORT (⭐ 핵심)
+  ========================= */
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+
+      if (av == null) return 1;
+      if (bv == null) return -1;
+
+      // 날짜
+      if (sortKey === "producedAt") {
+        return sortOrder === "asc"
+          ? new Date(av) - new Date(bv)
+          : new Date(bv) - new Date(av);
+      }
+
+      // 문자열
+      if (typeof av === "string") {
+        return sortOrder === "asc"
+          ? av.localeCompare(bv)
+          : bv.localeCompare(av);
+      }
+
+      // 숫자
+      return sortOrder === "asc" ? av - bv : bv - av;
+    });
+  }, [filtered, sortKey, sortOrder]);
+
+  /* =========================
+     PAGINATION
+  ========================= */
   const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * itemsPerPage;
-    return filtered.slice(startIndex, startIndex + itemsPerPage);
-  }, [filtered, page]);
+    const start = (page - 1) * itemsPerPage;
+    return sorted.slice(start, start + itemsPerPage);
+  }, [sorted, page]);
 
-  // 총 페이지 수 계산
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const totalPages = Math.ceil(sorted.length / itemsPerPage);
 
+  /* =========================
+     SUMMARY
+  ========================= */
   const summary = useMemo(() => {
     const total = filtered.length;
     const ok = filtered.filter((r) => r.testResult === "OK").length;
@@ -108,15 +156,20 @@ export default function Traceability() {
     return { total, ok, ng, linkCnt, lotCnt };
   }, [filtered]);
 
-  // 필터 변경 시 페이지 초기화
-  const handleKeywordChange = (v) => {
-    setKeyword(v);
-    setPage(1); // 검색 시 1페이지로
+  /* =========================
+     HANDLERS
+  ========================= */
+  const handleSort = (key) => {
+    setPage(1);
+    setSortOrder((prev) =>
+      sortKey === key && prev === "asc" ? "desc" : "asc",
+    );
+    setSortKey(key);
   };
 
-  const handleFilterChange = (e) => {
-    setResultFilter(e.target.value);
-    setPage(1); // 필터 변경 시 1페이지로
+  const onRowClick = (row) => {
+    setSelected(row);
+    setDrawerOpen(true);
   };
 
   const columns = [
@@ -138,11 +191,6 @@ export default function Traceability() {
     },
   ];
 
-  const onRowClick = (row) => {
-    setSelected(row);
-    setDrawerOpen(true);
-  };
-
   return (
     <Wrapper>
       <Header>
@@ -153,32 +201,19 @@ export default function Traceability() {
         <SummaryCard
           icon={<FiSearch />}
           label="조회 결과"
-          value={summary.total.toLocaleString()}
-          color="var(--main)"
+          value={summary.total}
         />
-        <SummaryCard
-          icon={<FiCheckCircle />}
-          label="OK"
-          value={summary.ok.toLocaleString()}
-          color="var(--run)"
-        />
-        <SummaryCard
-          icon={<FiXCircle />}
-          label="NG"
-          value={summary.ng.toLocaleString()}
-          color="var(--error)"
-        />
+        <SummaryCard icon={<FiCheckCircle />} label="OK" value={summary.ok} />
+        <SummaryCard icon={<FiXCircle />} label="NG" value={summary.ng} />
         <SummaryCard
           icon={<FiLayers />}
           label="LOT 수"
-          value={summary.lotCnt.toLocaleString()}
-          color="var(--waiting)"
+          value={summary.lotCnt}
         />
         <SummaryCard
           icon={<FiLink />}
           label="자재 LOT 링크"
-          value={summary.linkCnt.toLocaleString()}
-          color="var(--main)"
+          value={summary.linkCnt}
         />
       </SummaryGrid>
 
@@ -186,14 +221,20 @@ export default function Traceability() {
         <SearchWrap>
           <SearchBar
             value={keyword}
-            onChange={handleKeywordChange}
-            placeholder="제품LOT/시리얼/작업지시/자재LOT/불량코드 검색"
+            onChange={(v) => {
+              setKeyword(v);
+              setPage(1);
+            }}
+            placeholder="LOT / 시리얼 / 작업지시 / 자재 LOT / 불량코드"
           />
         </SearchWrap>
 
         <Select
           value={resultFilter}
-          onChange={handleFilterChange}
+          onChange={(e) => {
+            setResultFilter(e.target.value);
+            setPage(1);
+          }}
         >
           <option value="ALL">전체</option>
           <option value="OK">OK</option>
@@ -207,6 +248,9 @@ export default function Traceability() {
           data={paginatedData}
           selectable={false}
           onRowClick={onRowClick}
+          onSort={handleSort}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
         />
 
         <Pagination
@@ -222,6 +266,10 @@ export default function Traceability() {
     </Wrapper>
   );
 }
+
+/* =========================
+   styles
+========================= */
 
 const Wrapper = styled.div`
   display: flex;
@@ -240,10 +288,6 @@ const SummaryGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 12px;
-
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
 `;
 
 const FilterBar = styled.div`
