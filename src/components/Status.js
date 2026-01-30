@@ -54,7 +54,7 @@ const STATUS_CONFIG = {
   },
   // 생산 관리 (ProductLot 등)
   RUNNING: {
-    label: "생산중(투입)",
+    label: "생산중",
     iconColor: "var(--run)",
     textColor: "var(--font)",
     bg: "var(--bgRun)",
@@ -68,7 +68,7 @@ const STATUS_CONFIG = {
     icon: <FiCheckCircle />,
   },
   DEFECTIVE: {
-    label: "불량 발생",
+    label: "불량",
     iconColor: "var(--error)",
     textColor: "var(--font)",
     bg: "var(--bgError)",
@@ -156,14 +156,14 @@ const STATUS_CONFIG = {
     icon: <LuHourglass />,
   },
   LOT_RUN: {
-    label: "생산중(투입)",
+    label: "생산중",
     iconColor: "var(--run)",
     textColor: "var(--font)",
     bg: "var(--bgRun)",
-    icon: <FiRefreshCw />,
+    icon: <FiActivity />,
   },
   LOT_ERR: {
-    label: "품질/불량",
+    label: "불량",
     iconColor: "var(--error)",
     textColor: "var(--font)",
     bg: "var(--bgError)",
@@ -174,6 +174,13 @@ const STATUS_CONFIG = {
     iconColor: "var(--complete)",
     textColor: "var(--font)",
     bg: "var(--bgComplete)",
+    icon: <FiCheckCircle />,
+  },
+  LOT_END: {
+    label: "소진완료",
+    iconColor: "var(--stop)",
+    textColor: "var(--font)",
+    bg: "var(--bgStop)",
     icon: <FiCheckCircle />,
   },
   // 예외 처리 (Default)

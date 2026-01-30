@@ -135,14 +135,14 @@ export default function ProductLot() {
     const running = filteredData.filter(d => d.status === "LOT_RUN").length;
     const completed = filteredData.filter(d => d.status === "LOT_OK").length;
     const defective = filteredData.filter(d => d.status === "LOT_ERR").length;
-    const exhausted = filteredData.filter(d => d.status === "LOT_WAIT").length;
+    const exhausted = filteredData.filter(d => d.status === "LOT_END").length;
 
     // 파이 차트 데이터 키값도 맞춰줌 (COLORS 객체와 매칭)
     const pieData = [
       { name: "생산중", value: running, key: "LOT_RUN" },
       { name: "생산완료", value: completed, key: "LOT_OK" },
       { name: "불량", value: defective, key: "LOT_ERR" },
-      { name: "소진완료", value: exhausted, key: "LOT_WAIT" },
+      { name: "소진완료", value: exhausted, key: "LOT_END" },
     ];
 
     // 라인 차트 데이터 (일자별 생산 실적)
@@ -213,7 +213,7 @@ export default function ProductLot() {
   return (
     <Wrapper>
       <Header>
-        <h2>생산 제품 LOT 관리</h2>
+        <h2>제품 LOT 관리</h2>
       </Header>
 
       {/* 차트 영역 */}
@@ -236,9 +236,9 @@ export default function ProductLot() {
         </Card>
         <SummaryGrid>
           <SummaryCard icon={<FiLayers />} label="전체 LOT" value={filteredData.length} color="var(--font)" />
-          <SummaryCard icon={<FiActivity />} label="생산중" value={stats.running} color="var(--main)" />
-          <SummaryCard icon={<FiCheckCircle />} label="생산완료" value={stats.completed} color="var(--run)" />
-          <SummaryCard icon={<FiAlertTriangle />} label="불량 발생" value={stats.defective} color="var(--error)" />
+          <SummaryCard icon={<FiActivity />} label="생산중" value={stats.running} color="var(--run)" />
+          <SummaryCard icon={<FiCheckCircle />} label="생산완료" value={stats.completed} color="var(--main)" />
+          <SummaryCard icon={<FiAlertTriangle />} label="불량" value={stats.defective} color="var(--error)" />
         </SummaryGrid>
 
       </ChartGrid>
