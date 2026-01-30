@@ -230,6 +230,81 @@ export default function ProcessMonitoring() {
         ))}
       </SummaryGrid>
 
+      {/* ===== 5개 공정 진행률 (Bar 형태) ===== */}
+      <Card>
+        <CardTitle>공정별 실시간 진행률</CardTitle>
+        <ChartBoxTall>
+          <ResponsiveContainer>
+            <BarChart
+              data={progressData}
+              layout="vertical"
+              margin={{ left: 20, right: 20 }}
+              barCategoryGap={12} // 공정 간 간격
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <YAxis type="category" dataKey="name" width={90} />
+              <Tooltip formatter={(v) => [`${v}%`, "진행률"]} />
+
+              <Bar dataKey="percent" fill="#004DFC" radius={0} barSize={14} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartBoxTall>
+        <Hint>※ C# 설비 시뮬레이터 연동 시 1초 단위로 진행률/지표 갱신</Hint>
+      </Card>
+
+      {/* ===== 공정별 실시간 그래프 (각 공정 1개씩, 총 5개) ===== */}
+      <Card>
+        <CardTitle>공정별 실시간 지표</CardTitle>
+        <MiniChartGrid>
+          {processSteps.map((s) => {
+            const data = seriesMap[s.key] || [];
+            const last = data[data.length - 1]?.value;
+
+            return (
+              <MiniCard key={s.key}>
+                <MiniHead>
+                  <div className="left">
+                    <MiniDot style={{ background: s.color }} />
+                    <div>
+                      <div className="title">{s.title}</div>
+                      <div className="sub">{s.metricLabel}</div>
+                    </div>
+                  </div>
+                  <div className="value">
+                    {last?.toLocaleString?.() ?? "-"}{" "}
+                  </div>
+                </MiniHead>
+
+                <MiniChartBox>
+                  <ResponsiveContainer>
+                    <LineChart data={data}>
+                      <XAxis dataKey="t" hide />
+                      <YAxis hide />
+                      <Tooltip
+                        formatter={(v) => [v, s.metricLabel]}
+                        labelFormatter={(t) => `${t}s`}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke={s.color}
+                        strokeWidth={2.5}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </MiniChartBox>
+              </MiniCard>
+            );
+          })}
+        </MiniChartGrid>
+      </Card>
+
       {/* ===== 자재 소모 ===== */}
       <Card>
         <CardTitle>BOM 기반 자재 소모 현황</CardTitle>
