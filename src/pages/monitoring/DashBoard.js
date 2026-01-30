@@ -1,6 +1,6 @@
 // src/pages/mes/Dashboard.js
 import styled from "styled-components";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -13,7 +13,6 @@ import {
   Pie,
   Cell,
   Legend,
-  CartesianGrid,
 } from "recharts";
 
 import {
@@ -35,17 +34,6 @@ import SummaryCard from "../../components/SummaryCard";
 import Status from "../../components/Status";
 
 /* =========================
-   공정 정의
-========================= */
-const PROCESS_STEPS = [
-  { key: "electrode", label: "전극공정" },
-  { key: "assembly", label: "조립공정" },
-  { key: "activation", label: "활성화공정" },
-  { key: "pack", label: "팩" },
-  { key: "final", label: "최종 검사" },
-];
-
-/* =========================
    MOCK DATA
 ========================= */
 
@@ -56,19 +44,31 @@ const getNowTime = () =>
     second: "2-digit",
   });
 
+/**
+ * 시간별 생산 + 불량
+ */
 const PROD_TREND = [
-  { time: "08:00", plan: 120, actual: 110, defect: 10 },
-  { time: "09:00", plan: 120, actual: 115, defect: 4 },
-  { time: "10:00", plan: 120, actual: 105, defect: 7 },
-  { time: "11:00", plan: 120, actual: 118, defect: 3 },
-  { time: "12:00", plan: 120, actual: 95, defect: 11 },
-  { time: "13:00", plan: 120, actual: 108, defect: 9 },
+  { time: "08:00", plan: 120, actual: 110, defect: 4 },
+  { time: "09:00", plan: 120, actual: 115, defect: 3 },
+  { time: "10:00", plan: 120, actual: 105, defect: 6 },
+  { time: "11:00", plan: 120, actual: 118, defect: 2 },
+  { time: "12:00", plan: 120, actual: 95, defect: 8 },
+  { time: "13:00", plan: 120, actual: 108, defect: 5 },
 ];
 
-const YIELD_CHART = [
-  { name: "양품", value: 96.2 },
-  { name: "불량", value: 3.8 },
+/**
+ * 불량 유형 분포
+ * (전체 불량 기준)
+ */
+const DEFECT_TYPE_CHART = [
+  { name: "전압 불량", value: 30 },
+  { name: "용량 미달", value: 25 },
+  { name: "외관 불량", value: 20 },
+  { name: "누액", value: 15 },
+  { name: "기타", value: 10 },
 ];
+
+const PIE_COLORS = ["#FF5B5B", "#FF9F0A", "#FFD60A", "#34C759", "#AF52DE"];
 
 const MACHINE_ENV = [
   {
@@ -112,73 +112,10 @@ const PROCESS_EFF = {
 
 export default function Dashboard() {
   const [time, setTime] = useState(getNowTime());
-  const [weather, setWeather] = useState({
-    description: "-",
-    temp: "-",
-    humidity: "-",
-  });
-
-  const [progress, setProgress] = useState({
-    electrode: 0,
-    assembly: 0,
-    activation: 0,
-    pack: 0,
-    final: 0,
-  });
-
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const API_KEY = "5c76dcc2e466465eb8990218262801";
-        const CITY = "Seoul";
-
-        const res = await fetch(
-          `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${CITY}&aqi=no`,
-        );
-
-        if (!res.ok) {
-          throw new Error(`WeatherAPI error: ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        setWeather({
-          description: data.current.condition.text,
-          temp: `${data.current.temp_c} ℃`,
-          humidity: `${data.current.humidity} %`,
-        });
-      } catch (err) {
-        console.error("날씨 정보 조회 실패", err);
-      }
-    };
-
-    // 🔹 최초 1회 실행
-    fetchWeather();
-
-    // 🔹 10분마다 재조회
-    const intervalId = setInterval(fetchWeather, 600000);
-
-    // 🔹 컴포넌트 언마운트 시 정리 (중요)
-    return () => clearInterval(intervalId);
-  }, []);
 
   useEffect(() => {
     const clock = setInterval(() => setTime(getNowTime()), 1000);
-
-    const progressTimer = setInterval(() => {
-      setProgress((prev) => {
-        const next = { ...prev };
-        PROCESS_STEPS.forEach((p) => {
-          next[p.key] = Math.min(100, prev[p.key] + Math.random() * 2);
-        });
-        return next;
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(clock);
-      clearInterval(progressTimer);
-    };
+    return () => clearInterval(clock);
   }, []);
 
   return (
@@ -187,23 +124,13 @@ export default function Dashboard() {
       <Section>
         <Grid cols={4}>
           <SummaryCard label="현재 시각" value={time} icon={<FaClock />} />
-          <SummaryCard
-            label="외부 날씨"
-            value={weather.description}
-            icon={<FaCloudSun />}
-          />
-
+          <SummaryCard label="외부 날씨" value="맑음" icon={<FaCloudSun />} />
           <SummaryCard
             label="현재 온도"
-            value={weather.temp}
+            value="23 ℃"
             icon={<FaTemperatureHigh />}
           />
-
-          <SummaryCard
-            label="현재 습도"
-            value={weather.humidity}
-            icon={<FaTint />}
-          />
+          <SummaryCard label="현재 습도" value="48 %" icon={<FaTint />} />
         </Grid>
       </Section>
 
@@ -214,20 +141,34 @@ export default function Dashboard() {
         </SectionTitle>
 
         <ChartGrid>
+          {/* 시간별 생산 + 불량 */}
           <ChartCard>
             <ChartTitle>
-              <FaIndustry /> 시간별 계획 대비 생산량
+              <FaIndustry /> 시간별 계획 대비 생산 / 불량
             </ChartTitle>
+
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={PROD_TREND}>
                 <XAxis dataKey="time" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="actual" fill="#004DFC" barSize={22} />
-                <Bar dataKey="defect" fill="#ff0000" barSize={22} />
+
+                <Bar
+                  dataKey="actual"
+                  name="생산량"
+                  fill="#004DFC"
+                  barSize={18}
+                />
+                <Bar
+                  dataKey="defect"
+                  name="불량 수량"
+                  fill="#FF5B5B"
+                  barSize={18}
+                />
                 <Line
                   dataKey="plan"
+                  name="계획 수량"
                   stroke="#FF9F0A"
                   strokeWidth={2}
                   dot={false}
@@ -236,20 +177,23 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </ChartCard>
 
+          {/* 불량 유형 분포 */}
           <ChartCard>
             <ChartTitle>
-              <FaExclamationTriangle /> 수율 / 불량률
+              <FaExclamationTriangle /> 불량 유형 분포
             </ChartTitle>
+
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
-                  data={YIELD_CHART}
+                  data={DEFECT_TYPE_CHART}
                   dataKey="value"
-                  innerRadius={55}
+                  innerRadius={50}
                   outerRadius={85}
                 >
-                  <Cell fill="#004DFC" />
-                  <Cell fill="#FF5B5B" />
+                  {DEFECT_TYPE_CHART.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
                 </Pie>
                 <Tooltip />
                 <Legend />
