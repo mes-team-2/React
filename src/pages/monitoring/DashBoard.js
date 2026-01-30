@@ -57,12 +57,12 @@ const getNowTime = () =>
   });
 
 const PROD_TREND = [
-  { time: "08:00", plan: 120, actual: 110 },
-  { time: "09:00", plan: 120, actual: 115 },
-  { time: "10:00", plan: 120, actual: 105 },
-  { time: "11:00", plan: 120, actual: 118 },
-  { time: "12:00", plan: 120, actual: 95 },
-  { time: "13:00", plan: 120, actual: 108 },
+  { time: "08:00", plan: 120, actual: 110, defect: 10 },
+  { time: "09:00", plan: 120, actual: 115, defect: 4 },
+  { time: "10:00", plan: 120, actual: 105, defect: 7 },
+  { time: "11:00", plan: 120, actual: 118, defect: 3 },
+  { time: "12:00", plan: 120, actual: 95, defect: 11 },
+  { time: "13:00", plan: 120, actual: 108, defect: 9 },
 ];
 
 const YIELD_CHART = [
@@ -181,15 +181,6 @@ export default function Dashboard() {
     };
   }, []);
 
-  const progressData = useMemo(
-    () =>
-      PROCESS_STEPS.map((p) => ({
-        name: p.label,
-        value: Math.round(progress[p.key]),
-      })),
-    [progress],
-  );
-
   return (
     <Wrapper>
       {/* ================= 상단 ================= */}
@@ -234,6 +225,7 @@ export default function Dashboard() {
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="actual" fill="#004DFC" barSize={22} />
+                <Bar dataKey="defect" fill="#ff0000" barSize={22} />
                 <Line
                   dataKey="plan"
                   stroke="#FF9F0A"
