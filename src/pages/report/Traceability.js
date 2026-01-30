@@ -5,6 +5,7 @@ import SearchBar from "../../components/SearchBar";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import TraceabilityDetail from "./TraceabilityDetail";
+import Pagination from "../../components/Pagination";
 
 import {
   FiSearch,
@@ -62,6 +63,9 @@ export default function Traceability() {
   const [resultFilter, setResultFilter] = useState("ALL");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
+  // 페이지네이션 상태
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 20; // 페이지당 20개씩
 
   const filtered = useMemo(() => {
     let data = rows;
@@ -83,6 +87,15 @@ export default function Traceability() {
     return data;
   }, [rows, keyword, resultFilter]);
 
+  // 페이지네이션 데이터 슬라이싱
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return filtered.slice(startIndex, startIndex + itemsPerPage);
+  }, [filtered, page]);
+
+  // 총 페이지 수 계산
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
   const summary = useMemo(() => {
     const total = filtered.length;
     const ok = filtered.filter((r) => r.testResult === "OK").length;
@@ -94,6 +107,17 @@ export default function Traceability() {
     const lotCnt = new Set(filtered.map((r) => r.lotNo)).size;
     return { total, ok, ng, linkCnt, lotCnt };
   }, [filtered]);
+
+  // 필터 변경 시 페이지 초기화
+  const handleKeywordChange = (v) => {
+    setKeyword(v);
+    setPage(1); // 검색 시 1페이지로
+  };
+
+  const handleFilterChange = (e) => {
+    setResultFilter(e.target.value);
+    setPage(1); // 필터 변경 시 1페이지로
+  };
 
   const columns = [
     { key: "producedAt", label: "생산일시", width: 170 },
@@ -162,14 +186,14 @@ export default function Traceability() {
         <SearchWrap>
           <SearchBar
             value={keyword}
-            onChange={setKeyword}
+            onChange={handleKeywordChange}
             placeholder="제품LOT/시리얼/작업지시/자재LOT/불량코드 검색"
           />
         </SearchWrap>
 
         <Select
           value={resultFilter}
-          onChange={(e) => setResultFilter(e.target.value)}
+          onChange={handleFilterChange}
         >
           <option value="ALL">전체</option>
           <option value="OK">OK</option>
@@ -180,9 +204,15 @@ export default function Traceability() {
       <TableWrap>
         <Table
           columns={columns}
-          data={filtered}
+          data={paginatedData}
           selectable={false}
           onRowClick={onRowClick}
+        />
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
         />
       </TableWrap>
 

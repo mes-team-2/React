@@ -333,7 +333,6 @@ const Header = styled.div`
     font-weight: var(--bold);
   }
 `;
-
 const ChartGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
