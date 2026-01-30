@@ -32,6 +32,7 @@ import DefectLog from "./pages/quality/DefectLog";
 
 import FgInventory from "./pages/inventory/FgInventory";
 import MaterialLog from "./pages/master/MaterialLog";
+import MaterialList from "./pages/master/MaterialList";
 
 import Traceability from "./pages/report/Traceability";
 import ProductionReport from "./pages/report/ProductionReport";
@@ -96,7 +97,7 @@ function App() {
 
               {/* ================= 자재 / 재고 ================= */}
               <Route path="inventory">
-                <Route path="material" element={<Material />} />
+                <Route path="material-list" element={<MaterialList />} />
                 <Route path="material-tx" element={<MaterialLog />} />
                 <Route path="material-lot" element={<MaterialLot />} />
                 <Route path="fg-inventory" element={<FgInventory />} />

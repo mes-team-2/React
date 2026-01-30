@@ -102,7 +102,7 @@ const PAGE_LABEL = {
   "/mes/quality/defect": "불량 관리",
 
   // 자재
-  "/mes/inventory/material": "자재 관리",
+  "/mes/inventory/material-list": "자재 재고 조회",
   "/mes/inventory/material-tx": "자재 이력 조회",
 
   // 제품
@@ -168,7 +168,7 @@ const MENU = [
         title: "자재 관리",
         items: [
           { to: "/mes/inventory/material-lot", label: "자재 LOT 관리" },
-          { to: "/mes/inventory/material", label: "자재 재고 조회" },
+          { to: "/mes/inventory/material-list", label: "자재 재고 조회" },
           { to: "/mes/inventory/material-tx", label: "자재 입출고 이력 조회" },
         ],
       },
