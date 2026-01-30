@@ -2,7 +2,7 @@ import React from "react";
 import {
   FiAlertTriangle,
   FiRefreshCw,
-  FiCheckCircle, FiAlertCircle
+  FiCheckCircle, FiXCircle, FiPauseCircle, FiBox, FiActivity
 } from "react-icons/fi";
 import styled, { css } from "styled-components";
 import { LuHourglass } from "react-icons/lu";
@@ -16,46 +16,100 @@ import {
 
 // 텍스트 색상(color), 배경색(bg), 아이콘(icon), 라벨(label)
 const STATUS_CONFIG = {
+  // 공통/기본 상태
   WAITING: {
-    label: "WAITING",
+    label: "대기중",
     iconColor: "var(--waiting)",
     textColor: "var(--font)",
     bg: "var(--bgWaiting)",
     icon: <LuHourglass />,
   },
   FAIL: {
-    label: "FAIL",
+    label: "실패",
     iconColor: "var(--error)",
     textColor: "var(--font)",
+    bg: "var(--bgError)",
     icon: <FiAlertTriangle />,
   },
   RUN: {
-    label: "RUN",
+    label: "실행중",
     iconColor: "var(--run)",
     textColor: "var(--font)",
     bg: "var(--bgRun)",
     icon: <FiRefreshCw />,
+  },
+  COMPLETE: {
+    label: "완료",
+    iconColor: "var(--complete)",
+    textColor: "var(--font)",
+    bg: "var(--bgComplete)",
+    icon: <FiCheckCircle />,
+  },
+  OK: {
+    label: "정상",
+    iconColor: "var(--complete)",
+    textColor: "var(--font)",
+    bg: "var(--bgComplete)",
+    icon: <FiCheckCircle />,
+  },
+  // 생산 관리 (ProductLot 등)
+  RUNNING: {
+    label: "생산중(투입)",
+    iconColor: "var(--run)",
+    textColor: "var(--font)",
+    bg: "var(--bgRun)",
+    icon: <FiRefreshCw />,
+  },
+  COMPLETED: {
+    label: "생산완료",
+    iconColor: "var(--complete)",
+    textColor: "var(--font)",
+    bg: "var(--bgComplete)",
+    icon: <FiCheckCircle />,
+  },
+  DEFECTIVE: {
+    label: "불량 발생",
+    iconColor: "var(--error)",
+    textColor: "var(--font)",
+    bg: "var(--bgError)",
+    icon: <FiAlertTriangle />,
+  },
+  HOLD: {
+    label: "보류(Hold)",
+    iconColor: "var(--waiting)",
+    textColor: "var(--font)",
+    bg: "var(--bgWaiting)",
+    icon: <FiPauseCircle />,
+  },
+  // 자재/재고 관리 (MaterialLot 등)
+  EXHAUSTED: {
+    label: "소진완료",
+    iconColor: "var(--stop)",
+    textColor: "var(--font)",
+    bg: "var(--bgStop)",
+    icon: <FiXCircle />,
   },
   MATIN: {
     label: "자재입고",
     iconColor: "var(--run)",
     textColor: "var(--font)",
     bg: "var(--bgRun)",
-    icon: <IoArrowBackCircleOutline />,
+    icon: <FiBox />,
   },
   MATOUT: {
     label: "생산투입",
     iconColor: "var(--error)",
     textColor: "var(--font)",
     bg: "var(--bgError)",
-    icon: <IoArrowForwardCircleOutline />,
+    icon: <FiActivity />,
   },
+  // 입출고/물류 관리
   IN: {
     label: "생산입고",
     iconColor: "var(--run)",
     textColor: "var(--font)",
     bg: "var(--bgRun)",
-    icon: <IoArrowBackCircleOutline />,
+    icon: <FiBox />,
   },
   OUT: {
     label: "출고",
@@ -69,32 +123,10 @@ const STATUS_CONFIG = {
     iconColor: "var(--waiting)",
     textColor: "var(--font)",
     bg: "var(--bgWaiting)",
-    icon: <FiCheckCircle />,
+    icon: <FiXCircle />,
   },
-  COMPLETE: {
-    label: "COMPLETE",
-    iconColor: "var(--complete)",
-    textColor: "var(--font)",
-    bg: "var(--bgComplete)",
-    icon: <FiCheckCircle />,
-  },
-  OK: {
-    label: "OK",
-    iconColor: "var(--complete)",
-    textColor: "var(--font)",
-    bg: "var(--bgComplete)",
-    icon: <FiCheckCircle />,
-  },
-  // 예외 처리를 위한 기본값 (정의되지 않은 상태가 들어올 경우)
-  DEFAULT: {
-    label: "-",
-    iconColor: "var(--stop)",
-    textColor: "var(--font)",
-    bg: "var(--bgStop)",
-    icon: null,
-  },
+  // 안전 재고 상태
   SAFE: {
-    //안전
     label: "안전",
     iconColor: "var(--run)",
     textColor: "var(--font)",
@@ -102,7 +134,6 @@ const STATUS_CONFIG = {
     icon: <AiFillSafetyCertificate />,
   },
   CAUTION: {
-    //주의
     label: "주의",
     iconColor: "var(--waiting)",
     textColor: "var(--font)",
@@ -110,13 +141,13 @@ const STATUS_CONFIG = {
     icon: <FiCheckCircle />,
   },
   DANGER: {
-    //경고
     label: "경고",
     iconColor: "var(--error)",
     textColor: "var(--font)",
     bg: "var(--bgError)",
     icon: <FiAlertTriangle />,
   },
+  // 구버전 호환 (Legacy)
   LOT_WAIT: {
     label: "대기중",
     iconColor: "var(--waiting)",
@@ -132,11 +163,26 @@ const STATUS_CONFIG = {
     icon: <FiRefreshCw />,
   },
   LOT_ERR: {
-    label: "품절/불량",
+    label: "품질/불량",
     iconColor: "var(--error)",
     textColor: "var(--font)",
     bg: "var(--bgError)",
     icon: <FiAlertTriangle />,
+  },
+  LOT_OK: {
+    label: "생산완료",
+    iconColor: "var(--complete)",
+    textColor: "var(--font)",
+    bg: "var(--bgComplete)",
+    icon: <FiCheckCircle />,
+  },
+  // 예외 처리 (Default)
+  DEFAULT: {
+    label: "-",
+    iconColor: "var(--stop)",
+    textColor: "var(--font)",
+    bg: "var(--bgStop)",
+    icon: null,
   },
 };
 
@@ -166,7 +212,7 @@ const BadgeWrapper = styled.div`
   gap: 8px;
   padding: 10px;
   font-size: var(--fontXs);
-  font-weight: var(--normal);
+  font-weight: var(--medium);
   white-space: nowrap;
   background-color: ${(props) => props.$bg};
   box-sizing: border-box;

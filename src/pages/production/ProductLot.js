@@ -1,10 +1,5 @@
+import React, { useState, useMemo, useEffect } from "react";
 import styled from "styled-components";
-import { useMemo, useState, useEffect } from "react";
-import Table from "../../components/TableStyle";
-import SearchBar from "../../components/SearchBar";
-import SideDrawer from "../../components/SideDrawer";
-import LotDetail from "./LotDetail";
-import MaterialDetail from "../master/MaterialDetail"; // 참고용 (LOT 화면에서는 미사용)
 import {
   PieChart,
   Pie,
@@ -16,302 +11,268 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend
 } from "recharts";
+import { FiLayers, FiCheckCircle, FiActivity, FiAlertTriangle } from "react-icons/fi";
+import TableStyle from "../../components/TableStyle";
+import SearchBar from "../../components/SearchBar";
+import SearchDate from "../../components/SearchDate";
+import Pagination from "../../components/Pagination";
+import Status from "../../components/Status";
+import SummaryCard from "../../components/SummaryCard";
+import SideDrawer from "../../components/SideDrawer";
+import LotDetail from "./LotDetail";
 
 
-const LOT_STATUS_COLORS = {
-  사용중: "var(--main)",
-  보관: "var(--run)",
-  소진: "var(--stop)",
-  HOLD: "var(--waiting)",
-};
-
-export default function Lot() {
-
-  // 상태관리
-  const [viewMode, setViewMode] = useState("LOT");
+export default function ProductLot() {
+  // 상태 관리
+  const [data, setData] = useState([]);
   const [keyword, setKeyword] = useState("");
-  const [selectedMaterial, setSelectedMaterial] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sortConfig, setSortConfig] = useState({ key: "createdAt", direction: "desc" });
 
+  // 페이지네이션 상태
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 15;
+
+  // 드로어 상태
   const [lotOpen, setLotOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState(null);
 
-  const handleKeywordChange = (v) => {
-    if (typeof v === "string") return setKeyword(v);
-    if (v?.target?.value !== undefined) return setKeyword(v.target.value);
-    setKeyword("");
-  };
+  useEffect(() => {
+    const mockData = Array.from({ length: 150 }).map((_, i) => {
+      const rand = Math.random();
+      let status = "LOT_RUN"; // 기본: 생산중
 
-  /* =========================
-     LOT 더미 데이터
-  ========================= */
-  const lotData = useMemo(
-    () =>
-      Array.from({ length: 30 }).map((_, i) => {
-        const materialCode =
-          i % 4 === 0
-            ? "MAT-CASE"
-            : i % 4 === 1
-              ? "MAT-LEAD"
-              : i % 4 === 2
-                ? "MAT-ELEC"
-                : "MAT-SEP";
+      if (rand > 0.8) status = "LOT_OK";      // 생산완료
+      else if (rand > 0.7) status = "LOT_ERR"; // 불량
+      else if (rand > 0.6) status = "LOT_WAIT"; // 소진완료(대기/종료)
 
-        const materialName =
-          materialCode === "MAT-CASE"
-            ? "배터리 케이스"
-            : materialCode === "MAT-LEAD"
-              ? "납판"
-              : materialCode === "MAT-ELEC"
-                ? "전해액"
-                : "분리막";
+      const dateObj = new Date();
+      dateObj.setDate(dateObj.getDate() - Math.floor(Math.random() * 14));
+      const dateStr = dateObj.toISOString().split("T")[0];
 
-        //  차트용 수량 데이터 시뮬레이션
-        const initialQty = 1000; // 생산 실적 (Actual)
-        const plannedQty = 1000 + (i % 3 === 0 ? 100 : 0); // 생산 계획 (Plan) - 가끔 계획이 더 많음
-        const remainQty = Math.max(0, initialQty - i * 45); // 현재 잔량
+      const initialQty = Math.floor(Math.random() * 500) + 500;
+      const badQty = status === "LOT_ERR" ? Math.floor(Math.random() * 50) : 0;
+      const currentQty = status === "LOT_WAIT" ? 0 : initialQty - badQty;
 
-        const status = i % 3 === 0 ? "사용중" : i % 3 === 1 ? "보관" : "소진";
-
-        // 날짜 생성 (최근 7일치 데이터가 나오도록 조정)
-        const dateObj = new Date();
-        dateObj.setDate(dateObj.getDate() - (i % 7));
-        const dateStr = `${dateObj.getFullYear()}/${String(dateObj.getMonth() + 1).padStart(2, "0")}/${String(dateObj.getDate()).padStart(2, "0")}`;
-
-        return {
-          id: i + 1,
-          lotNo: `LOT-202601-${String(i + 1).padStart(3, "0")}`,
-          materialCode,
-          materialName,
-          inboundAt: dateStr,
-          remainQty,
-          initialQty,
-          plannedQty,
-          status,
-          workOrderNo: `WO-202601-00${(i % 5) + 1}`,
-          createdAt: `${dateStr} 09:00`,
-        };
-      }),
-    [],
-  );
-
-
-  // 자재 목록 (Select)
-  const materialOptions = useMemo(() => {
-    const map = {};
-    lotData.forEach((lot) => {
-      map[lot.materialCode] = lot.materialName;
+      return {
+        id: i + 1,
+        lotNo: `LOT-2601-${String(i + 1).padStart(4, "0")}`,
+        productCode: i % 2 === 0 ? "BAT-12V-100A" : "BAT-12V-200A",
+        productName: i % 2 === 0 ? "차량용 배터리 100Ah" : "산업용 배터리 200Ah",
+        process: ["조립", "화성", "검사", "포장"][Math.floor(Math.random() * 4)],
+        line: ["Line-A", "Line-B"][Math.floor(Math.random() * 2)],
+        initialQty,
+        currentQty,
+        badQty,
+        status, // Status 컴포넌트 키값 (LOT_RUN, LOT_OK...)
+        workOrderNo: `WO-2601-${String(Math.floor(i / 10) + 1).padStart(3, "0")}`,
+        createdAt: `${dateStr} ${String(Math.floor(Math.random() * 9) + 9).padStart(2, "0")}:00`,
+        operator: ["김철수", "이영희", "박민수"][Math.floor(Math.random() * 3)],
+      };
     });
-    return Object.entries(map).map(([code, name]) => ({
-      code,
-      name,
-    }));
-  }, [lotData]);
+    setData(mockData);
+  }, []);
 
-  // LOT 필터링
-  const filteredLots = useMemo(() => {
-    let rows = lotData;
+  // 필터링 로직 (검색어 + 날짜 + 상태)
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      // 키워드 검색
+      const k = keyword.toLowerCase();
+      const matchKeyword =
+        !keyword ||
+        item.lotNo.toLowerCase().includes(k) ||
+        item.productCode.toLowerCase().includes(k) ||
+        item.productName.toLowerCase().includes(k) ||
+        item.workOrderNo.toLowerCase().includes(k);
 
-    if (viewMode === "MATERIAL" && selectedMaterial) {
-      rows = rows.filter((lot) => lot.materialCode === selectedMaterial);
-    }
+      // 날짜 검색
+      let matchDate = true;
+      if (dateRange.start && dateRange.end) {
+        const itemDate = new Date(item.createdAt);
+        const start = new Date(dateRange.start);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(dateRange.end);
+        end.setHours(23, 59, 59, 999);
+        matchDate = itemDate >= start && itemDate <= end;
+      }
 
-    if (keyword.trim()) {
-      const lower = keyword.toLowerCase();
-      rows = rows.filter(
-        (lot) =>
-          lot.lotNo.toLowerCase().includes(lower) ||
-          lot.materialCode.toLowerCase().includes(lower) ||
-          lot.materialName.toLowerCase().includes(lower) ||
-          lot.workOrderNo.toLowerCase().includes(lower),
-      );
-    }
+      // 상태 필터
+      const matchStatus = statusFilter === "ALL" || item.status === statusFilter;
 
-    return rows;
-  }, [lotData, viewMode, selectedMaterial, keyword]);
+      return matchKeyword && matchDate && matchStatus;
+    });
+  }, [data, keyword, dateRange, statusFilter]);
 
-  // 정렬
-  const handleSort = (key) => {
-    setSortConfig((prev) =>
-      prev.key === key
-        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
-        : { key, direction: "asc" },
-    );
-  };
-
-  const sortedLots = useMemo(() => {
-    if (!sortConfig.key) return filteredLots;
-
-    return [...filteredLots].sort((a, b) => {
+  // 정렬 로직
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key) return filteredData;
+    return [...filteredData].sort((a, b) => {
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
 
-      if (typeof aVal === "string" && typeof bVal === "string") {
+      if (typeof aVal === "string") {
         return sortConfig.direction === "asc"
           ? aVal.localeCompare(bVal, "ko", { numeric: true })
           : bVal.localeCompare(aVal, "ko", { numeric: true });
       }
       return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
     });
-  }, [filteredLots, sortConfig]);
+  }, [filteredData, sortConfig]);
 
-  /* =========================
-     ViewMode 변경 시 초기화
-  ========================= */
-  useEffect(() => {
-    setKeyword("");
-    setSortConfig({ key: null, direction: "asc" });
-    if (viewMode === "LOT") setSelectedMaterial("");
-  }, [viewMode]);
+  // 페이지네이션 데이터 슬라이싱
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return sortedData.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedData, page]);
 
-  /* =========================
-     차트 (LOT 기준일 때만)
-  ========================= */
-  const statusChart = useMemo(() => {
-    const map = {};
-    lotData.forEach((lot) => {
-      map[lot.status] = (map[lot.status] || 0) + 1;
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+
+  // 통계 데이터 (차트용)
+  const stats = useMemo(() => {
+    const running = filteredData.filter(d => d.status === "LOT_RUN").length;
+    const completed = filteredData.filter(d => d.status === "LOT_OK").length;
+    const defective = filteredData.filter(d => d.status === "LOT_ERR").length;
+    const exhausted = filteredData.filter(d => d.status === "LOT_WAIT").length;
+
+    // 파이 차트 데이터 키값도 맞춰줌 (COLORS 객체와 매칭)
+    const pieData = [
+      { name: "생산중", value: running, key: "LOT_RUN" },
+      { name: "생산완료", value: completed, key: "LOT_OK" },
+      { name: "불량", value: defective, key: "LOT_ERR" },
+      { name: "소진완료", value: exhausted, key: "LOT_WAIT" },
+    ];
+
+    // 라인 차트 데이터 (일자별 생산 실적)
+    const lineMap = {};
+    filteredData.forEach(d => {
+      const date = d.createdAt.split(" ")[0].slice(5); // MM-DD
+      if (!lineMap[date]) lineMap[date] = { date, target: 0, actual: 0 };
+      lineMap[date].target += d.initialQty;
+      lineMap[date].actual += d.currentQty;
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [lotData]);
+    const lineData = Object.values(lineMap).sort((a, b) => a.date.localeCompare(b.date));
 
-  const dailyPerformanceChart = useMemo(() => {
-    const map = {};
-    // 날짜순 정렬을 위해
-    const sortedData = [...lotData].sort((a, b) => a.inboundAt.localeCompare(b.inboundAt));
+    return { running, completed, defective, exhausted, pieData, lineData };
+  }, [filteredData]);
 
-    sortedData.forEach((lot) => {
-      const date = lot.inboundAt.slice(5, 10); // MM/DD
-      if (!map[date]) map[date] = { date, plan: 0, actual: 0 };
 
-      map[date].plan += lot.plannedQty;  // 계획 수량 누적
-      map[date].actual += lot.initialQty; // 실적 수량 누적
-    });
-    return Object.values(map);
-  }, [lotData]);
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    setSortConfig({ key, direction });
+  };
 
-  // 컬럼 
-  const columns = [
-    { key: "lotNo", label: "LOT 번호", width: 180 },
-    { key: "materialCode", label: "제품코드", width: 140 },
-    { key: "materialName", label: "제품명", width: 160 },
-    { key: "initialQty", label: "생산수량", width: 100 }, // 잔량 대신 생산량 표시 (필요시 잔량도 표기가능)
-    { key: "status", label: "상태", width: 110 },
-    { key: "workOrderNo", label: "작업지시", width: 160 },
-    { key: "inboundAt", label: "생산일", width: 140 },
-  ];
+  // 검색 시 페이지 리셋
+  const handleKeywordChange = (val) => {
+    setKeyword(val);
+    // setPage(1);
+  };
 
-  // Row 클릭 핸들러
+  const handleDateChange = (start, end) => {
+    setDateRange({ start, end });
+    setPage(1);
+  };
+
   const handleRowClick = (row) => {
     setSelectedLot(row);
     setLotOpen(true);
   };
 
+  const columns = [
+    {
+      key: "status",
+      label: "상태",
+      width: 150,
+      render: (val) => <Status status={val} type="basic" />
+    },
+    { key: "lotNo", label: "LOT 번호", width: 160 },
+    { key: "productCode", label: "제품코드", width: 140 },
+    { key: "productName", label: "제품명", width: 180 },
+    { key: "process", label: "현재 공정", width: 100 },
+    { key: "line", label: "생산 라인", width: 100 },
+    {
+      key: "currentQty",
+      label: "현재 수량",
+      width: 80,
+      render: (val) => val.toLocaleString()
+    },
+    {
+      key: "badQty",
+      label: "불량",
+      width: 80,
+      render: (val) => <BadText $isBad={val > 0}>{val > 0 ? val : '-'}</BadText>
+    },
+    { key: "workOrderNo", label: "작업 지시", width: 140 },
+    { key: "createdAt", label: "상태 변경 일시", width: 150 },
+    { key: "operator", label: "작업자", width: 90 },
+  ];
+
   return (
     <Wrapper>
       <Header>
-        <h2>LOT 및 생산 관리</h2>
+        <h2>생산 제품 LOT 관리</h2>
       </Header>
 
-      {viewMode === "LOT" && (
-        <ChartGrid>
-          <Card>
-            <h4>일자별 생산 계획 vs 실적</h4>
-            <ChartBox>
-              <ResponsiveContainer>
-                <LineChart data={dailyPerformanceChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="plan"
-                    name="계획수량"
-                    stroke="var(--main)" // 파란색 계열
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="actual"
-                    name="생산실적"
-                    stroke="var(--run)" // 초록색 계열
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartBox>
-          </Card>
+      {/* 차트 영역 */}
+      <ChartGrid>
+        <Card>
+          <h4>일자별 생산 실적 (목표 vs 달성)</h4>
+          <ChartBox>
+            <ResponsiveContainer>
+              <LineChart data={stats.lineData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="target" name="목표수량" stroke="var(--main)" strokeWidth={1} dot={false} />
+                <Line type="monotone" dataKey="actual" name="생산수량" stroke="var(--run)" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartBox>
+        </Card>
+        <SummaryGrid>
+          <SummaryCard icon={<FiLayers />} label="전체 LOT" value={filteredData.length} color="var(--font)" />
+          <SummaryCard icon={<FiActivity />} label="생산중" value={stats.running} color="var(--main)" />
+          <SummaryCard icon={<FiCheckCircle />} label="생산완료" value={stats.completed} color="var(--run)" />
+          <SummaryCard icon={<FiAlertTriangle />} label="불량 발생" value={stats.defective} color="var(--error)" />
+        </SummaryGrid>
 
-          <Card>
-            <h4>LOT 상태 분포</h4>
-            <ChartBox>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={statusChart}
-                    dataKey="value"
-                    innerRadius={50}
-                    outerRadius={80}
-                  >
-                    {statusChart.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={LOT_STATUS_COLORS[entry.name] || "#6366f1"}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartBox>
-          </Card>
-        </ChartGrid>
-      )}
+      </ChartGrid>
 
       <FilterBar>
-        <ViewSelect
-          value={viewMode}
-          onChange={(e) => setViewMode(e.target.value)}
-        >
-          <option value="LOT">전체 LOT</option>
-          <option value="MATERIAL">자재 LOT 보기</option>
-        </ViewSelect>
-
-        {viewMode === "MATERIAL" && (
-          <MaterialSelect
-            value={selectedMaterial}
-            onChange={(e) => setSelectedMaterial(e.target.value)}
-          >
-            <option value="">자재 선택</option>
-            {materialOptions.map((m) => (
-              <option key={m.code} value={m.code}>
-                {m.name} ({m.code})
-              </option>
-            ))}
-          </MaterialSelect>
-        )}
-
-        <SearchWrap>
-          <SearchBar
-            value={keyword}
-            onChange={handleKeywordChange}
-            placeholder="LOT 번호 / 자재 / 작업지시 검색"
-          />
-        </SearchWrap>
+        <SearchDate
+          width="m"
+          onChange={handleDateChange}
+          placeholder="기간 검색"
+        />
+        <SearchBar
+          width="l"
+          value={keyword}
+          onChange={handleKeywordChange}
+          placeholder="LOT 번호 / 제품명 / 작업지시 검색"
+        />
       </FilterBar>
 
-      <Table
-        columns={columns}
-        data={sortedLots}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        selectable={false}
-        onRowClick={handleRowClick}
-      />
+      <TableWrapper>
+        <TableStyle
+          columns={columns}
+          data={paginatedData}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          selectable={false}
+          onRowClick={handleRowClick}
+        />
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      </TableWrapper>
 
       <SideDrawer open={lotOpen} onClose={() => setLotOpen(false)}>
         <LotDetail lot={selectedLot} />
@@ -325,6 +286,7 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding-bottom: 40px;
 `;
 
 const Header = styled.div`
@@ -336,61 +298,55 @@ const Header = styled.div`
 
 const ChartGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 3fr 2fr;
   gap: 20px;
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1200px) {
     grid-template-columns: 1fr;
   }
 `;
 
-
-
 const Card = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  padding-right: 20px;
+
+
+  box-shadow: var(--shadow);
 
   h4 {
-    font-size: 14px;
-    margin-bottom: 10px;
-    font-weight: 600;
+    font-size: var(--fontSm);
+    margin: 15px;
+    font-weight: var(--bold);
+    color: var(--font);
   }
 `;
 
 const ChartBox = styled.div`
-  height: 220px;
+  height: 150px;
+  font-size: var(--fontXxs);
+  margin-top: 30px;
+`;
 
-  svg:focus,
-  svg *:focus {
-    outline: none;
-  }
+const SummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
 `;
 
 const FilterBar = styled.div`
-  display: flex;
+ display: flex;
   align-items: center;
   gap: 10px;
 `;
 
-const ViewSelect = styled.select`
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  font-size: 13px;
-  background: white;
+const TableWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
 
-const MaterialSelect = styled.select`
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  font-size: 13px;
-  background: white;
-  min-width: 200px;
-`;
-
-const SearchWrap = styled.div`
-  flex: 1;
+const BadText = styled.span`
+  color: ${props => props.$isBad ? "var(--error)" : "inherit"};
+  font-weight: ${props => props.$isBad ? "bold" : "var(--medium)"};
 `;
