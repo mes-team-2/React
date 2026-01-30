@@ -83,6 +83,10 @@ export const WorkOrderAPI = {
   getList: async () => {
     return await AxiosAPI.get("/api/workorder");
   },
+
+  getDetail: async (workOrderNo) => {
+    return await AxiosAPI.get(`/api/workorder/${workOrderNo}`);
+  },
 };
 
 export default AxiosAPI;

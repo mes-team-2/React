@@ -1,95 +1,56 @@
 import styled from "styled-components";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import SummaryCard from "../../components/SummaryCard";
 import { FiHash, FiPackage, FiActivity, FiCalendar } from "react-icons/fi";
+import { WorkOrderAPI } from "../../api/AxiosAPI";
 
 export default function WorkOrderDetail({ workOrder }) {
-  /* =========================
-     단일 LOT 데이터
-  ========================= */
-  const productLot = useMemo(() => {
-    if (!workOrder) return null;
+  // 백엔드에서 받아온 상세 데이터 상태
+  const [detailData, setDetailData] = useState(null);
 
-    return {
-      lotNo: "LOT-202601-001",
-      qty: workOrder.plannedQty,
-      status: "IN_PROCESS",
-      createdAt: "2026-01-05 09:30",
+  // workOrder(부모에서 넘겨준 요약정보)가 바뀔 때마다 상세 조회 API 호출
+  useEffect(() => {
+    const fetchDetail = async () => {
+      if (!workOrder?.id) return;
+      try {
+        // workOrder.id는 "WO-2026..." 형식의 번호라고 가정
+        const res = await WorkOrderAPI.getDetail(workOrder.id);
+        setDetailData(res.data);
+      } catch (err) {
+        console.error("상세 조회 실패", err);
+      }
     };
-  }, [workOrder]);
-
-  const processData = useMemo(() => {
-    if (!workOrder) return [];
-    return [
-      {
-        id: 1,
-        step: "극판 적층",
-        machine: "설비-02",
-        status: "DONE",
-        startedAt: "09:30",
-        endedAt: "10:40",
-      },
-      {
-        id: 2,
-        step: "COS 용접",
-        machine: "설비-05",
-        status: "IN_PROGRESS",
-        startedAt: "10:50",
-        endedAt: "-",
-      },
-      {
-        id: 3,
-        step: "화성",
-        machine: "설비-09",
-        status: "WAIT",
-        startedAt: "-",
-        endedAt: "-",
-      },
-    ];
-  }, [workOrder]);
-
-  const materialData = useMemo(() => {
-    if (!workOrder) return [];
-    return [
-      {
-        id: 1,
-        material: "납판",
-        qty: 1000,
-        unit: "EA",
-        time: "2026-01-05 09:20",
-      },
-      {
-        id: 2,
-        material: "분리막",
-        qty: 350,
-        unit: "M",
-        time: "2026-01-05 09:22",
-      },
-      {
-        id: 3,
-        material: "전해액",
-        qty: 120,
-        unit: "L",
-        time: "2026-01-05 11:10",
-      },
-    ];
+    fetchDetail();
   }, [workOrder]);
 
   if (!workOrder) {
     return <Empty>작업지시를 선택하세요.</Empty>;
   }
 
+  // 데이터가 로딩 중이거나 없을 때 보여줄 기본값 (또는 로딩 스피너)
+  // 여기서는 기존 workOrder 정보라도 먼저 보여주도록 처리
+
+  const lotInfo = detailData?.lotInfo || {
+    lotNo: "-",
+    qty: 0,
+    status: "-",
+    createdAt: "-",
+  };
+
+  const processData = detailData?.processList || [];
+  const materialData = detailData?.materialList || [];
+
   const processColumns = [
-    { key: "step", label: "공정", width: 160 },
-    { key: "machine", label: "설비", width: 140 },
+    { key: "stepName", label: "공정", width: 160 }, // key 수정 (step -> stepName)
+    { key: "machineName", label: "설비", width: 140 }, // key 수정 (machine -> machineName)
     { key: "status", label: "상태", width: 120 },
     { key: "startedAt", label: "시작", width: 120 },
     { key: "endedAt", label: "종료", width: 120 },
   ];
 
   const materialColumns = [
-    { key: "material", label: "자재명", width: 160 },
+    { key: "materialName", label: "자재명", width: 160 }, // key 수정
     { key: "qty", label: "수량", width: 100 },
     { key: "unit", label: "단위", width: 80 },
     { key: "time", label: "투입시각", width: 160 },
@@ -97,24 +58,24 @@ export default function WorkOrderDetail({ workOrder }) {
 
   return (
     <Wrapper>
-      {/* ===== 헤더 ===== */}
+      {/* ===== 헤더 (기존 workOrder prop 사용) ===== */}
       <Header>
         <div>
           <h3>작업지시 상세</h3>
-          <span>{workOrder.workOrderNo}</span>
+          <span>{workOrder.id}</span>
         </div>
         <StatusBadge>{workOrder.status}</StatusBadge>
       </Header>
 
-      {/* ===== 작업지시 요약 ===== */}
+      {/* ===== 요약 (기존 workOrder prop 사용) ===== */}
       <SummaryGrid>
         <SummaryItem>
           <label>제품</label>
-          <strong>{workOrder.productName}</strong>
+          <strong>{workOrder.product}</strong>
         </SummaryItem>
         <SummaryItem>
           <label>계획 수량</label>
-          <strong>{workOrder.plannedQty}</strong>
+          <strong>{workOrder.planQty}</strong>
         </SummaryItem>
         <SummaryItem>
           <label>작업 상태</label>
@@ -122,33 +83,32 @@ export default function WorkOrderDetail({ workOrder }) {
         </SummaryItem>
       </SummaryGrid>
 
-      {/* ===== LOT 현황 (2 x 2 배치) ===== */}
+      {/* ===== LOT 현황 (API 데이터 바인딩) ===== */}
       <Card>
         <SectionTitle>LOT 현황</SectionTitle>
-
         <LotGrid>
           <SummaryCard
             icon={<FiHash />}
             label="LOT 번호"
-            value={productLot.lotNo}
+            value={lotInfo.lotNo}
             color="var(--main)"
           />
           <SummaryCard
             icon={<FiPackage />}
             label="LOT 수량"
-            value={productLot.qty}
+            value={lotInfo.qty}
             color="var(--run)"
           />
           <SummaryCard
             icon={<FiActivity />}
             label="LOT 상태"
-            value={productLot.status}
+            value={lotInfo.status}
             color="var(--waiting)"
           />
           <SummaryCard
             icon={<FiCalendar />}
             label="생성일"
-            value={productLot.createdAt}
+            value={lotInfo.createdAt}
             color="var(--font2)"
           />
         </LotGrid>
