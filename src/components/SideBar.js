@@ -22,7 +22,7 @@ const IconStar = ({ filled = false, color = "currentColor" }) => (
     <polygon
       points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
       fill={filled ? color : "none"}
-      stroke={color}
+      stroke={filled ? color : "var(--font2)"}
       strokeWidth="2"
     />
   </svg>
@@ -494,7 +494,7 @@ export default function SideBar() {
         <TopBar>
           <TopBarLeft>
             <PaddedIconBtn onClick={toggleCurrentPin}>
-              <IconStar filled={isPinned} color="var(--main)" />
+              <IconStar filled={isPinned} color="#efc364" />
             </PaddedIconBtn>
 
             <Divider />
@@ -986,17 +986,21 @@ const Content = styled.section`
 const LogoutArea = styled.div`
   padding: 16px;
   border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const LogoutButton = styled.button`
-  width: 100%;
-  padding: 12px 0;
+  width: 80%;
+  height: 25px;
+  padding:  0;
   border-radius: 999px;
   border: none;
-  background: #004dfc;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
+  background: var(--main);
+  color: var(--font3);
+  font-size: var(--fontXs);
+  font-weight: var(--medium);
   cursor: pointer;
 
   &:hover {
@@ -1011,16 +1015,6 @@ const PinnedTabs = styled.div`
   user-select: none;
 `;
 
-const StarBtn = styled.button`
-  margin-left: 8px;
-  font-size: 14px;
-  color: ${({ $active }) => ($active ? "#FFD60A" : "var(--font2)")};
-  cursor: pointer;
-
-  &:hover {
-    color: #ffd60a;
-  }
-`;
 
 const PinnedStar = styled.button`
   display: flex;
@@ -1039,7 +1033,7 @@ const PinnedStar = styled.button`
 
   svg polygon,
   svg path {
-    fill: var(--main);
-    stroke: var(--main);
+    fill: #efc364;
+    stroke: none;
   }
 `;
