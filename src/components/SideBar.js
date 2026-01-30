@@ -85,12 +85,15 @@ const IconUser = () => (
 ========================= */
 const PAGE_LABEL = {
   "/mes/dashboard": "대시보드",
+  "/mes/process-monitoring": "공정 모니터링",
 
   // 기준 정보
   "/mes/master/machine": "설비 관리",
   "/mes/master/process": "공정 관리",
   "/mes/master/bom": "BOM 관리",
   "/mes/master/worker": "작업자 관리",
+  "/mes/master/product": "제품 관리",
+  "/mes/master/material": "자재 관리",
 
   // 생산
   "/mes/workorders": "작업지시 관리",
@@ -203,6 +206,12 @@ const MENU = [
 ];
 
 export default function SideBar() {
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const dragMovedRef = useRef(false);
+  const dragPinIndexRef = useRef(null);
+
   const location = useLocation();
   const navigate = useNavigate();
   const tabsRef = useRef(null);
@@ -212,6 +221,17 @@ export default function SideBar() {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
   });
+
+  const PIN_KEY = "mes_pinned_tabs";
+
+  const [pinnedTabs, setPinnedTabs] = useState(() => {
+    const saved = localStorage.getItem(PIN_KEY);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const currentPath = location.pathname;
+  const currentLabel = PAGE_LABEL[currentPath];
+  const isPinned = pinnedTabs.some((p) => p.path === currentPath);
 
   const handleLogout = () => {
     logout();
@@ -301,6 +321,75 @@ export default function SideBar() {
         behavior: "smooth",
       });
     }
+  };
+
+  const onMouseDownTabs = (e) => {
+    if (!tabsRef.current) return;
+    isDraggingRef.current = true;
+    dragMovedRef.current = false;
+    startXRef.current = e.pageX;
+    scrollLeftRef.current = tabsRef.current.scrollLeft;
+  };
+
+  const onMouseMoveTabs = (e) => {
+    if (!isDraggingRef.current || !tabsRef.current) return;
+    const x = e.pageX;
+    const walk = x - startXRef.current;
+
+    if (Math.abs(walk) > 5) {
+      dragMovedRef.current = true; // ⭐ 드래그 판정
+    }
+
+    tabsRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const stopDragTabs = () => {
+    isDraggingRef.current = false;
+
+    // 다음 클릭부터는 정상 클릭 허용
+    setTimeout(() => {
+      dragMovedRef.current = false;
+    }, 0);
+  };
+
+  const visibleTabs = [
+    ...pinnedTabs,
+    ...recentPages.filter((r) => !pinnedTabs.some((p) => p.path === r.path)),
+  ];
+
+  const toggleCurrentPin = () => {
+    if (!currentLabel) return; // 라벨 없는 페이지는 제외
+
+    setPinnedTabs((prev) => {
+      const exists = prev.some((p) => p.path === currentPath);
+
+      const next = exists
+        ? prev.filter((p) => p.path !== currentPath)
+        : [...prev, { path: currentPath, label: currentLabel }];
+
+      localStorage.setItem(PIN_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const onPinDragStart = (index) => {
+    dragPinIndexRef.current = index;
+  };
+
+  const onPinDrop = (targetIndex) => {
+    const from = dragPinIndexRef.current;
+    if (from === null || from === targetIndex) return;
+
+    setPinnedTabs((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(targetIndex, 0, moved);
+
+      localStorage.setItem(PIN_KEY, JSON.stringify(next));
+      return next;
+    });
+
+    dragPinIndexRef.current = null;
   };
 
   return (
@@ -393,8 +482,13 @@ export default function SideBar() {
       <Main>
         <TopBar>
           <TopBarLeft>
-            <PaddedIconBtn>
-              <IconStar />
+            <PaddedIconBtn onClick={toggleCurrentPin}>
+              <IconStar
+                style={{
+                  color: isPinned ? "#FFD60A" : "var(--font)",
+                  fill: isPinned ? "#FFD60A" : "none",
+                }}
+              />
             </PaddedIconBtn>
             <Divider />
             <PaddedIconBtn onClick={() => navigate("/")}>
@@ -405,27 +499,64 @@ export default function SideBar() {
               <IconChevronLeft />
             </BorderedChevronBtn>
 
-            <TabsContainer ref={tabsRef}>
-              {recentPages.map((p) => {
-                const active = location.pathname === p.path;
+            {/* ⭐ 고정 탭 영역 */}
+            <PinnedTabs>
+              {pinnedTabs.map((p, idx) => {
+                const active = currentPath === p.path;
+
                 return (
                   <Tab
-                    key={p.path}
+                    key={`pin-${p.path}`}
                     $active={active}
-                    onClick={() => navigate(p.path)}
+                    draggable
+                    onDragStart={() => onPinDragStart(idx)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => onPinDrop(idx)}
+                    onClick={() => {
+                      if (dragMovedRef.current) return;
+                      navigate(p.path);
+                    }}
                   >
                     <span>{p.label}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeTab(p.path);
-                      }}
-                    >
-                      ✕
-                    </button>
                   </Tab>
                 );
               })}
+            </PinnedTabs>
+
+            {/* ▶ 스크롤 탭 영역 */}
+            <TabsContainer
+              ref={tabsRef}
+              onMouseDown={onMouseDownTabs}
+              onMouseMove={onMouseMoveTabs}
+              onMouseUp={stopDragTabs}
+              onMouseLeave={stopDragTabs}
+            >
+              {recentPages
+                .filter((r) => !pinnedTabs.some((p) => p.path === r.path))
+                .map((p) => {
+                  const active = currentPath === p.path;
+
+                  return (
+                    <Tab
+                      key={`tab-${p.path}`}
+                      $active={active}
+                      onClick={() => {
+                        if (dragMovedRef.current) return;
+                        navigate(p.path);
+                      }}
+                    >
+                      <span>{p.label}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeTab(p.path);
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </Tab>
+                  );
+                })}
             </TabsContainer>
 
             <IconBtn onClick={() => scrollTabs("right")}>
@@ -696,10 +827,14 @@ const Divider = styled.div`
 
 const TabsContainer = styled.div`
   display: flex;
-  align-items: center;
   height: 100%;
-  margin-left: 8px;
   overflow-x: auto;
+  cursor: grab;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
 
   &::-webkit-scrollbar {
     display: none;
@@ -816,4 +951,11 @@ const LogoutButton = styled.button`
   &:hover {
     background: #003ad6;
   }
+`;
+
+const PinnedTabs = styled.div`
+  display: flex;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  user-select: none;
 `;
