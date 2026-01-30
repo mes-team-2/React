@@ -68,7 +68,7 @@ const DEFECT_TYPE_CHART = [
   { name: "기타", value: 10 },
 ];
 
-const PIE_COLORS = ["#FF5B5B", "#FF9F0A", "#FFD60A", "#34C759", "#AF52DE"];
+const PIE_COLORS = ["#FF5B5B", "#FF9F0A", "#938bff", "#34C759", "#AF52DE"];
 
 const MACHINE_ENV = [
   {
@@ -190,6 +190,9 @@ export default function Dashboard() {
                   dataKey="value"
                   innerRadius={50}
                   outerRadius={85}
+                  isAnimationActive={true}
+                  animationDuration={400}
+                  animationEasing="ease-out"
                 >
                   {DEFECT_TYPE_CHART.map((_, i) => (
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />

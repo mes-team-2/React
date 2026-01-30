@@ -96,7 +96,7 @@ export default function ProcessLog() {
   return (
     <Wrapper>
       <Header>
-        <h2>공정 이력 (Process Log)</h2>
+        <h2>공정 이력</h2>
       </Header>
 
       <FilterBar>
