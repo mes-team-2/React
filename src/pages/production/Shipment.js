@@ -1,19 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import {
-  History,
-} from 'lucide-react';
-import {
   IoArrowForwardCircleOutline,
   IoArrowBackCircleOutline,
 } from "react-icons/io5";
 import { FiEdit, } from "react-icons/fi";
-
 import TableStyle from '../../components/TableStyle';
 import SearchBar from '../../components/SearchBar';
 import SearchDate from '../../components/SearchDate';
 import SummaryCard from '../../components/SummaryCard';
 import Status from '../../components/Status';
+import Pagination from '../../components/Pagination';
 
 const Shipment = () => {
   // 상태 관리
@@ -24,6 +21,10 @@ const Shipment = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchDateRange, setSearchDateRange] = useState({ start: null, end: null });
   const [txTypeFilter, setTxTypeFilter] = useState("ALL"); // ALL, IN, OUT
+
+  // 페이지네이션 상태 추가
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 20; // 페이지당 20개
 
   // 초기 데이터 로드 (DB 구조 기반 시뮬레이션)
   useEffect(() => {
@@ -76,6 +77,19 @@ const Shipment = () => {
         location: 'A-105',
         note: '정기 재고실사 차이 반영'
       },
+      // ... 페이지네이션 확인을 위한 더미 데이터 복제
+      ...Array.from({ length: 20 }).map((_, i) => ({
+        id: 200 + i,
+        tx_time: `2026-01-${20 - (i % 20)} 10:00:00`,
+        tx_type: i % 2 === 0 ? 'PRODUCTION_IN' : 'SHIPMENT_OUT',
+        status_key: i % 2 === 0 ? 'MATIN' : 'MATOUT',
+        product_code: 'BAT-12V-100A',
+        product_name: '리튬이온 배터리 (100Ah)',
+        qty: i % 2 === 0 ? 100 : -50,
+        unit: 'EA',
+        location: i % 2 === 0 ? 'A-101' : '출하장',
+        note: '-'
+      })),
     ];
     setHistoryData(dummyData);
   }, []);
@@ -129,6 +143,15 @@ const Shipment = () => {
     return data;
   }, [historyData, searchTerm, searchDateRange, txTypeFilter, sortConfig]);
 
+  // 현재 페이지 데이터 슬라이싱
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return filteredData.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredData, page]);
+
+  // 총 페이지 수 계산
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
   //  Summary 통계 계산 (총 건수, 입고, 출고, 재고조정)
   const summary = useMemo(() => {
     let totalIn = 0;
@@ -148,6 +171,24 @@ const Shipment = () => {
 
     return { totalCount, totalIn, totalOut, adjustmentQty };
   }, [filteredData]);
+
+  // 정렬 핸들러
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
+  };
+
+  // 검색 (페이지 리셋 포함) 핸들러
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+
+  const handleDateSearch = (start, end) => {
+    setSearchDateRange({ start, end });
+    setPage(1);
+  };
 
   // 테이블 컬럼 정의
   const columns = useMemo(() => [
@@ -190,12 +231,7 @@ const Shipment = () => {
     },
   ], []);
 
-  // 이벤트 핸들러
-  const handleSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
-    setSortConfig({ key, direction });
-  };
+
 
   return (
     <Wrapper>
@@ -246,11 +282,17 @@ const Shipment = () => {
 
       <TableContainer>
         <TableStyle
-          data={filteredData}
+          data={paginatedData}
           columns={columns}
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
+        />
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
         />
       </TableContainer>
     </Wrapper>
@@ -291,6 +333,9 @@ const TableContainer = styled.div`
   flex: 1;
   border-radius: 12px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
 
 
