@@ -7,6 +7,7 @@ import SummaryCard from "../../components/SummaryCard";
 import MaterialLogDetail from "./MaterialLogDetail";
 import SearchDate from "../../components/SearchDate";
 import Status from "../../components/Status";
+import Pagination from "../../components/Pagination";
 import {
   IoArrowForwardCircleOutline,
   IoArrowBackCircleOutline,
@@ -23,10 +24,10 @@ const MATERIAL_LOGS = [
     lotNo: "LOT-202601-001",
     type: "IN",
     qty: 500,
-    remainQty: 500, // 잔량
+    remainQty: 500,
     unit: "EA",
-    fromLocation: "협력사(ABC메탈)", // 출발지
-    toLocation: "자재창고 A-01",     // 도착지
+    fromLocation: "협력사(ABC메탈)",
+    toLocation: "자재창고 A-01",
     operator: "WK-101",
     note: "정기 입고",
   },
@@ -38,7 +39,7 @@ const MATERIAL_LOGS = [
     lotNo: "LOT-202601-001",
     type: "USE",
     qty: -120,
-    remainQty: 380, // 500 - 120
+    remainQty: 380,
     unit: "EA",
     fromLocation: "자재창고 A-01",
     toLocation: "생산 1라인",
@@ -75,66 +76,22 @@ const MATERIAL_LOGS = [
     operator: "WK-104",
     note: "",
   },
-  {
-    id: 5,
-    occurredAt: "2026-01-20 09:12",
-    materialCode: "MAT-LEAD",
-    materialName: "납판",
-    lotNo: "LOT-202601-001",
-    type: "IN",
-    qty: 500,
-    remainQty: 500, // 잔량
+  // ... (데이터 부족 시 페이지네이션 확인용 더미 데이터 추가)
+  ...Array.from({ length: 20 }).map((_, i) => ({
+    id: i + 10,
+    occurredAt: `2026-01-${22 + (i % 5)} 10:00`,
+    materialCode: "MAT-TEST",
+    materialName: "테스트 자재",
+    lotNo: `LOT-202601-${String(i + 20).padStart(3, '0')}`,
+    type: i % 2 === 0 ? "IN" : "USE",
+    qty: i % 2 === 0 ? 100 : -50,
+    remainQty: 100,
     unit: "EA",
-    fromLocation: "협력사(ABC메탈)", // 출발지
-    toLocation: "자재창고 A-01",     // 도착지
-    operator: "WK-101",
-    note: "정기 입고",
-  },
-  {
-    id: 6,
-    occurredAt: "2026-01-20 11:40",
-    materialCode: "MAT-LEAD",
-    materialName: "납판",
-    lotNo: "LOT-202601-001",
-    type: "USE",
-    qty: -120,
-    remainQty: 380, // 500 - 120
-    unit: "EA",
-    fromLocation: "자재창고 A-01",
-    toLocation: "생산 1라인",
-    operator: "WK-103",
+    fromLocation: "창고",
+    toLocation: "라인",
+    operator: "WK-TEST",
     note: "",
-  },
-  {
-    id: 7,
-    occurredAt: "2026-01-21 14:05",
-    materialCode: "MAT-ELEC",
-    materialName: "전해액",
-    lotNo: "LOT-202601-014",
-    type: "IN",
-    qty: 1000,
-    remainQty: 1000,
-    unit: "L",
-    fromLocation: "협력사(케미칼X)",
-    operator: "WK-104",
-    toLocation: "위험물 창고 B-02",
-    note: "",
-  },
-  {
-    id: 8,
-    occurredAt: "2026-01-21 16:30",
-    materialCode: "MAT-ELEC",
-    materialName: "전해액",
-    lotNo: "LOT-202601-014",
-    type: "USE",
-    qty: -300,
-    remainQty: 700,
-    unit: "L",
-    fromLocation: "위험물 창고 B-02",
-    toLocation: "생산 2라인",
-    operator: "WK-104",
-    note: "",
-  },
+  })),
 ];
 
 export default function MaterialLog() {
@@ -144,6 +101,9 @@ export default function MaterialLog() {
   const [selected, setSelected] = useState(null);
   const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 검색상태
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // 테이블 정렬 상태 관리
+  // 페이지네이션 상태
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 20; // 한 페이지당 20개
 
   // 필터 로직 (키워드 + 날짜)
   const filtered = useMemo(() => {
@@ -208,6 +168,15 @@ export default function MaterialLog() {
     return sortableItems;
   }, [filtered, sortConfig]);
 
+  // 데이터 슬라이싱 (현재 페이지 데이터만 추출)
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return sortedRows.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedRows, page]);
+
+  // 총 페이지 수 계산
+  const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
+
   // Summary 계산
   const summary = useMemo(() => {
     const targetData = filtered;
@@ -237,6 +206,22 @@ export default function MaterialLog() {
       direction = "desc";
     }
     setSortConfig({ key, direction });
+  };
+
+  // 필터 변경 시 페이지 리셋
+  const handleKeywordChange = (v) => {
+    setKeyword(v);
+    setPage(1);
+  };
+
+  const handleDateChange = (start, end) => {
+    setDateRange({ start, end });
+    setPage(1);
+  };
+
+  const onRowClick = (row) => {
+    setSelected(row);
+    setDrawerOpen(true);
   };
 
 
@@ -269,14 +254,7 @@ export default function MaterialLog() {
     { key: "operator", label: "작업자", width: 90 },
   ];
 
-  const handleDateChange = (start, end) => {
-    setDateRange({ start, end });
-  };
 
-  const onRowClick = (row) => {
-    setSelected(row);
-    setDrawerOpen(true);
-  };
 
   return (
     <Wrapper>
@@ -318,13 +296,20 @@ export default function MaterialLog() {
       <TableWrap>
         <TableStyle
           columns={columns}
-          data={sortedRows}
+          data={paginatedData}
           selectable={false}
           onRowClick={onRowClick}
           sortConfig={sortConfig}
           onSort={handleSort}
         />
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </TableWrap>
+
+
 
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         {selected && <MaterialLogDetail row={selected} />}
@@ -362,6 +347,9 @@ const FilterBar = styled.div`
 const TableWrap = styled.div`
   width: 100%;
   overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
 
 const QtyText = styled.span`
