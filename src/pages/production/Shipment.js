@@ -25,7 +25,7 @@ const Shipment = () => {
   const [searchDateRange, setSearchDateRange] = useState({ start: null, end: null });
   const [txTypeFilter, setTxTypeFilter] = useState("ALL"); // ALL, IN, OUT
 
-  // 2. 초기 데이터 로드 (DB 구조 기반 시뮬레이션)
+  // 초기 데이터 로드 (DB 구조 기반 시뮬레이션)
   useEffect(() => {
     const dummyData = [
       {
@@ -68,7 +68,7 @@ const Shipment = () => {
         id: 104,
         tx_time: '2026-01-26 15:20:00',
         tx_type: 'ADJUSTMENT', // 재고 조정
-        status_key: 'CAUTION',
+        status_key: 'MATOUT',
         product_code: 'BAT-12V-200A',
         product_name: '산업용 배터리 (200Ah)',
         qty: -2,

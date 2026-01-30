@@ -7,6 +7,10 @@ import SummaryCard from "../../components/SummaryCard";
 import MaterialLogDetail from "./MaterialLogDetail";
 import SearchDate from "../../components/SearchDate";
 import Status from "../../components/Status";
+import {
+  IoArrowForwardCircleOutline,
+  IoArrowBackCircleOutline,
+} from "react-icons/io5";
 
 import { FiArchive, FiLogIn, FiLogOut, FiPieChart } from "react-icons/fi";
 
@@ -282,16 +286,16 @@ export default function MaterialLog() {
 
       <SummaryGrid>
         <SummaryCard
-          icon={<FiLogIn />}
+          icon={<IoArrowBackCircleOutline />}
           label="입고된 자재 수량"
           value={summary.inQty.toLocaleString()}
           color="var(--run)"
         />
         <SummaryCard
-          icon={<FiLogOut />}
+          icon={<IoArrowForwardCircleOutline />}
           label="공정 투입"
           value={summary.outUseQty.toLocaleString()}
-          color="var(--waiting)"
+          color="var(--error)"
         />
         <SummaryCard
           icon={<FiArchive />}

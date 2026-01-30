@@ -28,7 +28,7 @@ export default function MaterialLogDetail({ row, onClose }) {
       </Header>
 
       <Content>
-        {/* LOT 정보 섹션 */}
+        {/* LOT 정보 섹션
         <Section>
           <SectionTitle>LOT정보</SectionTitle>
           <LotInfoGrid>
@@ -39,7 +39,7 @@ export default function MaterialLogDetail({ row, onClose }) {
               <Barcode value={row.lotNo} width={1} height={60} fontSize={12} />
             </BarcodeWrapper>
           </LotInfoGrid>
-        </Section>
+        </Section> */}
 
         {/* 입출고 정보 섹션 */}
         <Section>
