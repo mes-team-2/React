@@ -10,7 +10,6 @@ import SideDrawer from "../../components/SideDrawer";
 import MaterialCreate from "./MaterialCreate";
 import { InventoryAPI } from "../../api/AxiosAPI";
 
-
 import {
   PieChart,
   Pie,
@@ -74,7 +73,7 @@ export default function Material() {
       if (currentStock === 0) {
         danger++; // 재고 0 -> 위험
       } else if (currentStock >= safeStock) {
-        safe++;   // 재고 >= 안전재고 -> 안전
+        safe++; // 재고 >= 안전재고 -> 안전
       } else {
         warning++; // 재고 < 안전재고 -> 주의
       }
@@ -174,36 +173,7 @@ export default function Material() {
     { key: "no", label: "No", width: 50 },
     { key: "materialCode", label: "자재 코드", width: 180 },
     { key: "materialName", label: "자재명", width: 180 },
-    { key: "stockQty", label: "재고", width: 100 },
-    { key: "safeQty", label: "안전재고", width: 100 },
-    { key: "unit", label: "단위", width: 80 },
-    {
-      key: "stockStatus",
-      label: "재고상태",
-      width: 150,
-      render: (_, row) => {
-        // 숫자 변환 
-        const currentStock = Number(row.stockQty || 0);
-        const safeStock = Number(row.safeQty || 0);
 
-        let calcStatus = "CAUTION"; // 기본값 (주의)
-
-        // 재고가 0이면 -> DANGER
-        if (currentStock === 0) {
-          calcStatus = "DANGER";
-        }
-        // 재고가 안전재고보다 많거나 같으면 -> SAFE
-        else if (currentStock >= safeStock) {
-          calcStatus = "SAFE";
-        }
-        // 재고가 안전재고보다 적으면 (0보다는 큼) -> CAUTION (WARNING)
-        else {
-          calcStatus = "CAUTION";
-        }
-
-        return <Status status={calcStatus} />;
-      },
-    },
     { key: "inboundAt", label: "입고일자", width: 180 },
     { key: "createdAt", label: "자재등록일자", width: 180 },
   ];
@@ -282,19 +252,19 @@ export default function Material() {
 
       <FilterBar>
         <InputGroup>
-          <SearchDate width="m" onChange={handleDateChange} placeholder="입고일자 검색" />
+          <SearchDate
+            width="m"
+            onChange={handleDateChange}
+            placeholder="입고일자 검색"
+          />
           <SearchBar
             width="l"
             placeholder="자재명 / 자재코드 검색"
             onChange={setKeyword} // 키워드 상태 업데이트
-            onSearch={() => { }}
+            onSearch={() => {}}
           />
         </InputGroup>
-        <Button
-          variant="ok"
-          size="m"
-          onClick={() => setCreateOpen(true)}
-        >
+        <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
           + 신규 자재 등록
         </Button>
       </FilterBar>
@@ -332,7 +302,6 @@ export default function Material() {
   );
 }
 
-
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -350,7 +319,6 @@ const ChartGrid = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 
-  
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
   }
@@ -360,8 +328,7 @@ const Card = styled.div`
   border-radius: 16px;
   padding: 18px;
   box-shadow: var(--shadow);
-              
-  
+
   h4 {
     font-size: var(--fontSm);
     margin-bottom: 20px;

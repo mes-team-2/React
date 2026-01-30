@@ -273,28 +273,6 @@ export default function Dashboard() {
           <FaTools /> 설비별 환경 정보
         </SectionTitle>
 
-        {/* 🔥 여기만 추가됨 */}
-        <ChartCard>
-          <ChartTitle>공정별 실시간 진행률</ChartTitle>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart
-              data={progressData}
-              layout="vertical"
-              margin={{ left: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                type="number"
-                domain={[0, 100]}
-                tickFormatter={(v) => `${v}%`}
-              />
-              <YAxis type="category" dataKey="name" width={90} />
-              <Tooltip formatter={(v) => [`${v}%`, "진행률"]} />
-              <Bar dataKey="value" fill="#004DFC" barSize={14} radius={0} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
         <Grid cols={3}>
           {MACHINE_ENV.map((m) => (
             <EnvCard key={m.machine}>
