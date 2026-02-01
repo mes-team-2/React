@@ -40,8 +40,9 @@ const GlobalStyle = createGlobalStyle`
     --run : #22c55e; 
     --stop : #64748b; 
     --waiting : #f59e0b; 
-    --error : #ef4444; 
     --complete : #004dfc;
+    --error : #ef4444; 
+    --kpi : #AF52DE;
     --bgWaiting : #FEF6E7;
     --bgRun : #E9FAEF;
     --bgComplete : #E6EEFF;
