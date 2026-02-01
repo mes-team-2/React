@@ -50,9 +50,7 @@ const SearchDate = ({ width, onChange }) => {
 
 export default SearchDate;
 
-/* =========================
-   Custom Header
-   ========================= */
+
 const CustomHeader = ({
   date,
   decreaseMonth,
@@ -87,9 +85,7 @@ const CustomDatePicker = ({ selected, onChange, placeholder, ...rest }) => (
   </DateInputWrapper>
 );
 
-/* =========================
-   Styled Components
-   ========================= */
+
 const sizeMap = {
   s: '200px',
   m: '300px',
@@ -146,7 +142,6 @@ const StyledDatePicker = styled(ReactDatePicker)`
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05); 
   }
 
-
   &::placeholder {
     color: var(--font2);
   }
@@ -175,12 +170,12 @@ const HeaderContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 10px 5px 10px;
+  padding: 10px 5px 5px 5px;
   background-color: var(--background);
 `;
 
 const CurrentMonth = styled.span`
-  font-size: 15px;
+  font-size: var(--fontSm);
   font-weight: bold;
   color: var(--font);
   letter-spacing: -0.5px; 
@@ -191,9 +186,9 @@ const NavButton = styled.button`
   border: none;
   cursor: pointer;
   color: var(--font2);
-  font-size: 12px;
-  width: 28px;
-  height: 28px;
+  font-size: var(--fontXxs);
+  width: 24px;   
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -210,7 +205,7 @@ const NavButton = styled.button`
   }
 `;
 
-// 부드러운 등장 애니메이션
+
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
@@ -219,6 +214,7 @@ const fadeIn = keyframes`
 const DatePickerStyles = createGlobalStyle`
   .react-datepicker-popper {
     z-index: 9999 !important;
+    padding-top: 2px; 
   }
 
   .react-datepicker {
@@ -226,10 +222,11 @@ const DatePickerStyles = createGlobalStyle`
     border: 1px solid var(--border);
     border-radius: 12px;
     background-color: var(--background);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); 
-    padding-bottom: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); 
+    padding-bottom: 8px; 
     overflow: hidden;
-    animation: ${fadeIn} 0.2s ease-out; 
+    animation: ${fadeIn} 0.2s ease-out;
+    font-size: var(--fontXs); 
   }
 
   .react-datepicker__header {
@@ -239,31 +236,31 @@ const DatePickerStyles = createGlobalStyle`
   }
 
   .react-datepicker__day-names {
-    margin-top: 8px;
+    margin-top: 5px;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 8px;
+    padding-bottom: 5px;
   }
 
   .react-datepicker__day-name {
     color: var(--font2);
     font-weight: var(--medium);
-    width: 34px; 
-    line-height: 34px;
+    width: 28px;
+    line-height: 28px;
     margin: 1px;
-    font-size: 13px;
+    font-size: var(--fontXxs); 
   }
 
   .react-datepicker__month {
-    margin: 10px 10px 5px 10px;
+    margin: 5px 8px 0 8px; 
   }
 
   .react-datepicker__day {
-    width: 34px;
-    line-height: 34px;
+    width: 28px; 
+    line-height: 28px;
     margin: 1px;
     border-radius: 20%;
     color: var(--font);
-    font-size: var(--fontSm);
+    font-size: 12px;
     font-weight: var(--normal);
     transition: all 0.2s ease;
 
@@ -273,7 +270,7 @@ const DatePickerStyles = createGlobalStyle`
     }
   }
 
-  /* 선택된 날짜  */
+  /* 선택된 날짜 */
   .react-datepicker__day--selected,
   .react-datepicker__day--keyboard-selected,
   .react-datepicker__day--in-range,
@@ -293,11 +290,11 @@ const DatePickerStyles = createGlobalStyle`
     &::after {
       content: '';
       position: absolute;
-      bottom: 5px; 
+      bottom: 3px; 
       left: 50%;
       transform: translateX(-50%);
-      width: 4px;
-      height: 4px;
+      width: 3px;
+      height: 3px;
       background-color: var(--main);
       border-radius: 50%;
     }

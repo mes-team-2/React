@@ -14,6 +14,8 @@ import SummaryCard from "../../components/SummaryCard";
 import SideDrawer from "../../components/SideDrawer";
 import MaterialLotDetail from "./MaterialLotDetail";
 import Pagination from "../../components/Pagination";
+import SelectBar from "../../components/SelectBar";
+import Progress from "../../components/Progress";
 
 const MATERIAL_DATA = [
   {
@@ -35,9 +37,9 @@ const MATERIAL_DATA = [
     lot_no: "LOT-260101-090902",
     code: "MAT-260101-090901",
     name: "배터리 케이스 (L3)",
-    current: 8800,
-    production: 500,
-    available: 8300,
+    current: 4000,
+    production: 4000, // 50% 소진 가정
+    available: 0,
     date: "2026/01/01 12:23",
   },
   {
@@ -76,7 +78,6 @@ const MATERIAL_DATA = [
     available: 4000,
     date: "2026/01/01 12:23",
   },
-  // ... (데이터가 적으면 페이지네이션 확인이 어려우므로 임의로 데이터 복제)
   ...Array.from({ length: 30 }).map((_, i) => ({
     id: i + 6,
     inbound_date: "2025-12-25 12:23",
@@ -85,11 +86,23 @@ const MATERIAL_DATA = [
     code: "MAT-260101-090901",
     name: "배터리 케이스 (L3)",
     current: 5000 + i * 10,
-    production: 0,
+    production: i % 2 !== 0 ? 1000 : 0,
     available: 5000 + i * 10,
     date: "2026/01/01 12:23",
   })),
 ];
+
+// 날짜 포맷 함수 (yyyy-MM-dd HH:mm)
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+};
 
 export default function MaterialLot() {
   // 상태 관리
@@ -97,12 +110,23 @@ export default function MaterialLot() {
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
+  // 상태 필터 관리
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
   // 페이지네이션 상태
   const [page, setPage] = useState(1);
   const itemsPerPage = 20; // 페이지당 20개씩 보여주기
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+
+  // 상태 옵션 정의
+  const STATUS_OPTIONS = [
+    { value: "ALL", label: "전체 상태" },
+    { value: "WAITING", label: "대기중" },
+    { value: "RUNNING", label: "생산중" },
+    { value: "EMPTY", label: "품절/불량" },
+  ];
 
   // 필터링 로직
   const filteredList = useMemo(() => {
@@ -132,9 +156,13 @@ export default function MaterialLot() {
           if (itemDate > endDate) matchDate = false;
         }
       }
-      return matchSearch && matchDate;
+
+      // 상태 필터링
+      const matchStatus = statusFilter === "ALL" || item.status === statusFilter;
+
+      return matchSearch && matchDate && matchStatus;
     });
-  }, [keyword, dateRange]);
+  }, [keyword, dateRange, statusFilter]);
 
   // 정렬 로직
   const sortedList = useMemo(() => {
@@ -206,11 +234,16 @@ export default function MaterialLot() {
   // 테이블 컬럼
   const columns = [
     { key: "id", label: "No", width: 50, render: (v) => v },
-    { key: "inbound_date", label: "입고일자", width: 160 },
+    {
+      key: "inbound_date",
+      label: "입고일자",
+      width: 150,
+      render: (v) => formatDate(v)
+    },
     {
       key: "status",
       label: "LOT 상태",
-      width: 150,
+      width: 120,
       render: (v) => {
         let statusKey = "DEFAULT";
         if (v === "WAITING") statusKey = "LOT_WAIT";
@@ -220,12 +253,31 @@ export default function MaterialLot() {
       },
     },
     { key: "lot_no", label: "LOT번호", width: 160 },
-    { key: "code", label: "자재코드", width: 160 },
-    { key: "name", label: "자재명", width: 180 },
-    { key: "current", label: "재고", width: 100, render: (v) => v.toLocaleString() },
-    { key: "production", label: "생산중", width: 100, render: (v) => v.toLocaleString() },
-    { key: "available", label: "가용재고", width: 100, render: (v) => v.toLocaleString() },
-    { key: "date", label: "상태변경일시", width: 160 },
+    { key: "code", label: "자재코드", width: 150 },
+    { key: "name", label: "자재명", width: 170 },
+    {
+      key: "current",
+      label: "총 재고",
+      width: 90,
+      render: (v) => v.toLocaleString()
+    },
+    { key: "production", label: "생산투입", width: 90, render: (v) => v.toLocaleString() },
+    {
+      key: "usage_rate",
+      label: "소진율",
+      width: 140,
+      render: (_, row) => {
+        // 소진율 계산 로직 변경 production / current (현재 재고가 총량일 경우)
+        const rate = row.current > 0 ? (row.production / row.current) * 100 : 0;
+        return <Progress value={rate} width="100%" color="var(--main)" />;
+      }
+    },
+    {
+      key: "date",
+      label: "상태변경일시",
+      width: 150,
+      render: (v) => formatDate(v)
+    },
   ];
 
   return (
@@ -245,6 +297,16 @@ export default function MaterialLot() {
           onChange={handleDateChange}
           placeholder="기간 검색"
         />
+        <SelectBar
+          width="140px"
+          placeholder="상태 선택"
+          options={STATUS_OPTIONS}
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+        />
         <SearchBar
           width="l"
           placeholder="LOT번호 / 자재명 / 코드 검색"
@@ -252,6 +314,7 @@ export default function MaterialLot() {
           onSearch={() => { }}
         />
       </FilterBar>
+
 
       <TableContainer>
         <TableStyle
