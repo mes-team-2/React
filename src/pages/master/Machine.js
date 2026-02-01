@@ -4,9 +4,7 @@ import Table from "../../components/TableStyle";
 import { AlertTriangle, PlayCircle, PauseCircle, Power } from "lucide-react";
 import SummaryCard from "../../components/SummaryCard";
 
-/* =========================
-   상태 카드 데이터
-========================= */
+
 const summaryData = [
   {
     label: "WAITING",

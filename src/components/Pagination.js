@@ -84,7 +84,7 @@ const PageBtn = styled.button`
   
   color: ${({ $active }) => ($active ? "white" : "var(--font)")};
 
-  font-size: var();
+  font-size: var(--fontSm);
 
   &:disabled {
     cursor: default;
