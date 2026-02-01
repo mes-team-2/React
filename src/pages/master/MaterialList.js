@@ -9,6 +9,7 @@ import MaterialDetail from "./MaterialDetail";
 import SideDrawer from "../../components/SideDrawer";
 import MaterialCreate from "./MaterialCreate";
 import { InventoryAPI } from "../../api/AxiosAPI";
+import SelectBar from "../../components/SelectBar";
 
 import {
   PieChart,
@@ -33,10 +34,19 @@ export default function MaterialList() {
   const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 검색상태
   const [selectedIds, setSelectedIds] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [statusFilter, setStatusFilter] = useState("ALL"); // 재고 상태 필터링을 위한 State
 
   const [open, setOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
+
+  // SelectBar 옵션 정의
+  const STATUS_OPTIONS = [
+    { value: "ALL", label: "전체 상태" },
+    { value: "SAFE", label: "안전" },
+    { value: "CAUTION", label: "주의" },
+    { value: "DANGER", label: "경고(품절)" },
+  ];
 
   // 데이터 조회
   const fetchMaterials = async () => {
@@ -104,7 +114,7 @@ export default function MaterialList() {
     { date: "01-05", inbound: 520, outbound: 430 },
   ];
 
-  // 필터 및 정렬
+  // 필터 및 정렬 로직 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
       // 검색어 필터
@@ -114,11 +124,10 @@ export default function MaterialList() {
         item.materialName.toLowerCase().includes(lower) ||
         item.materialCode.toLowerCase().includes(lower);
 
-      // 날짜 필터 (입고일자 inboundAt 기준)
+      // 날짜 필터
       let matchesDate = true;
       if (item.inboundAt) {
         const itemDate = new Date(item.inboundAt);
-        // 시간 정보를 제거하고 날짜만 비교하기 위해 setHours(0,0,0,0) 처리
         itemDate.setHours(0, 0, 0, 0);
 
         if (dateRange.start) {
@@ -136,9 +145,23 @@ export default function MaterialList() {
         if (dateRange.start || dateRange.end) matchesDate = false;
       }
 
-      return matchesKeyword && matchesDate;
+      // 상태 필터 
+      let matchesStatus = true;
+      if (statusFilter !== "ALL") {
+        const currentStock = Number(item.stockQty || 0);
+        const safeStock = Number(item.safeQty || 0);
+        let itemStatus = "CAUTION"; // 기본값
+
+        if (currentStock === 0) itemStatus = "DANGER";
+        else if (currentStock >= safeStock) itemStatus = "SAFE";
+
+        // 필터값과 계산된 상태가 다르면 제외
+        if (itemStatus !== statusFilter) matchesStatus = false;
+      }
+
+      return matchesKeyword && matchesDate && matchesStatus;
     });
-  }, [keyword, data, dateRange]);
+  }, [keyword, data, dateRange, statusFilter]);
 
   const handleSort = (key) => {
     setSortConfig((prev) =>
@@ -285,6 +308,13 @@ export default function MaterialList() {
             width="m"
             onChange={handleDateChange}
             placeholder="입고일자 검색"
+          />
+          <SelectBar
+            width="130px"
+            placeholder="상태 선택"
+            options={STATUS_OPTIONS}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
           />
           <SearchBar
             width="l"

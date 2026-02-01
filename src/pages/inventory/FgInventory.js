@@ -11,6 +11,7 @@ import SearchBar from '../../components/SearchBar';
 import SearchDate from '../../components/SearchDate';
 import Status from '../../components/Status';
 import SummaryCard from '../../components/SummaryCard';
+import SelectBar from '../../components/SelectBar';
 
 
 
@@ -20,6 +21,9 @@ const FgInventory = () => {
   const [selectedIds, setSelectedIds] = useState([]); // 체크박스 선택된 ID들
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null }); // 정렬 설정
 
+  // 상태 필터 State
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
   // 검색 필터 상태관리
   const [searchTerm, setSearchTerm] = useState("");
   const [searchDateRange, setSearchDateRange] = useState({ start: null, end: null });
@@ -27,6 +31,14 @@ const FgInventory = () => {
   // 사이드 드로어 상태 관리
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState(null);
+
+  // SelectBar 옵션 정의
+  const STATUS_OPTIONS = [
+    { value: "ALL", label: "전체 상태" },
+    { value: "SAFE", label: "안전" },
+    { value: "CAUTION", label: "주의" },
+    { value: "DANGER", label: "경고(품절)" },
+  ];
 
   // 초기 데이터
   useEffect(() => {
@@ -51,11 +63,10 @@ const FgInventory = () => {
   };
 
   // 필터링 및 정렬 로직 
-  // 원본 데이터(inventoryData) + 검색어(searchTerm) + 날짜(searchDateRange) + 정렬(sortConfig)
   const filteredData = useMemo(() => {
     let data = [...inventoryData];
 
-    // 날짜 검색
+    // 1. 날짜 검색
     if (searchDateRange.start && searchDateRange.end) {
       data = data.filter(item => {
         const itemDate = new Date(item.date);
@@ -69,7 +80,7 @@ const FgInventory = () => {
       });
     }
 
-    // 텍스트 검색 (제품코드, 제품명, LOT 번호)
+    // 2. 텍스트 검색
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
       data = data.filter(item =>
@@ -79,7 +90,15 @@ const FgInventory = () => {
       );
     }
 
-    // 정렬
+    // 3. [추가] 상태 필터링
+    if (statusFilter !== "ALL") {
+      data = data.filter(item => {
+        const currentStatus = getStockStatus(item.qty, item.safe_qty);
+        return currentStatus === statusFilter;
+      });
+    }
+
+    // 4. 정렬
     if (sortConfig.key) {
       data.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
@@ -93,9 +112,9 @@ const FgInventory = () => {
     }
 
     return data;
-  }, [inventoryData, searchTerm, searchDateRange, sortConfig]);
+  }, [inventoryData, searchTerm, searchDateRange, sortConfig, statusFilter]);
 
-  /// Summary 데이터 계산
+  // Summary 데이터 계산 (필터링된 데이터 기준)
   const summaryMetrics = useMemo(() => {
     let safeCount = 0;
     let cautionCount = 0;
@@ -218,6 +237,13 @@ const FgInventory = () => {
         <SearchDate
           width="m"
           onChange={handleDateSearch}
+        />
+        <SelectBar
+          width="140px"
+          placeholder="상태 선택"
+          options={STATUS_OPTIONS}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
         />
         <SearchBar
           width="l"
