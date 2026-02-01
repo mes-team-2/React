@@ -232,7 +232,7 @@ export default function Dashboard() {
         <ChartCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
-              <FaChartBar />
+              <FaChartBar style={{ color: "var(--main)" }} />
               <span>시간별 생산 현황</span>
             </CardHeaderTitle>
             <div className="legend">
@@ -331,7 +331,7 @@ export default function Dashboard() {
         <ChartCard>
           <CardHeader>
             <CardHeaderTitle>
-              <FaExclamationCircle />
+              <FaExclamationCircle style={{ color: "var(--main)" }} />
               <span>불량 유형 분석</span>
             </CardHeaderTitle>
           </CardHeader>
@@ -371,7 +371,7 @@ export default function Dashboard() {
         <ListCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
-              <FaTools />
+              <FaTools style={{ color: "var(--main)" }} />
               <span>설비 가동 현황</span>
             </CardHeaderTitle>
             <HeaderSubText>실시간 모니터링</HeaderSubText>
@@ -417,7 +417,7 @@ export default function Dashboard() {
         <WidgetCard>
           <CardHeader>
             <CardHeaderTitle>
-              <FaTachometerAlt />
+              <FaTachometerAlt style={{ color: "var(--main)" }} />
               <span>공정 효율 (OEE & KPI)</span>
             </CardHeaderTitle>
           </CardHeader>
@@ -479,7 +479,7 @@ export default function Dashboard() {
         <ListCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
-              <FaUserCheck />
+              <FaUserCheck style={{ color: "var(--main)" }} />
               <span>작업자 현황</span>
             </CardHeaderTitle>
             <WorkerSummary>
@@ -531,7 +531,7 @@ export default function Dashboard() {
         <WidgetCard>
           <CardHeader>
             <CardHeaderTitle>
-              <FaCheckCircle />
+              <FaCheckCircle style={{ color: "var(--main)" }} />
               <span>공지사항 / 메모</span>
             </CardHeaderTitle>
           </CardHeader>
@@ -616,7 +616,7 @@ const TopSummaryGrid = styled.div`
 const MainDashboardGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: 350px 450px 350px;
+  grid-template-rows: 300px 450px 350px;
   gap: 20px;
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
