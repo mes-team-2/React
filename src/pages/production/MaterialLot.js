@@ -264,7 +264,7 @@ export default function MaterialLot() {
     { key: "production", label: "생산투입", width: 90, render: (v) => v.toLocaleString() },
     {
       key: "usage_rate",
-      label: "소진율",
+      label: "자재 소진율",
       width: 140,
       render: (_, row) => {
         // 소진율 계산 로직 변경 production / current (현재 재고가 총량일 경우)
