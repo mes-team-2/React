@@ -233,7 +233,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardHeaderTitle>
               <FaChartBar />
-              <span>시간별 생산 비율 (실시간 이동)</span>
+              <span>시간별 생산 현황</span>
             </CardHeaderTitle>
             <div className="legend">
               <span
