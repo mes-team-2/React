@@ -8,12 +8,13 @@ import MaterialLogDetail from "./MaterialLogDetail";
 import SearchDate from "../../components/SearchDate";
 import Status from "../../components/Status";
 import Pagination from "../../components/Pagination";
+import SelectBar from "../../components/SelectBar";
 import {
   IoArrowForwardCircleOutline,
   IoArrowBackCircleOutline,
 } from "react-icons/io5";
 
-import { FiArchive, FiLogIn, FiLogOut, FiPieChart } from "react-icons/fi";
+import { FiArchive } from "react-icons/fi";
 
 const MATERIAL_LOGS = [
   {
@@ -101,11 +102,22 @@ export default function MaterialLog() {
   const [selected, setSelected] = useState(null);
   const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 검색상태
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // 테이블 정렬 상태 관리
+
+  // 입출고 유형 필터 상태
+  const [typeFilter, setTypeFilter] = useState("ALL");
+
   // 페이지네이션 상태
   const [page, setPage] = useState(1);
   const itemsPerPage = 20; // 한 페이지당 20개
 
-  // 필터 로직 (키워드 + 날짜)
+  // SelectBar 옵션 정의
+  const LOG_TYPE_OPTIONS = [
+    { value: "ALL", label: "전체 구분" },
+    { value: "IN", label: "자재입고" },
+    { value: "USE", label: "생산투입" },
+  ];
+
+  // 필터 로직 (키워드 + 날짜 + 유형)
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       // 키워드 검색
@@ -120,7 +132,7 @@ export default function MaterialLog() {
       let matchesDate = true;
       if (r.occurredAt) {
         const logDate = new Date(r.occurredAt);
-        logDate.setHours(0, 0, 0, 0); // 시간 초기화
+        logDate.setHours(0, 0, 0, 0);
 
         if (dateRange.start) {
           const startDate = new Date(dateRange.start);
@@ -135,11 +147,14 @@ export default function MaterialLog() {
         }
       }
 
-      return matchesKeyword && matchesDate;
-    });
-  }, [rows, keyword, dateRange]);
+      // [추가] 유형 필터 (IN / USE)
+      const matchesType = typeFilter === "ALL" || r.type === typeFilter;
 
-  // 정렬 로직 (필터링된 데이터를 정렬)
+      return matchesKeyword && matchesDate && matchesType;
+    });
+  }, [rows, keyword, dateRange, typeFilter]);
+
+  // 정렬 로직
   const sortedRows = useMemo(() => {
     let sortableItems = [...filtered];
     if (sortConfig.key !== null) {
@@ -147,21 +162,15 @@ export default function MaterialLog() {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
-        // 숫자일 경우 비교 처리 (문자열 숫자가 있다면 Number() 변환 필요)
         if (typeof aValue === 'number' && typeof bValue === 'number') {
-          // 그대로 비교
+          // 숫자 비교
         } else {
-          // 문자열 비교
           aValue = String(aValue);
           bValue = String(bValue);
         }
 
-        if (aValue < bValue) {
-          return sortConfig.direction === "asc" ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === "asc" ? 1 : -1;
-        }
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
@@ -177,23 +186,19 @@ export default function MaterialLog() {
   // 총 페이지 수 계산
   const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
 
-  // Summary 계산
   const summary = useMemo(() => {
+    // 현재 검색 결과(filtered) 기준으로 통계를 냄
     const targetData = filtered;
     const total = targetData.length;
 
-    // 입고 수량
     const inQty = targetData
       .filter((r) => r.type === "IN")
       .reduce((a, b) => a + b.qty, 0);
 
-    // 출고/투입 수량
     const outUseQty = targetData
       .filter((r) => r.type !== "IN")
       .reduce((a, b) => a + Math.abs(b.qty), 0);
 
-    // [계산] 입출고 비율 (투입 / 입고 * 100)
-    // 입고가 0일 경우 0% 처리하여 에러 방지
     const rate = inQty === 0 ? 0 : ((outUseQty / inQty) * 100).toFixed(1);
 
     return { total, inQty, outUseQty, rate };
@@ -271,7 +276,7 @@ export default function MaterialLog() {
         />
         <SummaryCard
           icon={<IoArrowForwardCircleOutline />}
-          label="공정 투입"
+          label="생산 투입"
           value={summary.outUseQty.toLocaleString()}
           color="var(--error)"
         />
@@ -285,6 +290,16 @@ export default function MaterialLog() {
 
       <FilterBar>
         <SearchDate width="m" onChange={handleDateChange} placeholder="일자 검색" />
+        <SelectBar
+          width="140px"
+          options={LOG_TYPE_OPTIONS}
+          value={typeFilter}
+          onChange={(e) => {
+            setTypeFilter(e.target.value);
+            setPage(1);
+          }}
+          placeholder="구분 선택"
+        />
         <SearchBar
           width="l"
           placeholder="자재명 / 코드 / LOT 검색"
