@@ -290,7 +290,7 @@ export default function MaterialList() {
             width="l"
             placeholder="자재명 / 자재코드 검색"
             onChange={setKeyword} // 키워드 상태 업데이트
-            onSearch={() => {}}
+            onSearch={() => { }}
           />
         </InputGroup>
         <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
@@ -376,13 +376,13 @@ const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
 `;
 
 const InputGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
 `;
 
 const TableContainer = styled.div`

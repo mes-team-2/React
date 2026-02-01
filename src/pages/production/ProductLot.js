@@ -281,18 +281,20 @@ export default function ProductLot() {
       </ChartGrid>
 
       <FilterBar>
+
+
+        <SearchDate
+          width="m"
+          onChange={handleDateChange}
+          placeholder="기간 검색"
+        />
+
         <SelectBar
           width="140px"
           options={STATUS_OPTIONS}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           placeholder="상태 선택"
-        />
-
-        <SearchDate
-          width="m"
-          onChange={handleDateChange}
-          placeholder="기간 검색"
         />
         <SearchBar
           width="l"
@@ -382,7 +384,7 @@ const SummaryGrid = styled.div`
 const FilterBar = styled.div`
  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
 `;
 
 const TableWrapper = styled.div`

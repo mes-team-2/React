@@ -97,7 +97,7 @@ const Container = styled.div`
   width: ${props => sizeMap[props.width] || props.width};
   height: 30px;
   align-items: center;
-  gap: 5px;
+  gap: 2px;
   box-sizing: border-box;
 `;
 

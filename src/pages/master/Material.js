@@ -261,7 +261,7 @@ export default function Material() {
             width="l"
             placeholder="자재명 / 자재코드 검색"
             onChange={setKeyword} // 키워드 상태 업데이트
-            onSearch={() => {}}
+            onSearch={() => { }}
           />
         </InputGroup>
         <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
@@ -336,18 +336,12 @@ const Card = styled.div`
     color: var(--font2);
   }
 `;
-const ChartBox = styled.div`
-  height: 220px;
-  svg:focus,
-  svg *:focus {
-    outline: none;
-  }
-`;
+
 const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
 `;
 
 const InputGroup = styled.div`

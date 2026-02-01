@@ -341,7 +341,7 @@ const SummaryGrid = styled.div`
 const FilterBar = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
 `;
 
 const TableWrap = styled.div`
