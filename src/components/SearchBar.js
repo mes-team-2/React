@@ -77,6 +77,10 @@ const SearchBox = styled.div`
   &:focus-within {
    border: 1px solid var(--font2);
   }
+  &:hover {
+    border: 1px solid var(--font2);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05); 
+  }
 `;
 
 const Input = styled.input`

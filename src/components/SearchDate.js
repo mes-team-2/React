@@ -1,16 +1,16 @@
-import styled from "styled-components";
-import { useState, useEffect } from "react";
+import styled, { createGlobalStyle, keyframes } from "styled-components";
+import { useState } from "react";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { FaCalendarAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+
 /**
  * @param {string} width 
  * @param {function} onChange 
  */
-
 const SearchDate = ({ width, onChange }) => {
-  const [startDate, setStartDate] = useState(null); // 시작날짜
-  const [endDate, setEndDate] = useState(null); // 종료날짜
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   const handleStartDateChange = (date) => {
     setStartDate(date);
@@ -24,16 +24,25 @@ const SearchDate = ({ width, onChange }) => {
 
   return (
     <Container width={width}>
+      <DatePickerStyles />
+
       <CustomDatePicker
         selected={startDate}
         onChange={handleStartDateChange}
-        placeholder="시작날짜"
+        placeholder="시작일"
+        selectsStart
+        startDate={startDate}
+        endDate={endDate}
       />
       <Separator>~</Separator>
       <CustomDatePicker
         selected={endDate}
         onChange={handleEndDateChange}
-        placeholder="종료날짜"
+        placeholder="종료일"
+        selectsEnd
+        startDate={startDate}
+        endDate={endDate}
+        minDate={startDate}
       />
     </Container>
   );
@@ -41,6 +50,46 @@ const SearchDate = ({ width, onChange }) => {
 
 export default SearchDate;
 
+/* =========================
+   Custom Header
+   ========================= */
+const CustomHeader = ({
+  date,
+  decreaseMonth,
+  increaseMonth,
+  prevMonthButtonDisabled,
+  nextMonthButtonDisabled,
+}) => (
+  <HeaderContainer>
+    <NavButton onClick={decreaseMonth} disabled={prevMonthButtonDisabled}>
+      <FaChevronLeft />
+    </NavButton>
+    <CurrentMonth>
+      {date.getFullYear()}년 {date.getMonth() + 1}월
+    </CurrentMonth>
+    <NavButton onClick={increaseMonth} disabled={nextMonthButtonDisabled}>
+      <FaChevronRight />
+    </NavButton>
+  </HeaderContainer>
+);
+
+const CustomDatePicker = ({ selected, onChange, placeholder, ...rest }) => (
+  <DateInputWrapper>
+    <StyledDatePicker
+      selected={selected}
+      onChange={onChange}
+      dateFormat="yyyy-MM-dd"
+      placeholderText={placeholder}
+      renderCustomHeader={CustomHeader}
+      {...rest}
+    />
+    <CalendarIcon />
+  </DateInputWrapper>
+);
+
+/* =========================
+   Styled Components
+   ========================= */
 const sizeMap = {
   s: '200px',
   m: '300px',
@@ -50,103 +99,226 @@ const sizeMap = {
 const Container = styled.div`
   display: flex;
   width: ${props => sizeMap[props.width] || props.width};
-  height: auto;
   height: 30px;
-  justify-content: flex-start;
   align-items: center;
   gap: 5px;
   box-sizing: border-box;
-`;
-
-
-const StyledDatePicker = styled(ReactDatePicker)`
-  justify-content: flex-start;
-  gap: 10px;
-  display: flex;
-  border: none;
-  border-radius: 25px;
-  font-size: var(--fontSm); 
-  font-weight: var(--normal);
-  color: var(--font); 
-  
-  background-color: var(--background2);
-  width: 100%;
-  min-width: 120px;
-  height: 100%;
-  border: 1px solid transparent;
-  box-sizing: border-box;
-  padding: 0 15px;
-  cursor: pointer;
-
-  &:focus {
-    border: 1px solid var(--font2);
-  }
-
-  &:focus {
-    outline: none;
-  }
-  &::placeholder {
-    color: var(--font2);
-  }
 `;
 
 const DateInputWrapper = styled.div`
   position: relative;
   flex: 1;
   width: 100%;
-  height: 30px;
+  height: 100%;
 
   .react-datepicker-wrapper {
     width: 100%;
     height: 100%;
     display: block;
   }
-
   .react-datepicker__input-container {
     height: 100%;
     width: 100%;
   }
-  .react-datepicker-popper {
-    z-index: 9999 !important; 
+`;
+
+const StyledDatePicker = styled(ReactDatePicker)`
+  width: 100%;
+  height: 30px;
+  padding: 0 15px;
+  border: 1px solid transparent;
+  border-radius: 50px;
+  background-color: var(--background2);
+  color: var(--font);
+  font-size: var(--fontSm);
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border: 1px solid var(--font2);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05); 
+  }
+
+  &:focus {
+    border: 1px solid var(--font2);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05); 
+  }
+
+
+  &::placeholder {
+    color: var(--font2);
   }
 `;
 
 const CalendarIcon = styled(FaCalendarAlt)`
   position: absolute;
-  right: 15px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--font2);
-  font-size: var(--fontSm);
+  font-size: 12px;
   pointer-events: none;
-  z-index: 1; 
+  z-index: 1;
+`;
+
+const Separator = styled.span`
+  font-size: var(--fontSm);
+  color: var(--font2);
+  flex-shrink: 0;
+  padding: 0 2px;
+`;
+
+
+const HeaderContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 10px 5px 10px;
+  background-color: var(--background);
+`;
+
+const CurrentMonth = styled.span`
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--font);
+  letter-spacing: -0.5px; 
+`;
+
+const NavButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--font2);
+  font-size: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+
   &:hover {
-    color: var(--font2); 
+    background-color: var(--background2);
+    color: var(--main);
+  }
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
   }
 `;
 
-const Separator = styled.p`
-  font-size: var(--fontSm);
-  color: var(--font);
-  margin: 0;
-  flex-shrink: 0; 
+// 부드러운 등장 애니메이션
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 `;
 
-const CustomDatePicker = ({
-  selected,
-  onChange,
-  placeholder,
-  ...rest
-}) => (
-  <DateInputWrapper>
-    <StyledDatePicker
-      selected={selected}
-      onChange={onChange}
-      dateFormat="yyyy/MM/dd"
-      placeholderText={placeholder}
-      {...rest}
-    />
-    <CalendarIcon />
-  </DateInputWrapper>
-);
+const DatePickerStyles = createGlobalStyle`
+  .react-datepicker-popper {
+    z-index: 9999 !important;
+  }
 
+  .react-datepicker {
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background-color: var(--background);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); 
+    padding-bottom: 10px;
+    overflow: hidden;
+    animation: ${fadeIn} 0.2s ease-out; 
+  }
+
+  .react-datepicker__header {
+    background-color: var(--background);
+    border-bottom: none;
+    padding-top: 0;
+  }
+
+  .react-datepicker__day-names {
+    margin-top: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  .react-datepicker__day-name {
+    color: var(--font2);
+    font-weight: var(--medium);
+    width: 34px; 
+    line-height: 34px;
+    margin: 1px;
+    font-size: 13px;
+  }
+
+  .react-datepicker__month {
+    margin: 10px 10px 5px 10px;
+  }
+
+  .react-datepicker__day {
+    width: 34px;
+    line-height: 34px;
+    margin: 1px;
+    border-radius: 20%;
+    color: var(--font);
+    font-size: var(--fontSm);
+    font-weight: var(--normal);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--background2);
+      color: var(--main);
+    }
+  }
+
+  /* 선택된 날짜  */
+  .react-datepicker__day--selected,
+  .react-datepicker__day--keyboard-selected,
+  .react-datepicker__day--in-range,
+  .react-datepicker__day--in-selecting-range {
+    background-color: var(--background2) !important;
+    color: var(--main) !important;
+    font-weight: var(--bold);
+    border-radius: 20%; 
+  }
+
+  /* 오늘 날짜 */
+  .react-datepicker__day--today {
+    font-weight: var(--bold);
+    color: var(--main);
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 5px; 
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      background-color: var(--main);
+      border-radius: 50%;
+    }
+  }
+  
+  /* 선택된 상태에서 오늘 날짜 점 색상 */
+  .react-datepicker__day--selected.react-datepicker__day--today::after {
+    background-color: var(--main); 
+  }
+
+  .react-datepicker__day--disabled {
+    color: var(--font2);
+    opacity: 0.5;
+    cursor: not-allowed;
+    &:hover {
+      background-color: transparent;
+      color: var(--font2);
+    }
+  }
+
+  .react-datepicker__triangle {
+    display: none;
+  }
+`;

@@ -42,6 +42,7 @@ const ProgressWrapper = styled.div`
   align-items: center;
   gap: 10px;
   width: ${(props) => sizeMap[props.$width] || props.$width};
+  padding: 0px 5px;
 `;
 
 const ProgressBar = styled.div`

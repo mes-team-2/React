@@ -92,9 +92,6 @@ const SelectBar = ({
 
 export default SelectBar;
 
-/* =========================
-   Styled Components
-========================= */
 
 const sizeMap = {
   s: "120px",
@@ -123,7 +120,8 @@ const SelectTrigger = styled.div`
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   box-sizing: border-box;
-  color: ${(props) => (props.$isSelected ? "var(--font)" : "var(--font2)")};
+  color: ${(props) => (props.$isSelected ? "var(--font2)" : "var(--font)")};
+  
 
   &:hover {
     border-color: var(--font2);
@@ -132,11 +130,14 @@ const SelectTrigger = styled.div`
   }
 `;
 
-const LabelText = styled.span`
+const LabelText = styled.div`
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 `;
 
 const IconWrapper = styled.div`
@@ -146,7 +147,6 @@ const IconWrapper = styled.div`
   font-size: 16px;
   color: var(--font2);
   
-  margin-left: 5px; 
   padding: 0 2px;
 
   transition: transform 0.3s ease;

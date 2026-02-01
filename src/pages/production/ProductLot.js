@@ -1,9 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import styled from "styled-components";
 import {
-  PieChart,
-  Pie,
-  Cell,
   LineChart,
   Line,
   XAxis,
@@ -22,6 +19,8 @@ import Status from "../../components/Status";
 import SummaryCard from "../../components/SummaryCard";
 import SideDrawer from "../../components/SideDrawer";
 import LotDetail from "./LotDetail";
+import SelectBar from "../../components/SelectBar";
+import Progress from "../../components/Progress";
 
 
 export default function ProductLot() {
@@ -40,6 +39,15 @@ export default function ProductLot() {
   const [lotOpen, setLotOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState(null);
 
+  // SelectBar에 들어갈 상태 옵션 정의
+  const STATUS_OPTIONS = [
+    { value: "ALL", label: "전체 상태" },
+    { value: "LOT_RUN", label: "생산중" },
+    { value: "LOT_OK", label: "생산완료" },
+    { value: "LOT_ERR", label: "불량" },
+    { value: "LOT_WAIT", label: "소진완료" },
+  ];
+
   useEffect(() => {
     const mockData = Array.from({ length: 150 }).map((_, i) => {
       const rand = Math.random();
@@ -53,9 +61,23 @@ export default function ProductLot() {
       dateObj.setDate(dateObj.getDate() - Math.floor(Math.random() * 14));
       const dateStr = dateObj.toISOString().split("T")[0];
 
-      const initialQty = Math.floor(Math.random() * 500) + 500;
+      const initialQty = Math.floor(Math.random() * 500) + 500; // 500 ~ 1000
       const badQty = status === "LOT_ERR" ? Math.floor(Math.random() * 50) : 0;
-      const currentQty = status === "LOT_WAIT" ? 0 : initialQty - badQty;
+
+      // [수정 핵심] 상태에 따른 현재 수량(currentQty) 계산
+      let currentQty = 0;
+
+      if (status === "LOT_WAIT") {
+        // 대기중: 아직 시작 안 함 (0%)
+        currentQty = 0;
+      } else if (status === "LOT_RUN") {
+        // 생산중: 10% ~ 95% 사이 랜덤 진행
+        const progressRate = 0.1 + Math.random() * 0.85;
+        currentQty = Math.floor(initialQty * progressRate);
+      } else {
+        // 완료(LOT_OK) 혹은 불량(LOT_ERR): 거의 100% 완료된 상태
+        currentQty = initialQty - badQty;
+      }
 
       return {
         id: i + 1,
@@ -67,7 +89,7 @@ export default function ProductLot() {
         initialQty,
         currentQty,
         badQty,
-        status, // Status 컴포넌트 키값 (LOT_RUN, LOT_OK...)
+        status,
         workOrderNo: `WO-2601-${String(Math.floor(i / 10) + 1).padStart(3, "0")}`,
         createdAt: `${dateStr} ${String(Math.floor(Math.random() * 9) + 9).padStart(2, "0")}:00`,
         operator: ["김철수", "이영희", "박민수"][Math.floor(Math.random() * 3)],
@@ -188,16 +210,31 @@ export default function ProductLot() {
       width: 150,
       render: (val) => <Status status={val} type="basic" />
     },
-    { key: "lotNo", label: "LOT 번호", width: 160 },
+    { key: "lotNo", label: "LOT 번호", width: 130 },
     { key: "productCode", label: "제품코드", width: 140 },
-    { key: "productName", label: "제품명", width: 180 },
-    { key: "process", label: "현재 공정", width: 100 },
+    { key: "productName", label: "제품명", width: 150 },
+    { key: "process", label: "현재 공정", width: 70 },
     { key: "line", label: "생산 라인", width: 100 },
     {
       key: "currentQty",
-      label: "현재 수량",
-      width: 80,
-      render: (val) => val.toLocaleString()
+      label: "실적/계획수량",
+      width: 120,
+      render: (val, row) => (
+        <QtyDisplay>
+          <strong className="current">{val.toLocaleString()}</strong>
+          <span className="divider">/</span>
+          <span className="initial">{row.initialQty.toLocaleString()}</span>
+        </QtyDisplay>
+      )
+    },
+    {
+      key: "progress",
+      label: "진행률",
+      width: 150,
+      render: (_, row) => {
+        const rate = row.initialQty > 0 ? (row.currentQty / row.initialQty) * 100 : 0;
+        return <Progress value={rate} width="100%" />;
+      }
     },
     {
       key: "badQty",
@@ -244,6 +281,14 @@ export default function ProductLot() {
       </ChartGrid>
 
       <FilterBar>
+        <SelectBar
+          width="140px"
+          options={STATUS_OPTIONS}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          placeholder="상태 선택"
+        />
+
         <SearchDate
           width="m"
           onChange={handleDateChange}
@@ -349,4 +394,22 @@ const TableWrapper = styled.div`
 const BadText = styled.span`
   color: ${props => props.$isBad ? "var(--error)" : "inherit"};
   font-weight: ${props => props.$isBad ? "bold" : "var(--medium)"};
+`;
+
+const QtyDisplay = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  
+  .current {
+    font-weight: bold;
+    color: var(--main);
+  }
+  .divider {
+    color: var(--border);
+  }
+  .initial {
+    color: var(--font2);
+  }
 `;
