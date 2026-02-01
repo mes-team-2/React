@@ -11,6 +11,19 @@ import SearchDate from '../../components/SearchDate';
 import SummaryCard from '../../components/SummaryCard';
 import Status from '../../components/Status';
 import Pagination from '../../components/Pagination';
+import SelectBar from '../../components/SelectBar';
+
+// 날짜 포맷 함수 (yyyy-MM-dd HH:mm)
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+};
 
 const Shipment = () => {
   // 상태 관리
@@ -22,11 +35,18 @@ const Shipment = () => {
   const [searchDateRange, setSearchDateRange] = useState({ start: null, end: null });
   const [txTypeFilter, setTxTypeFilter] = useState("ALL"); // ALL, IN, OUT
 
-  // 페이지네이션 상태 추가
+  // 페이지네이션 상태
   const [page, setPage] = useState(1);
-  const itemsPerPage = 20; // 페이지당 20개
+  const itemsPerPage = 20;
 
-  // 초기 데이터 로드 (DB 구조 기반 시뮬레이션)
+  // 구분 필터 옵션 정의
+  const STATUS_OPTIONS = [
+    { value: "ALL", label: "전체 구분" },
+    { value: "IN", label: "생산입고" },
+    { value: "OUT", label: "출고" },
+  ];
+
+  // 초기 데이터 로드
   useEffect(() => {
     const dummyData = [
       {
@@ -77,7 +97,6 @@ const Shipment = () => {
         location: 'A-105',
         note: '정기 재고실사 차이 반영'
       },
-      // ... 페이지네이션 확인을 위한 더미 데이터 복제
       ...Array.from({ length: 20 }).map((_, i) => ({
         id: 200 + i,
         tx_time: `2026-01-${20 - (i % 20)} 10:00:00`,
@@ -149,10 +168,9 @@ const Shipment = () => {
     return filteredData.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredData, page]);
 
-  // 총 페이지 수 계산
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  //  Summary 통계 계산 (총 건수, 입고, 출고, 재고조정)
+  // Summary 통계 계산
   const summary = useMemo(() => {
     let totalIn = 0;
     let totalOut = 0;
@@ -172,27 +190,21 @@ const Shipment = () => {
     return { totalCount, totalIn, totalOut, adjustmentQty };
   }, [filteredData]);
 
-  // 정렬 핸들러
+  // 핸들러
   const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
     setSortConfig({ key, direction });
   };
 
-  // 검색 (페이지 리셋 포함) 핸들러
-  const handleSearch = (value) => {
-    setSearchTerm(value);
-    setPage(1);
-  };
-
-  const handleDateSearch = (start, end) => {
-    setSearchDateRange({ start, end });
-    setPage(1);
-  };
-
   // 테이블 컬럼 정의
   const columns = useMemo(() => [
-    { key: 'tx_time', label: '일시', width: 150 },
+    {
+      key: 'tx_time',
+      label: '일시',
+      width: 150,
+      render: (val) => formatDate(val)
+    },
     {
       key: 'status_key',
       label: '구분',
@@ -205,7 +217,6 @@ const Shipment = () => {
       key: 'product_code',
       label: '제품코드',
       width: 130,
-
     },
     { key: 'product_name', label: '제품명', width: 180 },
     {
@@ -230,8 +241,6 @@ const Shipment = () => {
       width: 140,
     },
   ], []);
-
-
 
   return (
     <Wrapper>
@@ -268,15 +277,32 @@ const Shipment = () => {
 
       {/* 검색 필터 */}
       <FilterBar>
+
         <SearchDate
           width="m"
-          onChange={(start, end) => setSearchDateRange({ start, end })}
+          onChange={(start, end) => {
+            setSearchDateRange({ start, end });
+            setPage(1);
+          }}
+        />
+        <SelectBar
+          width="140px"
+          options={STATUS_OPTIONS}
+          value={txTypeFilter}
+          onChange={(e) => {
+            setTxTypeFilter(e.target.value);
+            setPage(1);
+          }}
+          placeholder="구분 선택"
         />
 
         <SearchBar
           width="l"
           placeholder="제품코드, 명, 위치, 비고 검색"
-          onSearch={(val) => setSearchTerm(val)}
+          onSearch={(val) => {
+            setSearchTerm(val);
+            setPage(1);
+          }}
         />
       </FilterBar>
 
@@ -300,7 +326,6 @@ const Shipment = () => {
 };
 
 export default Shipment;
-
 
 const Wrapper = styled.div`
   display: flex;
@@ -326,7 +351,7 @@ const SummaryGrid = styled.div`
 const FilterBar = styled.div`
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 20px; 
 `;
 
 const TableContainer = styled.div`
@@ -338,9 +363,7 @@ const TableContainer = styled.div`
   gap: 15px;
 `;
 
-
 const QtyText = styled.span`
   font-weight: var(--bold);
   color: ${props => props.$isPositive ? 'var(--main)' : 'var(--error)'};
 `;
-

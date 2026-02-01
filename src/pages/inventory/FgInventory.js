@@ -13,7 +13,17 @@ import Status from '../../components/Status';
 import SummaryCard from '../../components/SummaryCard';
 import SelectBar from '../../components/SelectBar';
 
-
+// 날짜 포맷 함수 (yyyy-MM-dd HH:mm)
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+};
 
 const FgInventory = () => {
   // 상태 관리
@@ -43,11 +53,11 @@ const FgInventory = () => {
   // 초기 데이터
   useEffect(() => {
     const dummyData = [
-      { id: 1, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260120-01', qty: 450, safe_qty: 100, unit: 'EA', loc: 'A-101', date: '2026-01-28' },
-      { id: 2, p_code: 'BAT-12V-120A', p_name: '리튬이온 배터리 (120Ah)', lot: 'LOT260120-05', qty: 80, safe_qty: 100, unit: 'EA', loc: 'B-202', date: '2026-01-28' },
-      { id: 3, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260121-02', qty: 300, safe_qty: 150, unit: 'EA', loc: 'A-103', date: '2026-01-28' },
-      { id: 4, p_code: 'BAT-12V-080A', p_name: '납축전지 (80Ah)', lot: 'LOT260122-01', qty: 5, safe_qty: 50, unit: 'SET', loc: 'C-001', date: '2026-01-27' },
-      { id: 5, p_code: 'BAT-12V-200A', p_name: '산업용 배터리 (200Ah)', lot: 'LOT260123-11', qty: 20, safe_qty: 30, unit: 'EA', loc: 'A-105', date: '2026-01-26' },
+      { id: 1, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260120-01', qty: 450, safe_qty: 100, unit: 'EA', loc: 'A-101', date: '2026-01-28 10:30' },
+      { id: 2, p_code: 'BAT-12V-120A', p_name: '리튬이온 배터리 (120Ah)', lot: 'LOT260120-05', qty: 80, safe_qty: 100, unit: 'EA', loc: 'B-202', date: '2026-01-28 11:20' },
+      { id: 3, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260121-02', qty: 300, safe_qty: 150, unit: 'EA', loc: 'A-103', date: '2026-01-28 14:15' },
+      { id: 4, p_code: 'BAT-12V-080A', p_name: '납축전지 (80Ah)', lot: 'LOT260122-01', qty: 5, safe_qty: 50, unit: 'SET', loc: 'C-001', date: '2026-01-27 09:00' },
+      { id: 5, p_code: 'BAT-12V-200A', p_name: '산업용 배터리 (200Ah)', lot: 'LOT260123-11', qty: 20, safe_qty: 30, unit: 'EA', loc: 'A-105', date: '2026-01-26 16:45' },
     ];
     setInventoryData(dummyData);
   }, []);
@@ -162,7 +172,12 @@ const FgInventory = () => {
       width: 150,
       render: (_, row) => <Status status={getStockStatus(row.qty, row.safe_qty)} />
     },
-    { key: 'date', label: '최종 입고일', width: 120 },
+    {
+      key: 'date',
+      label: '최종 입고일',
+      width: 150,
+      render: (val) => formatDate(val)
+    },
   ], []);
 
   // 이벤트 핸들러

@@ -28,6 +28,18 @@ import {
 // 차트 색상
 const COLORS = ["var(--run)", "var(--waiting)", "var(--error)"];
 
+// 날짜 포맷 함수 (yyyy-MM-dd HH:mm)
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+};
+
 export default function MaterialList() {
   const [data, setData] = useState([]);
   const [keyword, setKeyword] = useState("");
@@ -226,8 +238,18 @@ export default function MaterialList() {
         return <Status status={calcStatus} />;
       },
     },
-    { key: "inboundAt", label: "입고일자", width: 180 },
-    { key: "createdAt", label: "자재등록일자", width: 180 },
+    {
+      key: "inboundAt",
+      label: "입고일자",
+      width: 180,
+      render: (val) => formatDate(val)
+    },
+    {
+      key: "createdAt",
+      label: "자재등록일자",
+      width: 180,
+      render: (val) => formatDate(val)
+    },
   ];
 
   const handleRowClick = (item) => {
