@@ -5,6 +5,7 @@ import SearchBar from "../../components/SearchBar";
 import SideDrawer from "../../components/SideDrawer";
 import SummaryCard from "../../components/SummaryCard";
 import TestLogDetail from "./TestLogDetail";
+import Pagination from "../../components/Pagination";
 
 import {
   FiClipboard,
@@ -131,6 +132,9 @@ export default function TestLog() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
 
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+
   // SearchBar onChange (value/event 모두 대응)
   const handleKeywordChange = (v) => {
     if (typeof v === "string") return setKeyword(v);
@@ -251,6 +255,14 @@ export default function TestLog() {
     return Object.entries(map).map(([name, count]) => ({ name, count }));
   }, [filtered]);
 
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+
+  const pagedData = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return sorted.slice(start, end);
+  }, [sorted, page]);
+
   /* =========================
      테이블 컬럼
   ========================= */
@@ -276,6 +288,10 @@ export default function TestLog() {
   useEffect(() => {
     setSortConfig({ key: null, direction: "asc" });
   }, [resultFilter, defectFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [resultFilter, defectFilter, keyword, sortConfig]);
 
   return (
     <Wrapper>
@@ -399,17 +415,15 @@ export default function TestLog() {
       <TableWrap>
         <Table
           columns={columns}
-          data={sorted}
+          data={pagedData}
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
           onRowClick={onRowClick}
-          // TableStyle가 rowStyle 지원한다면, 판정 색 강조
-          rowStyle={(row) => ({
-            color: RESULT_COLOR[row.result] || "inherit",
-          })}
         />
       </TableWrap>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* ===== 상세 Drawer ===== */}
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
