@@ -17,85 +17,6 @@ import {
 import { FiArchive } from "react-icons/fi";
 import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
-// const MATERIAL_LOGS = [
-//   {
-//     id: 1,
-//     occurredAt: "2026-01-20 09:12",
-//     materialCode: "MAT-LEAD",
-//     materialName: "납판",
-//     lotNo: "LOT-202601-001",
-//     type: "IN",
-//     qty: 500,
-//     remainQty: 500,
-//     unit: "EA",
-//     fromLocation: "협력사(ABC메탈)",
-//     toLocation: "자재창고 A-01",
-//     operator: "WK-101",
-//     note: "정기 입고",
-//   },
-//   {
-//     id: 2,
-//     occurredAt: "2026-01-20 11:40",
-//     materialCode: "MAT-LEAD",
-//     materialName: "납판",
-//     lotNo: "LOT-202601-001",
-//     type: "USE",
-//     qty: -120,
-//     remainQty: 380,
-//     unit: "EA",
-//     fromLocation: "자재창고 A-01",
-//     toLocation: "생산 1라인",
-//     operator: "WK-103",
-//     note: "",
-//   },
-//   {
-//     id: 3,
-//     occurredAt: "2026-01-21 14:05",
-//     materialCode: "MAT-ELEC",
-//     materialName: "전해액",
-//     lotNo: "LOT-202601-014",
-//     type: "IN",
-//     qty: 1000,
-//     remainQty: 1000,
-//     unit: "L",
-//     fromLocation: "협력사(케미칼X)",
-//     operator: "WK-104",
-//     toLocation: "위험물 창고 B-02",
-//     note: "",
-//   },
-//   {
-//     id: 4,
-//     occurredAt: "2026-01-21 16:30",
-//     materialCode: "MAT-ELEC",
-//     materialName: "전해액",
-//     lotNo: "LOT-202601-014",
-//     type: "USE",
-//     qty: -300,
-//     remainQty: 700,
-//     unit: "L",
-//     fromLocation: "위험물 창고 B-02",
-//     toLocation: "생산 2라인",
-//     operator: "WK-104",
-//     note: "",
-//   },
-//   // ... (데이터 부족 시 페이지네이션 확인용 더미 데이터 추가)
-//   ...Array.from({ length: 20 }).map((_, i) => ({
-//     id: i + 10,
-//     occurredAt: `2026-01-${22 + (i % 5)} 10:00`,
-//     materialCode: "MAT-TEST",
-//     materialName: "테스트 자재",
-//     lotNo: `LOT-202601-${String(i + 20).padStart(3, '0')}`,
-//     type: i % 2 === 0 ? "IN" : "USE",
-//     qty: i % 2 === 0 ? 100 : -50,
-//     remainQty: 100,
-//     unit: "EA",
-//     fromLocation: "창고",
-//     toLocation: "라인",
-//     operator: "WK-TEST",
-//     note: "",
-//   })),
-// ];
-
 export default function MaterialLog() {
   // 데이터 관리
   const [rows, setRows] = useState([]);
@@ -111,7 +32,26 @@ export default function MaterialLog() {
   // 입출고 유형 필터 상태
   const [typeFilter, setTypeFilter] = useState("ALL");
 
-  // 데이터 가져오기
+  // 날짜 변환 함수
+  const toDateOnly = (d) => {
+    if (!d) return null;
+
+    const date = new Date(d);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // 타입 변환 함수
+  const convertTypeForServer = (type) => {
+    if (type === "IN") return "INBOUND";
+    if (type === "USE") return "CONSUME";
+    return null;
+  };
+
+  // 데이터 가져오기(페이지)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -120,9 +60,9 @@ export default function MaterialLog() {
         const res = await InventoryAPI2.getMaterialTxList({
           page,
           keyword,
-          type: typeFilter === "ALL" ? null : typeFilter,
-          ...(dateRange.start && { startDate: dateRange.start }),
-          ...(dateRange.end && { endDate: dateRange.end }),
+          type: convertTypeForServer(typeFilter),
+          ...(dateRange.start && { startDate: toDateOnly(dateRange.start) }),
+          ...(dateRange.end && { endDate: toDateOnly(dateRange.end) }),
         });
         const data = res.data;
 
@@ -160,7 +100,28 @@ export default function MaterialLog() {
     fetchData();
   }, [page, keyword, typeFilter, dateRange]);
 
-  // 데이터 필터 조작
+  const [totalSummary, setTotalSummary] = useState({
+    inQty: 0,
+    outUseQty: 0,
+    rate: 0,
+  });
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      const res = await InventoryAPI2.getMaterialTxSummary({
+        type: convertTypeForServer(typeFilter),
+        startDate: toDateOnly(dateRange.start),
+        endDate: toDateOnly(dateRange.end),
+        keyword,
+      });
+      setTotalSummary(res.data);
+      console.log("inQty:", res.data?.inQty);
+      console.log("outQty:", res.data?.outUseQty);
+      console.log("rate:", res.data?.rate);
+    };
+
+    fetchSummary();
+  }, [keyword, typeFilter, dateRange]);
 
   // SelectBar 옵션 정의
   const LOG_TYPE_OPTIONS = [
@@ -169,48 +130,9 @@ export default function MaterialLog() {
     { value: "USE", label: "생산투입" },
   ];
 
-  // 필터 로직 (키워드 + 날짜 + 유형)
-
-  const filtered = useMemo(() => {
-    return rows.filter((r) => {
-      const k = keyword.toLowerCase();
-
-      // 키워드
-      const matchesKeyword =
-        !keyword ||
-        (r.materialCode || "").toLowerCase().includes(k) ||
-        (r.materialName || "").toLowerCase().includes(k) ||
-        (r.lotNo || "").toLowerCase().includes(k);
-
-      // 날짜
-      let matchesDate = true;
-      if (r.occurredAt) {
-        const logDate = new Date(r.occurredAt);
-        logDate.setHours(0, 0, 0, 0);
-
-        if (dateRange.start) {
-          const startDate = new Date(dateRange.start);
-          startDate.setHours(0, 0, 0, 0);
-          if (logDate < startDate) matchesDate = false;
-        }
-
-        if (dateRange.end) {
-          const endDate = new Date(dateRange.end);
-          endDate.setHours(0, 0, 0, 0);
-          if (logDate > endDate) matchesDate = false;
-        }
-      }
-
-      // 타입
-      const matchesType = typeFilter === "ALL" || r.type === typeFilter;
-
-      return matchesKeyword && matchesDate && matchesType;
-    });
-  }, [rows, keyword, dateRange, typeFilter]);
-
   // 정렬 로직
   const sortedRows = useMemo(() => {
-    let sortableItems = [...filtered];
+    let sortableItems = [...rows];
     if (sortConfig.key !== null) {
       sortableItems.sort((a, b) => {
         let aValue = a[sortConfig.key];
@@ -229,25 +151,7 @@ export default function MaterialLog() {
       });
     }
     return sortableItems;
-  }, [filtered, sortConfig]);
-
-  const summary = useMemo(() => {
-    // 현재 검색 결과(filtered) 기준으로 통계를 냄
-    const targetData = filtered;
-    const total = targetData.length;
-
-    const inQty = targetData
-      .filter((r) => r.type === "IN")
-      .reduce((a, b) => a + b.qty, 0);
-
-    const outUseQty = targetData
-      .filter((r) => r.type !== "IN")
-      .reduce((a, b) => a + Math.abs(b.qty), 0);
-
-    const rate = inQty === 0 ? 0 : ((outUseQty / inQty) * 100).toFixed(1);
-
-    return { total, inQty, outUseQty, rate };
-  }, [filtered]);
+  }, [rows, sortConfig]);
 
   //  정렬 핸들러
   const handleSort = (key) => {
@@ -258,13 +162,9 @@ export default function MaterialLog() {
     setSortConfig({ key, direction });
   };
 
-  // 필터 변경 시 페이지 리셋
-  const handleKeywordChange = (v) => {
-    setKeyword(v);
-    setPage(0);
-  };
-
   const handleDateChange = (start, end) => {
+    console.log("start:", start);
+    console.log("end:", end);
     setDateRange({ start, end });
     setPage(0);
   };
@@ -306,14 +206,6 @@ export default function MaterialLog() {
     { key: "operator", label: "작업자", width: 90 },
   ];
 
-  console.log("rows:", rows.length);
-  console.log("filtered:", filtered.length);
-  console.log("sortedRows:", sortedRows.length);
-  console.log(rows.map((r) => `[${r.type}]`));
-  console.log("typeFilter:", typeFilter);
-  console.log("keyword:", `[${keyword}]`);
-  console.log("dateRange:", dateRange);
-
   return (
     <Wrapper>
       <Header>
@@ -324,19 +216,19 @@ export default function MaterialLog() {
         <SummaryCard
           icon={<IoArrowBackCircleOutline />}
           label="입고된 자재 수량"
-          value={summary.inQty.toLocaleString()}
+          value={totalSummary.inQty.toLocaleString()}
           color="var(--run)"
         />
         <SummaryCard
           icon={<IoArrowForwardCircleOutline />}
           label="생산 투입"
-          value={summary.outUseQty.toLocaleString()}
+          value={totalSummary.outUseQty.toLocaleString()}
           color="var(--error)"
         />
         <SummaryCard
           icon={<FiArchive />}
           label="입출고 비율 (투입/입고)"
-          value={`${summary.rate}%`}
+          value={`${totalSummary.rate}%`}
           color="var(--main)"
         />
       </SummaryGrid>
