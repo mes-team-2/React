@@ -1,14 +1,14 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
 import Table from "../../components/TableStyle";
+import SummaryCard from "../../components/SummaryCard";
+
+import { FaBoxOpen, FaWarehouse, FaCheckCircle, FaClock } from "react-icons/fa";
 
 /* =========================
    제품 상세
 ========================= */
 export default function ProductDetail({ product }) {
-  /* =========================
-     Hooks (❗ 조건 없이 최상단)
-  ========================= */
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
@@ -34,9 +34,6 @@ export default function ProductDetail({ product }) {
     ];
   }, [product]);
 
-  /* =========================
-     컬럼
-  ========================= */
   const bomColumns = [
     { key: "materialCode", label: "자재 코드", width: 140 },
     { key: "materialName", label: "자재명", width: 160 },
@@ -44,9 +41,6 @@ export default function ProductDetail({ product }) {
     { key: "process", label: "공정", width: 120 },
   ];
 
-  /* =========================
-     정렬
-  ========================= */
   const handleSort = (key) => {
     setSortConfig((prev) => {
       if (prev.key === key) {
@@ -78,9 +72,6 @@ export default function ProductDetail({ product }) {
     });
   }, [bomData, sortConfig]);
 
-  /* =========================
-     선택 안 됐을 때 (마지막)
-  ========================= */
   if (!product) {
     return <Empty>제품을 선택하세요.</Empty>;
   }
@@ -93,26 +84,33 @@ export default function ProductDetail({ product }) {
           <h3>{product.productName}</h3>
           <span>{product.productCode}</span>
         </div>
-        <Badge>{product.productType}</Badge>
       </Header>
 
-      {/* ===== 요약 ===== */}
+      {/* ===== 요약 카드 (2 x 2) ===== */}
       <SummaryGrid>
-        <SummaryItem>
-          <label>유형</label>
-          <strong>{product.productType}</strong>
-        </SummaryItem>
-        <SummaryItem>
-          <label>사용 여부</label>
-          <strong>{product.useYn}</strong>
-        </SummaryItem>
-        <SummaryItem>
-          <label>등록일</label>
-          <strong>{product.createdAt}</strong>
-        </SummaryItem>
+        <SummaryCard
+          icon={<FaBoxOpen />}
+          label="제품 유형"
+          value={product.type || "완제품"}
+        />
+        <SummaryCard
+          icon={<FaWarehouse />}
+          label="재고 수량"
+          value={`${product.stockQty?.toLocaleString() ?? 0} EA`}
+        />
+        <SummaryCard
+          icon={<FaCheckCircle />}
+          label="상태"
+          value={product.status}
+        />
+        <SummaryCard
+          icon={<FaClock />}
+          label="최근 갱신일"
+          value={product.updatedAt}
+        />
       </SummaryGrid>
 
-      {/* ===== BOM ===== */}
+      {/* ===== BOM 구성 ===== */}
       <Card>
         <SectionTitle>BOM 구성</SectionTitle>
         <Table
@@ -154,37 +152,10 @@ const Header = styled.div`
   }
 `;
 
-const Badge = styled.div`
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(99, 102, 241, 0.15);
-  color: var(--main);
-`;
-
 const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr); /* ⭐ 2줄 */
   gap: 14px;
-`;
-
-const SummaryItem = styled.div`
-  background: white;
-  border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-
-  label {
-    font-size: 11px;
-    opacity: 0.6;
-  }
-
-  strong {
-    display: block;
-    margin-top: 6px;
-    font-size: 14px;
-  }
 `;
 
 const Card = styled.section`
