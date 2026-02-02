@@ -2,7 +2,11 @@ import React from "react";
 import {
   FiAlertTriangle,
   FiRefreshCw,
-  FiCheckCircle, FiXCircle, FiPauseCircle, FiBox, FiActivity
+  FiCheckCircle,
+  FiXCircle,
+  FiPauseCircle,
+  FiBox,
+  FiActivity,
 } from "react-icons/fi";
 import styled, { css } from "styled-components";
 import { LuHourglass } from "react-icons/lu";
@@ -12,7 +16,6 @@ import {
   IoArrowForwardCircleOutline,
   IoArrowBackCircleOutline,
 } from "react-icons/io5";
-
 
 // 텍스트 색상(color), 배경색(bg), 아이콘(icon), 라벨(label)
 const STATUS_CONFIG = {
@@ -53,6 +56,13 @@ const STATUS_CONFIG = {
     icon: <FiCheckCircle />,
   },
   // 생산 관리 (ProductLot 등)
+  WAIT: {
+    label: "대기중",
+    iconColor: "var(--waiting)",
+    textColor: "var(--font)",
+    bg: "var(--bgWaiting)",
+    icon: <LuHourglass />,
+  },
   RUNNING: {
     label: "생산중",
     iconColor: "var(--run)",
@@ -194,7 +204,7 @@ const STATUS_CONFIG = {
 };
 
 /**
- * @param {string} status - 상태 값 
+ * @param {string} status - 상태 값
  * @param {string} type - 'basic'(기본 캡슐형) / 'wide'(넓은 박스형)
  */
 
@@ -227,7 +237,7 @@ const BadgeWrapper = styled.div`
   ${(props) =>
     props.$type === "wide"
       ? css`
-          width: 100%; 
+          width: 100%;
           height: 38px;
           border-radius: 10px;
           border: 1px solid var(--border);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import { format } from "date-fns";
-
+import { FiCheckCircle, FiRefreshCw } from "react-icons/fi";
+import { LuHourglass } from "react-icons/lu";
 import TableStyle from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import Status from "../../components/Status";
@@ -9,8 +10,8 @@ import SearchBar from "../../components/SearchBar";
 import SearchDate from "../../components/SearchDate";
 import SelectBar from "../../components/SelectBar";
 import Pagination from "../../components/Pagination";
+import SummaryCard from "../../components/SummaryCard";
 import Button from "../../components/Button";
-
 import WorkOrderDetail from "./WorkOrderDetail";
 import WorkOrderCreate from "./WorkOrderCreate";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
@@ -94,6 +95,17 @@ export default function WorkOrder() {
     loadData();
   }, []);
 
+  // 상태별 카운트 계산
+  const summaryCounts = useMemo(() => {
+    const counts = { WAIT: 0, IN_PROGRESS: 0, DONE: 0 };
+    workOrders.forEach((item) => {
+      if (counts[item.status] !== undefined) {
+        counts[item.status]++;
+      }
+    });
+    return counts;
+  }, [workOrders]);
+
   // --- 필터링 로직 ---
   useEffect(() => {
     if (!workOrders.length) {
@@ -155,7 +167,7 @@ export default function WorkOrder() {
         width: 150,
         render: (status) => {
           let statusKey = "DEFAULT";
-          if (status === "WAIT") statusKey = "WAITING";
+          if (status === "WAIT") statusKey = "WAIT";
           else if (status === "IN_PROGRESS") statusKey = "RUN";
           else if (status === "DONE") statusKey = "COMPLETE";
           return <Status status={statusKey} />;
@@ -189,8 +201,29 @@ export default function WorkOrder() {
         </div>
       </Header>
 
-      <ActionBar>
-        <FilterGroup>
+      <SummaryGrid>
+        <SummaryCard
+          icon={<LuHourglass />}
+          label="대기중"
+          value={`${summaryCounts.WAIT}건`}
+          color="var(--waiting)"
+        />
+        <SummaryCard
+          icon={<FiRefreshCw />}
+          label="진행중"
+          value={`${summaryCounts.IN_PROGRESS}건`}
+          color="var(--run)"
+        />
+        <SummaryCard
+          icon={<FiCheckCircle />}
+          label="완료"
+          value={`${summaryCounts.DONE}건`}
+          color="var(--main)"
+        />
+      </SummaryGrid>
+
+      <FilterGroup>
+        <FilterBar>
           <SearchDate width="m" onChange={handleDateChange} />
           <SelectBar
             width="120px"
@@ -210,12 +243,12 @@ export default function WorkOrder() {
             onChange={setKeyword}
             onSearch={(val) => console.log("검색:", val)}
           />
-        </FilterGroup>
+        </FilterBar>
 
         <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
           작업지시 등록
         </Button>
-      </ActionBar>
+      </FilterGroup>
 
       <TableWrap>
         <TableStyle
@@ -261,37 +294,23 @@ const Header = styled.div`
   }
 `;
 
-const TitleRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 10px;
-
-  h2 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--font);
-  }
-
-  p {
-    margin: 6px 0 0 0;
-    font-size: 14px;
-    color: var(--font2);
-  }
-`;
-
-const ActionBar = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+const SummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); // 3개 카드 균등 배치
+  gap: 20px;
 `;
 
 const FilterGroup = styled.div`
   display: flex;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+`;
+
+const FilterBar = styled.div`
+  display: flex;
+  gap: 20px;
   align-items: center;
 `;
 
