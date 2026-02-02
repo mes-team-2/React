@@ -1,11 +1,16 @@
 import styled from "styled-components";
 
-export default function SideDrawer({ open, onClose, children }) {
+export default function SideDrawer({
+  open,
+  onClose,
+  width = 760, // ⭐ 기본값
+  children,
+}) {
   if (!open) return null;
 
   return (
     <Overlay onClick={onClose}>
-      <Drawer onClick={(e) => e.stopPropagation()}>
+      <Drawer width={width} onClick={(e) => e.stopPropagation()}>
         <Close onClick={onClose}>✕</Close>
         {children}
       </Drawer>
@@ -24,10 +29,10 @@ const Drawer = styled.div`
   position: absolute;
   right: 0;
   top: 0;
-  width: 760px;
+  width: ${(p) => p.width}px;
   height: 100%;
   background: var(--background);
-  padding: 20px 20px 20px 20px;
+  padding: 20px;
   overflow-y: auto;
 `;
 
