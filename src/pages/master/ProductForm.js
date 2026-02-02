@@ -167,7 +167,6 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
           <Table
             columns={columns}
             data={materials}
-            selectable
             selectedIds={selectedIds}
             onSelectChange={setSelectedIds}
           />
