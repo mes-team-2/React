@@ -1,24 +1,32 @@
 import styled from "styled-components";
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
-import SummaryCard from "../../components/SummaryCard";
-import { FiHash, FiPackage, FiActivity, FiCalendar } from "react-icons/fi";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
 
 export default function WorkOrderDetail({ workOrder }) {
-  // 백엔드에서 받아온 상세 데이터 상태
+  // 백에서 받아온 상세 데이터 상태
   const [detailData, setDetailData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // workOrder(부모에서 넘겨준 요약정보)가 바뀔 때마다 상세 조회 API 호출
   useEffect(() => {
     const fetchDetail = async () => {
       if (!workOrder?.id) return;
+
+      setLoading(true);
       try {
-        // workOrder.id는 "WO-2026..." 형식의 번호라고 가정
+        // API 호출: /api/workorder/{id}/detail
         const res = await WorkOrderAPI.getDetail(workOrder.id);
+
+        // 데이터가 잘 왔는지 확인용 로그
+        console.log("상세 데이터:", res.data);
+
         setDetailData(res.data);
       } catch (err) {
         console.error("상세 조회 실패", err);
+        setDetailData(null);
+      } finally {
+        setLoading(false);
       }
     };
     fetchDetail();
@@ -28,9 +36,9 @@ export default function WorkOrderDetail({ workOrder }) {
     return <Empty>작업지시를 선택하세요.</Empty>;
   }
 
-  // 데이터가 로딩 중이거나 없을 때 보여줄 기본값 (또는 로딩 스피너)
-  // 여기서는 기존 workOrder 정보라도 먼저 보여주도록 처리
+  // --- 데이터 매핑 (백엔드에서 null이 올 경우 대비) ---
 
+  // LOT 정보
   const lotInfo = detailData?.lotInfo || {
     lotNo: "-",
     qty: 0,
@@ -38,179 +46,218 @@ export default function WorkOrderDetail({ workOrder }) {
     createdAt: "-",
   };
 
+  // 공정 진행 리스트
   const processData = detailData?.processList || [];
+
+  // 자재 투입 리스트
   const materialData = detailData?.materialList || [];
 
+  // 테이블 컬럼 정의
   const processColumns = [
-    { key: "stepName", label: "공정", width: 160 }, // key 수정 (step -> stepName)
-    { key: "machineName", label: "설비", width: 140 }, // key 수정 (machine -> machineName)
-    { key: "status", label: "상태", width: 120 },
-    { key: "startedAt", label: "시작", width: 120 },
-    { key: "endedAt", label: "종료", width: 120 },
+    { key: "stepName", label: "공정명", width: 140 },
+    { key: "machineName", label: "설비명", width: 140 },
+    { key: "status", label: "상태", width: 100 },
+    { key: "startedAt", label: "시작시간", width: 150 },
+    { key: "endedAt", label: "종료시간", width: 150 },
   ];
 
   const materialColumns = [
-    { key: "materialName", label: "자재명", width: 160 }, // key 수정
-    { key: "qty", label: "수량", width: 100 },
+    { key: "materialName", label: "자재명", width: 160 },
+    { key: "qty", label: "투입수량", width: 100 },
     { key: "unit", label: "단위", width: 80 },
     { key: "time", label: "투입시각", width: 160 },
   ];
 
   return (
-    <Wrapper>
-      {/* ===== 헤더 (기존 workOrder prop 사용) ===== */}
+    <Container>
       <Header>
-        <div>
-          <h3>작업지시 상세</h3>
-          <span>{workOrder.id}</span>
-        </div>
-        <StatusBadge>{workOrder.status}</StatusBadge>
+        <h3>작업지시 상세</h3>
       </Header>
 
-      {/* ===== 요약 (기존 workOrder prop 사용) ===== */}
-      <SummaryGrid>
-        <SummaryItem>
-          <label>제품</label>
-          <strong>{workOrder.product}</strong>
-        </SummaryItem>
-        <SummaryItem>
-          <label>계획 수량</label>
-          <strong>{workOrder.planQty}</strong>
-        </SummaryItem>
-        <SummaryItem>
-          <label>작업 상태</label>
-          <strong>{workOrder.status}</strong>
-        </SummaryItem>
-      </SummaryGrid>
+      <Content>
+        <Section>
+          <SectionTitle>작업지시 정보</SectionTitle>
+          <Grid>
+            <Item>
+              <label>작업지시 번호</label>
+              <Value>{workOrder.id}</Value>
+            </Item>
+            <Item>
+              <label>담당자</label>
+              <Value>{workOrder.manager}</Value>
+            </Item>
+            <FullItem>
+              <label>작업지시 등록일</label>
+              <Value>{workOrder.createdAt}</Value>
+            </FullItem>
+            <FullItem>
+              <label>제품명</label>
+              <Value>{workOrder.product}</Value>
+            </FullItem>
+            <Item>
+              <label>작업 상태</label>
+              <Value>{workOrder.status}</Value>
+            </Item>
+            <Item>
+              <label>지시 수량</label>
+              <Value>{workOrder.planQty}</Value>
+            </Item>
 
-      {/* ===== LOT 현황 (API 데이터 바인딩) ===== */}
-      <Card>
-        <SectionTitle>LOT 현황</SectionTitle>
-        <LotGrid>
-          <SummaryCard
-            icon={<FiHash />}
-            label="LOT 번호"
-            value={lotInfo.lotNo}
-            color="var(--main)"
-          />
-          <SummaryCard
-            icon={<FiPackage />}
-            label="LOT 수량"
-            value={lotInfo.qty}
-            color="var(--run)"
-          />
-          <SummaryCard
-            icon={<FiActivity />}
-            label="LOT 상태"
-            value={lotInfo.status}
-            color="var(--waiting)"
-          />
-          <SummaryCard
-            icon={<FiCalendar />}
-            label="생성일"
-            value={lotInfo.createdAt}
-            color="var(--font2)"
-          />
-        </LotGrid>
-      </Card>
+            <Item>
+              <label>작업시작일</label>
+              <Value>{workOrder.startDate}</Value>
+            </Item>
+            <Item>
+              <label>납기일</label>
+              <Value>{workOrder.dueDate}</Value>
+            </Item>
+          </Grid>
+        </Section>
 
-      {/* ===== 공정 진행 ===== */}
-      <Card>
-        <SectionTitle>공정 진행</SectionTitle>
-        <Table columns={processColumns} data={processData} selectable={false} />
-      </Card>
+        <Section>
+          <SectionTitle>생산 LOT 정보</SectionTitle>
+          {detailData ? (
+            <Grid>
+              <FullItem>
+                <label>LOT 번호</label>
+                <Value>{lotInfo.lotNo}</Value>
+              </FullItem>
+              <Item>
+                <label>LOT 상태</label>
+                <Value>{lotInfo.status}</Value>
+              </Item>
+              <Item>
+                <label>생산 수량</label>
+                <Value>{lotInfo.qty}</Value>
+              </Item>
 
-      {/* ===== 자재 투입 ===== */}
-      <Card>
-        <SectionTitle>자재 투입</SectionTitle>
-        <Table
-          columns={materialColumns}
-          data={materialData}
-          selectable={false}
-        />
-      </Card>
-    </Wrapper>
+              <FullItem>
+                <label>LOT 생성일</label>
+                <Value>{lotInfo.createdAt}</Value>
+              </FullItem>
+            </Grid>
+          ) : (
+            <EmptyBox>LOT 정보가 없습니다.</EmptyBox>
+          )}
+        </Section>
+
+        <Section>
+          <SectionTitle>공정 진행 이력</SectionTitle>
+          <Table
+            columns={processColumns}
+            data={processData}
+            selectable={false}
+          />
+        </Section>
+
+        <Section>
+          <SectionTitle>자재 투입 이력</SectionTitle>
+          <Table
+            columns={materialColumns}
+            data={materialData}
+            selectable={false}
+          />
+        </Section>
+      </Content>
+    </Container>
   );
 }
 
-/* =========================
-   styled
-========================= */
-
-const Wrapper = styled.div`
+const Container = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 18px;
+  height: 100%;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-
+  align-items: center;
   h3 {
-    font-size: 20px;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  span {
-    font-size: 12px;
-    opacity: 0.6;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
+    margin-bottom: 20px;
   }
 `;
 
-const StatusBadge = styled.div`
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(99, 102, 241, 0.15);
-  color: var(--main);
-`;
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+  padding-right: 10px;
 
-const SummaryGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-`;
-
-const SummaryItem = styled.div`
-  background: white;
-  border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-
-  label {
-    font-size: 11px;
-    opacity: 0.6;
+  &::-webkit-scrollbar {
+    width: 6px;
   }
-
-  strong {
-    display: block;
-    margin-top: 6px;
-    font-size: 14px;
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
   }
 `;
 
-const Card = styled.section`
-  background: white;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
 
 const SectionTitle = styled.h4`
-  margin-bottom: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
+  }
 `;
 
-/* ⭐ 여기만 핵심 변경 */
-const LotGrid = styled.div`
+const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  gap: 12px;
+`;
+
+const Item = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  label {
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
+  }
+`;
+
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
+`;
+
+const Value = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  min-height: 38px;
+  font-size: var(--fontSm);
+  color: var(--font);
 `;
 
 const Empty = styled.div`
@@ -218,4 +265,13 @@ const Empty = styled.div`
   text-align: center;
   font-size: 14px;
   opacity: 0.6;
+`;
+
+const EmptyBox = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: var(--font2);
+  background: var(--background);
+  border-radius: 8px;
+  font-size: 13px;
 `;

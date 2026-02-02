@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import styled from "styled-components";
 import { FiBox, FiActivity, FiCalendar } from "react-icons/fi";
 import Status from "../../components/Status";
@@ -16,7 +16,11 @@ export default function MaterialLotDetail({ row, onClose }) {
     <Container>
       <Header>
         <h3>자재 LOT 상세 조회</h3>
-        {onClose && <Button variant="cancel" size="s" onClick={onClose}>닫기</Button>}
+        {onClose && (
+          <Button variant="cancel" size="s" onClick={onClose}>
+            닫기
+          </Button>
+        )}
       </Header>
 
       <Content>
@@ -51,12 +55,12 @@ export default function MaterialLotDetail({ row, onClose }) {
             <FullItem>
               <label>자재명</label>
               <Value>{row.name}</Value>
-            </FullItem><FullItem>
+            </FullItem>
+            <FullItem>
               <label>단위</label>
               <Value>{row.unit}</Value>
             </FullItem>
           </Grid>
-
         </Section>
 
         <Section>
@@ -64,11 +68,15 @@ export default function MaterialLotDetail({ row, onClose }) {
           <Grid>
             <FullItem>
               <label>현재고(A)</label>
-              <Value>{row.current.toLocaleString()} <Unit>EA</Unit></Value>
+              <Value>
+                {row.current.toLocaleString()} <Unit>EA</Unit>
+              </Value>
             </FullItem>
             <FullItem>
               <label>생산 투입중(B)</label>
-              <Value>{row.production.toLocaleString()} <Unit>EA</Unit></Value>
+              <Value>
+                {row.production.toLocaleString()} <Unit>EA</Unit>
+              </Value>
             </FullItem>
             <FullItem>
               <label>가용 재고(A-B)</label>
@@ -82,7 +90,6 @@ export default function MaterialLotDetail({ row, onClose }) {
         <Section>
           <SectionTitle>이력 정보</SectionTitle>
           <Grid>
-
             <Item>
               <label>최근 상태 변경일</label>
               <Value>{row.date}</Value>
@@ -93,7 +100,6 @@ export default function MaterialLotDetail({ row, onClose }) {
     </Container>
   );
 }
-
 
 const Container = styled.div`
   padding: 20px;
@@ -146,14 +152,14 @@ const SectionTitle = styled.h4`
   padding-left: 12px;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 4px;
     height: 16px;
-    background-color: var(--main); 
+    background-color: var(--main);
     border-radius: 2px;
   }
 `;
@@ -180,7 +186,6 @@ const FullItem = styled(Item)`
   grid-column: 1 / -1;
 `;
 
-
 const Value = styled.div`
   display: flex;
   align-items: center;
@@ -190,7 +195,6 @@ const Value = styled.div`
   background: var(--background);
   height: 38px;
 
-  
   strong {
     font-weight: var(--normal);
     color: var(--font);
@@ -199,12 +203,21 @@ const Value = styled.div`
 `;
 
 const Unit = styled.span`
-  font-size: var(--fontXs); color: var(--font2); font-weight: normal; margin-left: 4px;
+  font-size: var(--fontXs);
+  color: var(--font2);
+  font-weight: normal;
+  margin-left: 4px;
 `;
 
 const Button = styled.button`
-  padding: 10px 24px; border-radius: 8px;
-  background: var(--font2); color: white; border: none;
-  font-weight: var(--bold); cursor: pointer;
-  &:hover { opacity: 0.9; }
+  padding: 10px 24px;
+  border-radius: 8px;
+  background: var(--font2);
+  color: white;
+  border: none;
+  font-weight: var(--bold);
+  cursor: pointer;
+  &:hover {
+    opacity: 0.9;
+  }
 `;

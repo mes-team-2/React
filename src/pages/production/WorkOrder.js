@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { format } from "date-fns";
 import { FiCheckCircle, FiRefreshCw } from "react-icons/fi";
 import { LuHourglass } from "react-icons/lu";
+
 import TableStyle from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import Status from "../../components/Status";
@@ -12,6 +13,7 @@ import SelectBar from "../../components/SelectBar";
 import Pagination from "../../components/Pagination";
 import SummaryCard from "../../components/SummaryCard";
 import Button from "../../components/Button";
+
 import WorkOrderDetail from "./WorkOrderDetail";
 import WorkOrderCreate from "./WorkOrderCreate";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
@@ -24,10 +26,9 @@ const safeFormatDate = (dateStr) => {
   return format(date, "yyyy-MM-dd HH:mm");
 };
 
-// 랜덤으로 담당자를 생성함 / ID 기반으로 항상 같은 담당자를 반환하는 함수
+// 랜덤으로 담당자를 생성함
 const getManagerById = (id) => {
   const managers = ["이현수", "김하린", "우민규", "양찬종"];
-  // ID 문자열의 각 문자 코드를 더해서 숫자로 만듦
   let sum = 0;
   if (typeof id === "string") {
     for (let i = 0; i < id.length; i++) {
@@ -36,13 +37,10 @@ const getManagerById = (id) => {
   } else if (typeof id === "number") {
     sum = id;
   }
-
-  // 합계를 매니저 수로 나눈 나머지 인덱스 사용 -> 항상 같은 결과 보장
   return managers[sum % managers.length];
 };
 
 export default function WorkOrder() {
-  // 상태 관리
   const [workOrders, setWorkOrders] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
 
@@ -73,15 +71,13 @@ export default function WorkOrder() {
         return;
       }
 
-      // 데이터 가공 (등록일, 담당자 추가)
+      // 데이터 가공
       const formattedData = res.data.map((item) => ({
         ...item,
         startDate: safeFormatDate(item.startDate),
         endDate: safeFormatDate(item.endDate),
         dueDate: safeFormatDate(item.dueDate),
-        // 등록일 (DB created_at 매핑 가정)
         createdAt: safeFormatDate(item.createdAt || new Date()),
-        // 담당자 (랜덤으로 배정된 사람 id 불러옴)
         manager: getManagerById(item.id),
       }));
 
@@ -106,7 +102,7 @@ export default function WorkOrder() {
     return counts;
   }, [workOrders]);
 
-  // --- 필터링 로직 ---
+  // 필터링 로직
   useEffect(() => {
     if (!workOrders.length) {
       setFilteredData([]);
@@ -115,30 +111,26 @@ export default function WorkOrder() {
 
     let result = [...workOrders];
 
-    // 키워드 검색 (지시번호, 제품명, 담당자)
     if (keyword.trim()) {
       const k = keyword.toLowerCase();
       result = result.filter(
         (row) =>
           row.id.toLowerCase().includes(k) ||
           row.product.toLowerCase().includes(k) ||
-          row.manager.toLowerCase().includes(k), // 담당자 검색 추가
+          row.manager.toLowerCase().includes(k),
       );
     }
 
-    // 날짜 검색 (등록일 기준)
     if (searchDateRange.start && searchDateRange.end) {
       const start = new Date(searchDateRange.start).setHours(0, 0, 0, 0);
       const end = new Date(searchDateRange.end).setHours(23, 59, 59, 999);
 
       result = result.filter((row) => {
-        // 등록일(createdAt) 기준으로 필터링
         const rowDate = new Date(row.createdAt).getTime();
         return rowDate >= start && rowDate <= end;
       });
     }
 
-    // 상태 필터
     if (statusFilter !== "ALL") {
       result = result.filter((row) => row.status === statusFilter);
     }
@@ -147,7 +139,6 @@ export default function WorkOrder() {
     setCurrentPage(1);
   }, [keyword, searchDateRange, statusFilter, workOrders]);
 
-  // --- 페이지네이션 ---
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredData.slice(startIndex, startIndex + itemsPerPage);
@@ -155,11 +146,10 @@ export default function WorkOrder() {
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  // --- 테이블 컬럼 정의 ---
   const columns = useMemo(
     () => [
       { key: "id", label: "작업지시 번호", width: 140 },
-      { key: "product", label: "제품", width: 180 },
+      { key: "product", label: "제품명", width: 180 },
       { key: "planQty", label: "지시 수량", width: 90 },
       {
         key: "status",
@@ -173,12 +163,10 @@ export default function WorkOrder() {
           return <Status status={statusKey} />;
         },
       },
-      // [변경] 담당자 컬럼 추가
       { key: "manager", label: "담당자", width: 100 },
-      // [변경] 등록일 컬럼 추가
       { key: "createdAt", label: "등록일", width: 150 },
       { key: "startDate", label: "시작 시간", width: 150 },
-      { key: "dueDate", label: "납기일", width: 120 },
+      { key: "dueDate", label: "작업기한", width: 120 },
     ],
     [],
   );
@@ -198,6 +186,7 @@ export default function WorkOrder() {
       <Header>
         <div>
           <h2>작업지시 관리</h2>
+          <p>작업지시 등록/조회 및 LOT 생성 흐름을 관리합니다.</p>
         </div>
       </Header>
 
@@ -259,7 +248,6 @@ export default function WorkOrder() {
             setDetailOpen(true);
           }}
         />
-
         <Pagination
           page={currentPage}
           totalPages={totalPages}
@@ -292,11 +280,16 @@ const Header = styled.div`
     font-size: var(--fontHd);
     font-weight: var(--bold);
   }
+  p {
+    margin: 6px 0 0 0;
+    font-size: 14px;
+    color: var(--font2);
+  }
 `;
 
 const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr); // 3개 카드 균등 배치
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 `;
 

@@ -13,9 +13,11 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
   // 폼 상태
   const [form, setForm] = useState({
     productCode: "",
-    productName: "", // 화면 표시용
+    productName: "",
     plannedQty: "",
+    startDate: "",
     dueDate: "",
+    note: "",
   });
 
   // 제품 목록 불러오기
@@ -42,7 +44,6 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // 제품 선택 시 productName도 함께 업데이트
     if (name === "productCode") {
       const selectedProduct = products.find((p) => p.productCode === value);
       setForm((prev) => ({
@@ -55,15 +56,7 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
     }
   };
 
-  // SearchDate 단일 날짜 변경 핸들러
-  const handleDateChange = (date) => {
-    if (date) {
-      setForm((prev) => ({ ...prev, dueDate: format(date, "yyyy-MM-dd") }));
-    } else {
-      setForm((prev) => ({ ...prev, dueDate: "" }));
-    }
-  };
-
+  // SelectBar 변경 핸들러
   const handleProductSelect = (e) => {
     const value = e.target.value;
     const selectedProduct = products.find((p) => p.productCode === value);
@@ -74,9 +67,38 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
     }));
   };
 
+  // 작업시작일 변경 핸들러
+  const handleStartDateChange = (date) => {
+    if (date) {
+      setForm((prev) => ({ ...prev, startDate: format(date, "yyyy-MM-dd") }));
+    } else {
+      setForm((prev) => ({ ...prev, startDate: "" }));
+    }
+  };
+
+  // 작업기한 변경 핸들러
+  const handleDueDateChange = (date) => {
+    if (date) {
+      setForm((prev) => ({ ...prev, dueDate: format(date, "yyyy-MM-dd") }));
+    } else {
+      setForm((prev) => ({ ...prev, dueDate: "" }));
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!form.productCode || !form.plannedQty || !form.dueDate) {
-      alert("제품, 계획 수량, 납기일은 필수 항목입니다.");
+    if (
+      !form.productCode ||
+      !form.plannedQty ||
+      !form.startDate ||
+      !form.dueDate
+    ) {
+      alert("제품, 지시 수량, 작업시작일, 작업기한은 필수 항목입니다.");
+      return;
+    }
+
+    // 날짜 논리 검사 (작업시작일이 작업기한보다 늦으면 안됨)
+    if (form.startDate > form.dueDate) {
+      alert("작업시작일은 작업기한보다 늦을 수 없습니다.");
       return;
     }
 
@@ -84,7 +106,9 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
       const payload = {
         productCode: form.productCode,
         plannedQty: parseInt(form.plannedQty),
+        startDate: form.startDate,
         dueDate: form.dueDate,
+        note: form.note,
       };
 
       const res = await WorkOrderAPI.createWorkOrder(payload);
@@ -95,6 +119,7 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
         productCode: "",
         productName: "",
         plannedQty: "",
+        startDate: "",
         dueDate: "",
       });
       onSubmit?.(payload);
@@ -104,7 +129,7 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
     }
   };
 
-  // SelectBar에 전달할 옵션 데이터 가공
+  // SelectBar 옵션
   const productOptions = products.map((p) => ({
     value: p.productCode,
     label: `${p.productName} (${p.productCode})`,
@@ -144,7 +169,7 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
         <Section>
           <SectionTitle>생산 정보</SectionTitle>
           <Grid>
-            <Item>
+            <FullItem>
               <label>지시 수량</label>
               <Input
                 type="number"
@@ -153,29 +178,27 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
                 onChange={handleChange}
                 placeholder="예: 1000"
               />
-            </Item>
+            </FullItem>
+
             <Item>
-              <label>납기일 (Due Date)</label>
+              <label>작업 시작일 (Start Date)</label>
               <SearchDate
                 width="100%"
                 type="single"
-                onChange={handleDateChange}
-                placeholder="납기일 선택"
+                onChange={handleStartDateChange}
+                placeholder="작업시작일 선택"
               />
             </Item>
-          </Grid>
-        </Section>
-        <Section>
-          <SectionTitle>기타</SectionTitle>
-          <Grid>
-            <FullItem>
-              <label>비고</label>
-              <Input
-                type="text"
-                name="plannedQty"
-                placeholder="기타 참고사항 입력"
+
+            <Item>
+              <label>작업기한 (Due Date)</label>
+              <SearchDate
+                width="100%"
+                type="single"
+                onChange={handleDueDateChange}
+                placeholder="작업기한 선택"
               />
-            </FullItem>
+            </Item>
           </Grid>
         </Section>
       </Content>
