@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TableStyle from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
 import SideDrawer from "../../components/SideDrawer";
@@ -15,100 +15,152 @@ import {
 } from "react-icons/io5";
 
 import { FiArchive } from "react-icons/fi";
+import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
-const MATERIAL_LOGS = [
-  {
-    id: 1,
-    occurredAt: "2026-01-20 09:12",
-    materialCode: "MAT-LEAD",
-    materialName: "납판",
-    lotNo: "LOT-202601-001",
-    type: "IN",
-    qty: 500,
-    remainQty: 500,
-    unit: "EA",
-    fromLocation: "협력사(ABC메탈)",
-    toLocation: "자재창고 A-01",
-    operator: "WK-101",
-    note: "정기 입고",
-  },
-  {
-    id: 2,
-    occurredAt: "2026-01-20 11:40",
-    materialCode: "MAT-LEAD",
-    materialName: "납판",
-    lotNo: "LOT-202601-001",
-    type: "USE",
-    qty: -120,
-    remainQty: 380,
-    unit: "EA",
-    fromLocation: "자재창고 A-01",
-    toLocation: "생산 1라인",
-    operator: "WK-103",
-    note: "",
-  },
-  {
-    id: 3,
-    occurredAt: "2026-01-21 14:05",
-    materialCode: "MAT-ELEC",
-    materialName: "전해액",
-    lotNo: "LOT-202601-014",
-    type: "IN",
-    qty: 1000,
-    remainQty: 1000,
-    unit: "L",
-    fromLocation: "협력사(케미칼X)",
-    operator: "WK-104",
-    toLocation: "위험물 창고 B-02",
-    note: "",
-  },
-  {
-    id: 4,
-    occurredAt: "2026-01-21 16:30",
-    materialCode: "MAT-ELEC",
-    materialName: "전해액",
-    lotNo: "LOT-202601-014",
-    type: "USE",
-    qty: -300,
-    remainQty: 700,
-    unit: "L",
-    fromLocation: "위험물 창고 B-02",
-    toLocation: "생산 2라인",
-    operator: "WK-104",
-    note: "",
-  },
-  // ... (데이터 부족 시 페이지네이션 확인용 더미 데이터 추가)
-  ...Array.from({ length: 20 }).map((_, i) => ({
-    id: i + 10,
-    occurredAt: `2026-01-${22 + (i % 5)} 10:00`,
-    materialCode: "MAT-TEST",
-    materialName: "테스트 자재",
-    lotNo: `LOT-202601-${String(i + 20).padStart(3, '0')}`,
-    type: i % 2 === 0 ? "IN" : "USE",
-    qty: i % 2 === 0 ? 100 : -50,
-    remainQty: 100,
-    unit: "EA",
-    fromLocation: "창고",
-    toLocation: "라인",
-    operator: "WK-TEST",
-    note: "",
-  })),
-];
+// const MATERIAL_LOGS = [
+//   {
+//     id: 1,
+//     occurredAt: "2026-01-20 09:12",
+//     materialCode: "MAT-LEAD",
+//     materialName: "납판",
+//     lotNo: "LOT-202601-001",
+//     type: "IN",
+//     qty: 500,
+//     remainQty: 500,
+//     unit: "EA",
+//     fromLocation: "협력사(ABC메탈)",
+//     toLocation: "자재창고 A-01",
+//     operator: "WK-101",
+//     note: "정기 입고",
+//   },
+//   {
+//     id: 2,
+//     occurredAt: "2026-01-20 11:40",
+//     materialCode: "MAT-LEAD",
+//     materialName: "납판",
+//     lotNo: "LOT-202601-001",
+//     type: "USE",
+//     qty: -120,
+//     remainQty: 380,
+//     unit: "EA",
+//     fromLocation: "자재창고 A-01",
+//     toLocation: "생산 1라인",
+//     operator: "WK-103",
+//     note: "",
+//   },
+//   {
+//     id: 3,
+//     occurredAt: "2026-01-21 14:05",
+//     materialCode: "MAT-ELEC",
+//     materialName: "전해액",
+//     lotNo: "LOT-202601-014",
+//     type: "IN",
+//     qty: 1000,
+//     remainQty: 1000,
+//     unit: "L",
+//     fromLocation: "협력사(케미칼X)",
+//     operator: "WK-104",
+//     toLocation: "위험물 창고 B-02",
+//     note: "",
+//   },
+//   {
+//     id: 4,
+//     occurredAt: "2026-01-21 16:30",
+//     materialCode: "MAT-ELEC",
+//     materialName: "전해액",
+//     lotNo: "LOT-202601-014",
+//     type: "USE",
+//     qty: -300,
+//     remainQty: 700,
+//     unit: "L",
+//     fromLocation: "위험물 창고 B-02",
+//     toLocation: "생산 2라인",
+//     operator: "WK-104",
+//     note: "",
+//   },
+//   // ... (데이터 부족 시 페이지네이션 확인용 더미 데이터 추가)
+//   ...Array.from({ length: 20 }).map((_, i) => ({
+//     id: i + 10,
+//     occurredAt: `2026-01-${22 + (i % 5)} 10:00`,
+//     materialCode: "MAT-TEST",
+//     materialName: "테스트 자재",
+//     lotNo: `LOT-202601-${String(i + 20).padStart(3, '0')}`,
+//     type: i % 2 === 0 ? "IN" : "USE",
+//     qty: i % 2 === 0 ? 100 : -50,
+//     remainQty: 100,
+//     unit: "EA",
+//     fromLocation: "창고",
+//     toLocation: "라인",
+//     operator: "WK-TEST",
+//     note: "",
+//   })),
+// ];
 
 export default function MaterialLog() {
-  const [rows] = useState(MATERIAL_LOGS);
+  // 데이터 관리
+  const [rows, setRows] = useState([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(0);
   const [keyword, setKeyword] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 검색상태
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // 테이블 정렬 상태 관리
-
   // 입출고 유형 필터 상태
   const [typeFilter, setTypeFilter] = useState("ALL");
 
-  // 페이지네이션 상태
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 20; // 한 페이지당 20개
+  // 데이터 가져오기
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const res = await InventoryAPI2.getMaterialTxList({
+          page,
+          keyword,
+          type: typeFilter === "ALL" ? null : typeFilter,
+          ...(dateRange.start && { startDate: dateRange.start }),
+          ...(dateRange.end && { endDate: dateRange.end }),
+        });
+        const data = res.data;
+
+        console.log(
+          "전체 txType들:",
+          data.content.map((i) => i.txType),
+        );
+
+        setRows(
+          data.content.map((item, idx) => ({
+            id: `${item.txTime}-${idx}`,
+            occurredAt: item.txTime?.replace(" ", "T"),
+            type:
+              item.txType?.trim().toUpperCase() === "INBOUND" ? "IN" : "USE",
+            materialName: item.materialName,
+            lotNo: item.materialNo,
+            qty: Number(item.qty),
+            unit: item.unit,
+            materialCode: "-",
+            fromLocation: "-",
+            toLocation: "-",
+            operator: "-",
+          })),
+        );
+
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [page, keyword, typeFilter, dateRange]);
+
+  // 데이터 필터 조작
 
   // SelectBar 옵션 정의
   const LOG_TYPE_OPTIONS = [
@@ -118,17 +170,19 @@ export default function MaterialLog() {
   ];
 
   // 필터 로직 (키워드 + 날짜 + 유형)
+
   const filtered = useMemo(() => {
     return rows.filter((r) => {
-      // 키워드 검색
       const k = keyword.toLowerCase();
+
+      // 키워드
       const matchesKeyword =
         !keyword ||
-        r.materialCode.toLowerCase().includes(k) ||
-        r.materialName.toLowerCase().includes(k) ||
-        r.lotNo.toLowerCase().includes(k);
+        (r.materialCode || "").toLowerCase().includes(k) ||
+        (r.materialName || "").toLowerCase().includes(k) ||
+        (r.lotNo || "").toLowerCase().includes(k);
 
-      // 날짜 검색
+      // 날짜
       let matchesDate = true;
       if (r.occurredAt) {
         const logDate = new Date(r.occurredAt);
@@ -147,7 +201,7 @@ export default function MaterialLog() {
         }
       }
 
-      // [추가] 유형 필터 (IN / USE)
+      // 타입
       const matchesType = typeFilter === "ALL" || r.type === typeFilter;
 
       return matchesKeyword && matchesDate && matchesType;
@@ -162,7 +216,7 @@ export default function MaterialLog() {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
+        if (typeof aValue === "number" && typeof bValue === "number") {
           // 숫자 비교
         } else {
           aValue = String(aValue);
@@ -176,15 +230,6 @@ export default function MaterialLog() {
     }
     return sortableItems;
   }, [filtered, sortConfig]);
-
-  // 데이터 슬라이싱 (현재 페이지 데이터만 추출)
-  const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * itemsPerPage;
-    return sortedRows.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedRows, page]);
-
-  // 총 페이지 수 계산
-  const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
 
   const summary = useMemo(() => {
     // 현재 검색 결과(filtered) 기준으로 통계를 냄
@@ -216,12 +261,12 @@ export default function MaterialLog() {
   // 필터 변경 시 페이지 리셋
   const handleKeywordChange = (v) => {
     setKeyword(v);
-    setPage(1);
+    setPage(0);
   };
 
   const handleDateChange = (start, end) => {
     setDateRange({ start, end });
-    setPage(1);
+    setPage(0);
   };
 
   const onRowClick = (row) => {
@@ -229,7 +274,7 @@ export default function MaterialLog() {
     setDrawerOpen(true);
   };
 
-
+  // 각 컬럼 설정
   const columns = [
     { key: "occurredAt", label: "일시", width: 150 },
     {
@@ -237,19 +282,21 @@ export default function MaterialLog() {
       label: "구분",
       width: 150,
       render: (value) => {
-
         const statusKey = value === "IN" ? "MATIN" : "MATOUT";
         return <Status status={statusKey} type="basic" />;
-      }
+      },
     },
     { key: "materialName", label: "자재명", width: 130 },
     { key: "lotNo", label: "LOT 번호", width: 150 },
     {
-      key: "qty", label: "이동수량", width: 90, render: (val) => (
+      key: "qty",
+      label: "이동수량",
+      width: 90,
+      render: (val) => (
         <QtyText $isPositive={val > 0}>
           {val > 0 ? `+${val.toLocaleString()}` : val.toLocaleString()}
         </QtyText>
-      )
+      ),
     },
 
     { key: "unit", label: "단위", width: 60 },
@@ -259,7 +306,13 @@ export default function MaterialLog() {
     { key: "operator", label: "작업자", width: 90 },
   ];
 
-
+  console.log("rows:", rows.length);
+  console.log("filtered:", filtered.length);
+  console.log("sortedRows:", sortedRows.length);
+  console.log(rows.map((r) => `[${r.type}]`));
+  console.log("typeFilter:", typeFilter);
+  console.log("keyword:", `[${keyword}]`);
+  console.log("dateRange:", dateRange);
 
   return (
     <Wrapper>
@@ -289,14 +342,18 @@ export default function MaterialLog() {
       </SummaryGrid>
 
       <FilterBar>
-        <SearchDate width="m" onChange={handleDateChange} placeholder="일자 검색" />
+        <SearchDate
+          width="m"
+          onChange={handleDateChange}
+          placeholder="일자 검색"
+        />
         <SelectBar
           width="140px"
           options={LOG_TYPE_OPTIONS}
           value={typeFilter}
           onChange={(e) => {
             setTypeFilter(e.target.value);
-            setPage(1);
+            setPage(0);
           }}
           placeholder="구분 선택"
         />
@@ -304,27 +361,25 @@ export default function MaterialLog() {
           width="l"
           placeholder="자재명 / 코드 / LOT 검색"
           onChange={setKeyword} // 키워드 상태 업데이트
-          onSearch={() => { }}
+          onSearch={() => {}}
         />
       </FilterBar>
 
       <TableWrap>
         <TableStyle
           columns={columns}
-          data={paginatedData}
+          data={sortedRows}
           selectable={false}
           onRowClick={onRowClick}
           sortConfig={sortConfig}
           onSort={handleSort}
         />
         <Pagination
-          page={page}
+          page={page + 1}
           totalPages={totalPages}
-          onPageChange={setPage}
+          onPageChange={(p) => setPage(p - 1)}
         />
       </TableWrap>
-
-
 
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         {selected && <MaterialLogDetail row={selected} />}
@@ -333,7 +388,7 @@ export default function MaterialLog() {
   );
 }
 
-
+// 스타일
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -369,5 +424,5 @@ const TableWrap = styled.div`
 
 const QtyText = styled.span`
   font-weight: var(--bold);
-  color: ${props => props.$isPositive ? 'var(--main)' : 'var(--error)'};
+  color: ${(props) => (props.$isPositive ? "var(--main)" : "var(--error)")};
 `;
