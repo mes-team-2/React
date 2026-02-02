@@ -15,7 +15,6 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
     productCode: "",
     productName: "",
     plannedQty: "",
-    startDate: "",
     dueDate: "",
     note: "",
   });
@@ -67,15 +66,6 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
     }));
   };
 
-  // 작업시작일 변경 핸들러
-  const handleStartDateChange = (date) => {
-    if (date) {
-      setForm((prev) => ({ ...prev, startDate: format(date, "yyyy-MM-dd") }));
-    } else {
-      setForm((prev) => ({ ...prev, startDate: "" }));
-    }
-  };
-
   // 작업기한 변경 핸들러
   const handleDueDateChange = (date) => {
     if (date) {
@@ -86,19 +76,8 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
   };
 
   const handleSubmit = async () => {
-    if (
-      !form.productCode ||
-      !form.plannedQty ||
-      !form.startDate ||
-      !form.dueDate
-    ) {
-      alert("제품, 지시 수량, 작업시작일, 작업기한은 필수 항목입니다.");
-      return;
-    }
-
-    // 날짜 논리 검사 (작업시작일이 작업기한보다 늦으면 안됨)
-    if (form.startDate > form.dueDate) {
-      alert("작업시작일은 작업기한보다 늦을 수 없습니다.");
+    if (!form.productCode || !form.plannedQty || !form.dueDate) {
+      alert("제품, 지시 수량, 작업기한은 필수 항목입니다.");
       return;
     }
 
@@ -106,7 +85,6 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
       const payload = {
         productCode: form.productCode,
         plannedQty: parseInt(form.plannedQty),
-        startDate: form.startDate,
         dueDate: form.dueDate,
         note: form.note,
       };
@@ -119,7 +97,6 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
         productCode: "",
         productName: "",
         plannedQty: "",
-        startDate: "",
         dueDate: "",
       });
       onSubmit?.(payload);
@@ -179,16 +156,6 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
                 placeholder="예: 1000"
               />
             </FullItem>
-
-            <Item>
-              <label>작업 시작일 (Start Date)</label>
-              <SearchDate
-                width="100%"
-                type="single"
-                onChange={handleStartDateChange}
-                placeholder="작업시작일 선택"
-              />
-            </Item>
 
             <Item>
               <label>작업기한 (Due Date)</label>
