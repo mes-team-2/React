@@ -1,100 +1,169 @@
-import { useMemo } from "react";
 import styled from "styled-components";
-
-import TableStyle from "../../components/TableStyle";
+import { useState } from "react";
+import Table from "../../components/TableStyle";
 import Status from "../../components/Status";
+import Button from "../../components/Button";
+import ProcessDrawer from "./ProcessDrawer";
 
 /* =========================
-   MOCK DATA (process_step)
+   공정 기준 관리 (Process Master)
 ========================= */
-const PROCESS_STEPS = [
-  {
-    process_step_id: 1,
-    step_code: "PROC-01",
-    step_name: "전극공정",
-    seq: 1,
-    is_active: true,
-  },
-  {
-    process_step_id: 2,
-    step_code: "PROC-02",
-    step_name: "조립공정",
-    seq: 2,
-    is_active: true,
-  },
-  {
-    process_step_id: 3,
-    step_code: "PROC-03",
-    step_name: "활성화공정",
-    seq: 3,
-    is_active: true,
-  },
-  {
-    process_step_id: 4,
-    step_code: "PROC-04",
-    step_name: "팩공정",
-    seq: 4,
-    is_active: true,
-  },
-  {
-    process_step_id: 5,
-    step_code: "PROC-05",
-    step_name: "최종 검사",
-    seq: 5,
-    is_active: true,
-  },
-];
-
 export default function Process() {
-  /* =========================
-     기본 정렬만 useMemo
-     (초기 seq 오름차순)
-  ========================= */
-  const data = useMemo(() => {
-    return [...PROCESS_STEPS].sort((a, b) => a.seq - b.seq);
-  }, []);
+  const [processes, setProcesses] = useState([
+    {
+      processId: 1,
+      seq: 1,
+      processCode: "PROC-01",
+      processName: "전극 공정",
+      active: true,
+    },
+    {
+      processId: 2,
+      seq: 2,
+      processCode: "PROC-02",
+      processName: "조립 공정",
+      active: true,
+    },
+    {
+      processId: 3,
+      seq: 3,
+      processCode: "PROC-03",
+      processName: "활성화 공정",
+      active: true,
+    },
+    {
+      processId: 4,
+      seq: 4,
+      processCode: "PROC-04",
+      processName: "팩 공정",
+      active: true,
+    },
+    {
+      processId: 5,
+      seq: 5,
+      processCode: "PROC-05",
+      processName: "최종 검사",
+      active: true,
+    },
+  ]);
 
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState(null); // create | edit
+
+  const [form, setForm] = useState({
+    processId: null,
+    seq: "",
+    processCode: "",
+    processName: "",
+    active: true,
+  });
+
+  /* =========================
+     Drawer 제어
+  ========================= */
+  const openCreate = () => {
+    setForm({
+      processId: null,
+      seq: "",
+      processCode: "",
+      processName: "",
+      active: true,
+    });
+    setDrawerMode("create");
+    setDrawerOpen(true);
+  };
+
+  const openEdit = (row) => {
+    setForm(row);
+    setDrawerMode("edit");
+    setDrawerOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setDrawerMode(null);
+  };
+
+  /* =========================
+     CRUD
+  ========================= */
+  const handleCreate = () => {
+    setProcesses((prev) => [
+      ...prev,
+      {
+        ...form,
+        processId: Date.now(),
+        seq: Number(form.seq),
+      },
+    ]);
+    closeDrawer();
+  };
+
+  const handleUpdate = () => {
+    setProcesses((prev) =>
+      prev.map((p) =>
+        p.processId === form.processId
+          ? {
+              ...p,
+              processName: form.processName,
+              active: form.active,
+            }
+          : p,
+      ),
+    );
+    closeDrawer();
+  };
+
+  /* =========================
+     컬럼
+  ========================= */
   const columns = [
+    { key: "seq", label: "순서", width: 80 },
+    { key: "processCode", label: "공정 코드", width: 140 },
+    { key: "processName", label: "공정명", width: 220 },
     {
-      key: "seq",
-      label: "공정 순서",
-      width: 120,
-      sortable: true,
-    },
-    {
-      key: "step_code",
-      label: "공정 코드",
-      width: 160,
-      sortable: true,
-    },
-    {
-      key: "step_name",
-      label: "공정명",
-      sortable: true,
-    },
-    {
-      key: "is_active",
+      key: "active",
       label: "상태",
-      width: 140,
-      sortable: true,
-      render: (v) => <Status value={v ? "ACTIVE" : "INACTIVE"} />,
+      width: 120,
+      render: (v) => (
+        <Status
+          type={v ? "success" : "default"}
+          label={v ? "사용중" : "중지"}
+        />
+      ),
     },
   ];
 
   return (
     <Wrapper>
       <Header>
-        <h2>공정 정보 (Master Data)</h2>
-        <Desc>생산 흐름의 기준이 되는 공정 단계 정보입니다.</Desc>
+        <h2>공정 기준 관리</h2>
+        <Button variant="ok" size="m" onClick={openCreate}>
+          + 공정 등록
+        </Button>
       </Header>
 
-      <TableStyle columns={columns} data={data} />
+      <Table
+        columns={columns}
+        data={[...processes].sort((a, b) => a.seq - b.seq)}
+        onRowClick={openEdit}
+        selectable={false}
+      />
+
+      <ProcessDrawer
+        open={drawerOpen}
+        mode={drawerMode}
+        form={form}
+        setForm={setForm}
+        onClose={closeDrawer}
+        onSubmit={drawerMode === "create" ? handleCreate : handleUpdate}
+      />
     </Wrapper>
   );
 }
 
 /* =========================
-   styles
+   styled
 ========================= */
 
 const Wrapper = styled.div`
@@ -105,16 +174,12 @@ const Wrapper = styled.div`
 
 const Header = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
 
   h2 {
     margin: 0;
+    font-size: 20px;
+    font-weight: 700;
   }
-`;
-
-const Desc = styled.p`
-  margin: 0;
-  font-size: 13px;
-  color: #666;
 `;

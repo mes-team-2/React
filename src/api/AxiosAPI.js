@@ -89,4 +89,16 @@ export const WorkOrderAPI = {
   },
 };
 
+export const BomAPI = {
+  // 제품 코드로 BOM 목록 조회
+  getList: async (productCode) => {
+    return await AxiosAPI.get(`/api/bom/${productCode}`);
+  },
+
+  // BOM 정보 수정
+  update: async (bomId, data) => {
+    return await AxiosAPI.put(`/api/bom/${bomId}`, data);
+  },
+};
+
 export default AxiosAPI;

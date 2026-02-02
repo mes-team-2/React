@@ -2,13 +2,30 @@ import styled from "styled-components";
 import { useState, useEffect } from "react";
 import SideDrawer from "../../components/SideDrawer";
 import Button from "../../components/Button";
+import { BomAPI } from "../../api/AxiosAPI";
 
-export default function BOMDetail({ data, onClose }) {
+export default function BOMDetail({ data, onClose, onSave }) {
   const [form, setForm] = useState(null);
 
   useEffect(() => {
     setForm(data);
   }, [data]);
+
+  const handleSave = async () => {
+    if (!form) return;
+    try {
+      // API 호출 (수량, 공정 수정)
+      await BomAPI.update(form.id, {
+        qty: form.qty,
+        process: form.process,
+      });
+      alert("수정되었습니다.");
+      onSave?.(); // 부모에게 알림
+    } catch (err) {
+      console.error(err);
+      alert("수정 실패");
+    }
+  };
 
   if (!form) return null;
 
@@ -47,10 +64,11 @@ export default function BOMDetail({ data, onClose }) {
             value={form.process}
             onChange={(e) => setForm({ ...form, process: e.target.value })}
           >
-            <option>조립공정</option>
-            <option>전극공정</option>
-            <option>적층공정</option>
-            <option>충전공정</option>
+            <option value="전극공정">전극공정</option>
+            <option value="조립공정">조립공정</option>
+            <option value="팩공정">팩공정</option>
+            <option value="충전공정">충전공정</option>
+            <option value="검사공정">검사공정</option>
           </select>
         </Field>
 
@@ -58,13 +76,7 @@ export default function BOMDetail({ data, onClose }) {
           <Button variant="cancel" onClick={onClose}>
             취소
           </Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              console.log("SAVE BOM", form);
-              onClose();
-            }}
-          >
+          <Button variant="primary" onClick={handleSave}>
             저장
           </Button>
         </BtnRow>
