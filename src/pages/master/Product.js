@@ -1,28 +1,14 @@
 import styled from "styled-components";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
-import Status from "../../components/Status";
 import ProductDetail from "./ProductDetail";
 import ProductForm from "./ProductForm";
 import Button from "../../components/Button";
+import { WorkOrderAPI } from "../../api/AxiosAPI";
 
-/* =========================
-   제품 기준 관리
-========================= */
 export default function Product() {
-  const [products, setProducts] = useState([
-    {
-      productId: 1,
-      productCode: "BAT-12V-60",
-      productName: "12V 차량용 배터리 60Ah",
-      voltage: 12,
-      capacityAh: 60,
-      type: "완제품",
-      active: true,
-      updatedAt: "2026-02-01",
-    },
-  ]);
+  const [products, setProducts] = useState([]);
 
   const [drawer, setDrawer] = useState({
     open: false,
@@ -30,6 +16,20 @@ export default function Product() {
   });
 
   const [selected, setSelected] = useState(null);
+
+  // 1. 목록 조회
+  const fetchProducts = async () => {
+    try {
+      const res = await WorkOrderAPI.getProductList();
+      setProducts(res.data);
+    } catch (err) {
+      console.error("제품 목록 로드 실패", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const openDrawer = (type, row = null) => {
     setSelected(row);
@@ -42,36 +42,29 @@ export default function Product() {
   };
 
   /* ===== CRUD ===== */
-
-  const handleCreate = (data) => {
-    setProducts((prev) => [
-      ...prev,
-      {
-        ...data,
-        productId: Date.now(),
-        updatedAt: new Date().toISOString().slice(0, 10),
-      },
-    ]);
-    closeDrawer();
+  const handleCreate = async (payload) => {
+    try {
+      await WorkOrderAPI.createProduct(payload);
+      alert("제품이 등록되었습니다.");
+      closeDrawer();
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      alert("제품 등록 실패");
+    }
   };
 
-  const handleUpdate = (data) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.productId === data.productId
-          ? { ...p, ...data, updatedAt: new Date().toISOString().slice(0, 10) }
-          : p,
-      ),
-    );
-    closeDrawer();
-  };
-
-  const handleInactive = (row) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.productId === row.productId ? { ...p, active: false } : p,
-      ),
-    );
+  const handleUpdate = async (formData) => {
+    if (!selected) return;
+    try {
+      await WorkOrderAPI.updateProduct(selected.productId, formData);
+      alert("수정되었습니다.");
+      closeDrawer();
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      alert("수정 실패");
+    }
   };
 
   const columns = [
@@ -79,17 +72,8 @@ export default function Product() {
     { key: "productName", label: "제품명", width: 220 },
     { key: "voltage", label: "전압", width: 80 },
     { key: "capacityAh", label: "용량(Ah)", width: 100 },
-    {
-      key: "active",
-      label: "상태",
-      width: 120,
-      render: (v) => (
-        <Status
-          type={v ? "success" : "default"}
-          label={v ? "사용중" : "중지"}
-        />
-      ),
-    },
+    // [수정] 상태 -> 단위로 변경
+    { key: "unit", label: "단위", width: 80 },
     { key: "updatedAt", label: "수정일", width: 120 },
   ];
 
@@ -122,7 +106,6 @@ export default function Product() {
         {drawer.type === "detail" && selected && (
           <>
             <ProductDetail product={selected} />
-
             <DrawerFooter>
               <Button
                 variant="ok"
@@ -154,22 +137,16 @@ export default function Product() {
   );
 }
 
-/* =========================
-   styled
-========================= */
-
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
 `;
-
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
 `;
-
 const AddBtn = styled.button`
   padding: 8px 14px;
   background: var(--main);
@@ -177,7 +154,6 @@ const AddBtn = styled.button`
   border-radius: 8px;
   font-weight: 600;
 `;
-
 const DrawerFooter = styled.div`
   display: flex;
   justify-content: flex-end;

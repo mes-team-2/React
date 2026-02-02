@@ -4,51 +4,56 @@ import Table from "../../components/TableStyle";
 import Button from "../../components/Button";
 import { InventoryAPI } from "../../api/AxiosAPI";
 
-/* =========================
-   제품 + BOM 등록 폼
-========================= */
 export default function ProductForm({ mode, initialData, onSubmit }) {
-  /* =========================
-     제품 기본 정보
-  ========================= */
+  // [New] 초기값 세팅 (수정 모드 지원)
   const [product, setProduct] = useState({
     productCode: "",
     productName: "",
     voltage: 12,
     capacityAh: "",
-    type: "완제품",
-    active: true,
+    unit: "EA", // 기본 단위
   });
 
-  /* =========================
-     자재 목록 & BOM
-  ========================= */
   const [materials, setMaterials] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
 
-  /* =========================
-     자재 조회
-  ========================= */
+  // [New] 수정 모드일 때 초기 데이터 로드
   useEffect(() => {
-    fetchMaterials();
-  }, []);
+    if (mode === "edit" && initialData) {
+      setProduct({
+        productCode: initialData.productCode,
+        productName: initialData.productName,
+        voltage: initialData.voltage,
+        capacityAh: initialData.capacityAh,
+        unit: initialData.unit || "EA",
+      });
+      // 수정 모드에서는 BOM 수정을 여기서 하지 않고 BOM 관리 페이지에서 하므로 자재 로드 생략 가능
+    }
+  }, [mode, initialData]);
+
+  // 자재 목록 조회 (생성 모드일 때만 필요)
+  useEffect(() => {
+    if (mode === "create") {
+      fetchMaterials();
+    }
+  }, [mode]);
 
   const fetchMaterials = async () => {
-    const res = await InventoryAPI.getMaterialList();
-    if (res.status === 200) {
-      // BOM용 기본 qty = 0
-      setMaterials(
-        res.data.map((m) => ({
-          ...m,
-          qty: "0",
-        })),
-      );
+    try {
+      const res = await InventoryAPI.getMaterialList();
+      if (res.status === 200) {
+        setMaterials(
+          res.data.map((m) => ({
+            ...m,
+            qty: "0",
+          })),
+        );
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  /* =========================
-     입력 처리
-  ========================= */
   const handleProductChange = (e) => {
     const { name, value } = e.target;
     setProduct((prev) => ({ ...prev, [name]: value }));
@@ -60,9 +65,6 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
     );
   };
 
-  /* =========================
-     BOM 데이터 생성
-  ========================= */
   const bomItems = useMemo(() => {
     return materials
       .filter((m) => selectedIds.includes(m.no) && Number(m.qty) > 0)
@@ -74,25 +76,30 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
       }));
   }, [materials, selectedIds]);
 
-  /* =========================
-     저장
-  ========================= */
+  // [핵심] 백엔드 DTO 규격에 맞춰 전송
   const handleSubmit = () => {
     if (mode === "create") {
-      onSubmit({
-        product,
-        bomItems,
-      });
+      const payload = {
+        product: {
+          productCode: product.productCode,
+          productName: product.productName,
+          voltage: Number(product.voltage),
+          capacityAh: Number(product.capacityAh),
+          unit: product.unit,
+        },
+        bomItems: bomItems, // 선택된 자재 목록
+      };
+      onSubmit(payload);
     } else {
+      // 수정 모드
       onSubmit({
-        ...product,
+        productName: product.productName,
+        capacityAh: Number(product.capacityAh),
+        // active: true // 필요 시 추가
       });
     }
   };
 
-  /* =========================
-     테이블 컬럼
-  ========================= */
   const columns = [
     { key: "materialCode", label: "자재 코드", width: 160 },
     { key: "materialName", label: "자재명", width: 200 },
@@ -115,7 +122,6 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
 
   return (
     <Wrapper>
-      {/* ===== 제품 정보 ===== */}
       <Section>
         <h4>제품 기본 정보</h4>
 
@@ -125,6 +131,7 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
             name="productCode"
             value={product.productCode}
             onChange={handleProductChange}
+            disabled={mode === "edit"} // 수정 시 코드 변경 불가
           />
         </Field>
 
@@ -144,7 +151,8 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
               type="number"
               name="voltage"
               value={product.voltage}
-              disabled
+              onChange={handleProductChange}
+              disabled={mode === "edit"}
             />
           </Field>
           <Field>
@@ -159,11 +167,9 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
         </Row>
       </Section>
 
-      {/* ===== BOM 구성 (제품 등록 시에만) ===== */}
       {mode === "create" && (
         <Section>
           <h4>BOM 레시피 구성</h4>
-
           <Table
             columns={columns}
             data={materials}
@@ -173,7 +179,6 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
         </Section>
       )}
 
-      {/* ===== 저장 ===== */}
       <Footer>
         <Button variant="ok" size="m" onClick={handleSubmit}>
           {mode === "create" ? "제품 + BOM 등록" : "수정하기"}
@@ -183,50 +188,39 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
   );
 }
 
-/* =========================
-   styled
-========================= */
-
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
 `;
-
 const Section = styled.section`
   display: flex;
   flex-direction: column;
   gap: 10px;
-
   h4 {
     font-size: 14px;
     font-weight: 600;
   }
 `;
-
 const Row = styled.div`
   display: flex;
   gap: 12px;
 `;
-
 const Field = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1;
-
   label {
     font-size: 12px;
     opacity: 0.7;
   }
-
   input {
     padding: 8px 10px;
     border-radius: 6px;
     border: 1px solid var(--border);
   }
 `;
-
 const Footer = styled.div`
   display: flex;
   justify-content: flex-end;

@@ -1,44 +1,37 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import SummaryCard from "../../components/SummaryCard";
+import { BomAPI } from "../../api/AxiosAPI"; // [New] API Import
 
 import { FaBoxOpen, FaWarehouse, FaCheckCircle, FaClock } from "react-icons/fa";
 
-/* =========================
-   제품 상세
-========================= */
 export default function ProductDetail({ product }) {
+  const [bomData, setBomData] = useState([]); // [New] BOM State
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
 
-  const bomData = useMemo(() => {
-    if (!product) return [];
-    return [
-      {
-        id: 1,
-        materialCode: "MAT-001",
-        materialName: "납판",
-        qty: 10,
-        process: "조립",
-      },
-      {
-        id: 2,
-        materialCode: "MAT-002",
-        materialName: "전해액",
-        qty: 5,
-        process: "충전",
-      },
-    ];
+  // [New] 제품이 바뀔 때마다 실제 DB에서 BOM 조회
+  useEffect(() => {
+    const fetchBom = async () => {
+      if (!product?.productCode) return;
+      try {
+        const res = await BomAPI.getList(product.productCode);
+        setBomData(res.data);
+      } catch (err) {
+        console.error("BOM 조회 실패", err);
+      }
+    };
+    fetchBom();
   }, [product]);
 
   const bomColumns = [
     { key: "materialCode", label: "자재 코드", width: 140 },
     { key: "materialName", label: "자재명", width: 160 },
     { key: "qty", label: "소요 수량", width: 100 },
-    { key: "process", label: "공정", width: 120 },
+    { key: "process", label: "투입 공정", width: 120 },
   ];
 
   const handleSort = (key) => {
@@ -78,7 +71,6 @@ export default function ProductDetail({ product }) {
 
   return (
     <Wrapper>
-      {/* ===== 헤더 ===== */}
       <Header>
         <div>
           <h3>{product.productName}</h3>
@@ -96,12 +88,13 @@ export default function ProductDetail({ product }) {
         <SummaryCard
           icon={<FaWarehouse />}
           label="재고 수량"
-          value={`${product.stockQty?.toLocaleString() ?? 0} EA`}
+          // [수정] "EA" 제거, 데이터 없으면 0
+          value={product.stockQty?.toLocaleString() ?? 0}
         />
         <SummaryCard
           icon={<FaCheckCircle />}
-          label="상태"
-          value={product.status}
+          label="단위" // [수정] 상태 -> 단위
+          value={product.unit || "EA"}
         />
         <SummaryCard
           icon={<FaClock />}
@@ -125,52 +118,41 @@ export default function ProductDetail({ product }) {
   );
 }
 
-/* =========================
-   styled
-========================= */
-
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 22px;
 `;
-
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-
   h3 {
     font-size: 20px;
     font-weight: 700;
     margin: 0;
   }
-
   span {
     font-size: 12px;
     opacity: 0.6;
   }
 `;
-
 const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* ⭐ 2줄 */
+  grid-template-columns: repeat(2, 1fr);
   gap: 14px;
 `;
-
 const Card = styled.section`
   background: white;
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
 `;
-
 const SectionTitle = styled.h4`
   margin-bottom: 10px;
   font-size: 15px;
   font-weight: 600;
 `;
-
 const Empty = styled.div`
   padding: 60px 20px;
   text-align: center;

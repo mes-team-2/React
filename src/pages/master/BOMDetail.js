@@ -8,22 +8,41 @@ export default function BOMDetail({ data, onClose, onSave }) {
   const [form, setForm] = useState(null);
 
   useEffect(() => {
-    setForm(data);
+    if (data) {
+      setForm({
+        ...data,
+        process: data.process || "전극공정",
+      });
+    }
   }, [data]);
 
   const handleSave = async () => {
     if (!form) return;
     try {
-      // API 호출 (수량, 공정 수정)
-      await BomAPI.update(form.id, {
-        qty: form.qty,
-        process: form.process,
-      });
-      alert("수정되었습니다.");
-      onSave?.(); // 부모에게 알림
+      // [핵심] ID가 있으면 수정(PUT), 없으면 신규 등록(POST)
+      if (form.id) {
+        console.log("Updating BOM...", form.id);
+        await BomAPI.update(form.id, {
+          qty: form.qty,
+          process: form.process,
+        });
+      } else {
+        console.log("Creating New BOM...", form.materialCode);
+        // ID가 없다는 것은 DB에 데이터가 없다는 뜻 -> POST 호출
+        // URL: /api/bom (404가 뜨면 백엔드 Controller 확인 필수)
+        await BomAPI.create({
+          productCode: form.productCode,
+          materialCode: form.materialCode,
+          qty: form.qty,
+          process: form.process,
+        });
+      }
+
+      alert("저장되었습니다.");
+      onSave?.(); // 부모(BOM.js)의 loadData 호출
     } catch (err) {
       console.error(err);
-      alert("수정 실패");
+      alert("저장 실패: " + (err.response?.status || "Unknown Error"));
     }
   };
 
@@ -32,7 +51,7 @@ export default function BOMDetail({ data, onClose, onSave }) {
   return (
     <SideDrawer open={!!data} onClose={onClose}>
       <Wrapper>
-        <h3>BOM 수정</h3>
+        <h3>{form.id ? "BOM 수정" : "BOM 자재 등록"}</h3>
 
         <Field>
           <label>자재코드</label>
@@ -48,6 +67,8 @@ export default function BOMDetail({ data, onClose, onSave }) {
           <label>소요량</label>
           <input
             type="number"
+            min="0"
+            step="0.01"
             value={form.qty}
             onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
           />
@@ -85,24 +106,17 @@ export default function BOMDetail({ data, onClose, onSave }) {
   );
 }
 
-/* =========================
-   styled
-========================= */
-
 const Wrapper = styled.div`
   padding: 20px;
 `;
-
 const Field = styled.div`
   margin-bottom: 14px;
-
   label {
     display: block;
     font-size: 12px;
     margin-bottom: 6px;
     opacity: 0.7;
   }
-
   input,
   select {
     width: 100%;
@@ -111,7 +125,6 @@ const Field = styled.div`
     border: 1px solid #ddd;
   }
 `;
-
 const BtnRow = styled.div`
   display: flex;
   justify-content: flex-end;

@@ -74,6 +74,16 @@ export const WorkOrderAPI = {
     return await AxiosAPI.get("/api/master/products");
   },
 
+  // 제품 등록
+  createProduct: async (data) => {
+    return await AxiosAPI.post("/api/master/products", data);
+  },
+
+  // 제품 수정
+  updateProduct: async (productId, data) => {
+    return await AxiosAPI.put(`/api/master/products/${productId}`, data);
+  },
+
   // 작업지시 생성
   createWorkOrder: async (data) => {
     return await AxiosAPI.post("/api/workorder", data);
@@ -93,6 +103,11 @@ export const BomAPI = {
   // 제품 코드로 BOM 목록 조회
   getList: async (productCode) => {
     return await AxiosAPI.get(`/api/bom/${productCode}`);
+  },
+
+  // BOM 신규 등록
+  create: async (data) => {
+    return await AxiosAPI.post("/api/bom", data);
   },
 
   // BOM 정보 수정
