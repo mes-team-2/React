@@ -55,10 +55,6 @@ export default function WorkerDetail({ worker, onClose }) {
           <label>이름</label>
           <strong>{worker.name}</strong>
         </InfoItem>
-        <InfoItem>
-          <label>공정</label>
-          <strong>{worker.process}</strong>
-        </InfoItem>
 
         <InfoItem>
           <label>직급</label>

@@ -2,68 +2,74 @@ import styled from "styled-components";
 import { useMemo, useState } from "react";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
+import Status from "../../components/Status";
+import Button from "../../components/Button";
 import WorkerDetail from "./WorkerDetail";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 
 /* =========================
-   차트 색상
+   작업자 관리 (Worker Master)
+   - 그래프 없음
+   - 공정/근무상태 컬럼 없음
+   - 최소 CRUD: Create / Update / Active(soft)
 ========================= */
-const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444"];
-
 export default function Worker() {
   /* =========================
      state
   ========================= */
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const [drawer, setDrawer] = useState({ open: false, mode: null }); // create | edit
+  const [form, setForm] = useState({
+    id: null,
+    workerNo: "",
+    name: "",
+    position: "작업자",
+    line: "라인-1",
+    joinedAt: "",
+    active: true,
   });
-  const [open, setOpen] = useState(false);
+
+  const [detailOpen, setDetailOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);
 
   /* =========================
-     작업자 더미 데이터
+     더미 데이터 (기준정보)
   ========================= */
-  const tableData = useMemo(
-    () =>
-      Array.from({ length: 18 }).map((_, i) => ({
-        id: i + 1,
-        workerNo: `W-2026-${String(i + 1).padStart(3, "0")}`,
-        name: i % 3 === 0 ? "김현수" : i % 3 === 1 ? "이준호" : "박민지",
-        process: i % 3 === 0 ? "극판 적층" : i % 3 === 1 ? "COS 용접" : "화성",
-        line: `라인-${(i % 4) + 1}`,
-        position: i % 2 === 0 ? "작업자" : "반장",
-        status: i % 4 === 0 ? "근무중" : i % 4 === 2 ? "오프라인" : "근무중",
-        joinedAt: "2025/08/01",
-      })),
-    [],
+  const [workers, setWorkers] = useState(() =>
+    Array.from({ length: 18 }).map((_, i) => ({
+      id: i + 1,
+      workerNo: `W-2026-${String(i + 1).padStart(3, "0")}`,
+      name: i % 3 === 0 ? "김현수" : i % 3 === 1 ? "이준호" : "박민지",
+      position: i % 2 === 0 ? "작업자" : "반장",
+      line: `라인-${(i % 4) + 1}`,
+      joinedAt: "2025/08/01",
+      active: i % 7 !== 0, // 일부 비활성 더미
+    })),
   );
 
   /* =========================
-     테이블 컬럼
+     columns (공정/근무상태 제거)
   ========================= */
   const columns = [
-    { key: "workerNo", label: "작업자 번호", width: 140 },
-    { key: "name", label: "이름", width: 120 },
-    { key: "process", label: "공정", width: 160 },
-    { key: "position", label: "직급", width: 100 },
-    { key: "status", label: "근무 상태", width: 120 },
-    { key: "joinedAt", label: "입사일", width: 120 },
+    { key: "workerNo", label: "작업자 번호", width: 160 },
+    { key: "name", label: "이름", width: 140 },
+    { key: "position", label: "직급", width: 120 },
+    {
+      key: "active",
+      label: "사용 여부",
+      width: 120,
+      render: (v) => (
+        <Status
+          type={v ? "success" : "default"}
+          label={v ? "사용중" : "중지"}
+        />
+      ),
+    },
+    { key: "joinedAt", label: "입사일", width: 140 },
   ];
 
   /* =========================
-     정렬
+     sort
   ========================= */
   const handleSort = (key) => {
     setSortConfig((prev) =>
@@ -74,111 +80,214 @@ export default function Worker() {
   };
 
   const sortedData = useMemo(() => {
-    if (!sortConfig.key) return tableData;
+    if (!sortConfig.key) return workers;
 
-    return [...tableData].sort((a, b) => {
+    return [...workers].sort((a, b) => {
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
 
-      if (typeof aVal === "string") {
+      // 문자열 정렬(숫자 포함)
+      if (typeof aVal === "string" && typeof bVal === "string") {
         return sortConfig.direction === "asc"
           ? aVal.localeCompare(bVal, "ko", { numeric: true })
           : bVal.localeCompare(aVal, "ko", { numeric: true });
       }
 
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+      // boolean 정렬
+      if (typeof aVal === "boolean" && typeof bVal === "boolean") {
+        const aa = aVal ? 1 : 0;
+        const bb = bVal ? 1 : 0;
+        return sortConfig.direction === "asc" ? aa - bb : bb - aa;
+      }
+
+      return 0;
     });
-  }, [tableData, sortConfig]);
+  }, [workers, sortConfig]);
 
   /* =========================
-     차트 데이터
+     drawer controls
   ========================= */
-  const processChart = [
-    { name: "극판 적층", value: 6 },
-    { name: "COS 용접", value: 6 },
-    { name: "화성", value: 6 },
-  ];
+  const openCreate = () => {
+    setForm({
+      id: null,
+      workerNo: "",
+      name: "",
+      position: "작업자",
+      line: "라인-1",
+      joinedAt: "2026/02/02",
+      active: true,
+    });
+    setDrawer({ open: true, mode: "create" });
+  };
 
-  const statusChart = [
-    { name: "근무중", value: 10 },
-    { name: "휴식", value: 4 },
-    { name: "오프라인", value: 4 },
-  ];
+  const openEdit = (row) => {
+    setForm(row);
+    setDrawer({ open: true, mode: "edit" });
+  };
+
+  const closeDrawer = () => {
+    setDrawer({ open: false, mode: null });
+  };
 
   /* =========================
-     관리 액션
+     CRUD (최소)
   ========================= */
-  const handleAssign = () => {
-    console.log("공정 배치:", selectedIds);
+  const handleCreate = () => {
+    if (!form.workerNo.trim() || !form.name.trim()) return;
+
+    // 중복 코드 방지(프론트 기준)
+    const exists = workers.some((w) => w.workerNo === form.workerNo.trim());
+    if (exists) return;
+
+    setWorkers((prev) => [
+      ...prev,
+      {
+        ...form,
+        id: Date.now(),
+        workerNo: form.workerNo.trim(),
+        name: form.name.trim(),
+      },
+    ]);
+    closeDrawer();
   };
 
-  const handleDeactivate = () => {
-    console.log("비활성 처리:", selectedIds);
+  const handleUpdate = () => {
+    setWorkers((prev) =>
+      prev.map((w) =>
+        w.id === form.id
+          ? {
+              ...w,
+              // 수정 허용 범위만 반영
+              name: form.name.trim(),
+              position: form.position,
+              line: form.line,
+              active: form.active,
+            }
+          : w,
+      ),
+    );
+    closeDrawer();
   };
 
-  const handleRowClick = (row) => {
-    setSelectedWorker(row);
-    setOpen(true);
-  };
-
+  /* =========================
+     render
+  ========================= */
   return (
     <Wrapper>
       <Header>
         <h2>작업자 관리</h2>
+        <Button variant="ok" size="m" onClick={openCreate}>
+          + 작업자 등록
+        </Button>
       </Header>
 
-      {/* ===== 차트 (있어도 부담 없는 수준) ===== */}
-      <ChartGrid>
-        <Card>
-          <h4>공정별 작업자 분포</h4>
-          <ChartBox>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={processChart}
-                  dataKey="value"
-                  innerRadius={45}
-                  outerRadius={70}
-                >
-                  {processChart.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartBox>
-        </Card>
-
-        <Card>
-          <h4>근무 상태 분포</h4>
-          <ChartBox>
-            <ResponsiveContainer>
-              <BarChart data={statusChart}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#6366f1" />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartBox>
-        </Card>
-      </ChartGrid>
-
-      {/* ===== 관리 버튼 ===== */}
-
-      {/* ===== 테이블 ===== */}
       <Table
         columns={columns}
         data={sortedData}
         sortConfig={sortConfig}
         onSort={handleSort}
-        selectedIds={selectedIds}
-        onSelectChange={setSelectedIds}
-        onRowClick={handleRowClick}
+        selectable={false}
+        onRowClick={(row) => {
+          setSelectedWorker(row);
+          setDetailOpen(true);
+        }}
       />
-      <SideDrawer open={open} onClose={() => setOpen(false)}>
-        <WorkerDetail worker={selectedWorker} onClose={() => setOpen(false)} />
+
+      <SideDrawer open={drawer.open} width={360} onClose={closeDrawer}>
+        <DrawerBody>
+          <DrawerTitle>
+            {drawer.mode === "create" ? "작업자 등록" : "작업자 수정"}
+          </DrawerTitle>
+
+          <Field>
+            <label>작업자 번호</label>
+            <input
+              value={form.workerNo}
+              disabled={drawer.mode === "edit"}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, workerNo: e.target.value }))
+              }
+            />
+          </Field>
+
+          <Field>
+            <label>이름</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            />
+          </Field>
+
+          <Field>
+            <label>직급</label>
+            <select
+              value={form.position}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, position: e.target.value }))
+              }
+            >
+              <option value="작업자">작업자</option>
+              <option value="반장">반장</option>
+              <option value="관리자">관리자</option>
+            </select>
+          </Field>
+
+          <Field>
+            <label>입사일</label>
+            <input value={form.joinedAt} disabled />
+          </Field>
+
+          {/* 사용 여부: 최소 형태로 유지(원하면 Process처럼 토글로 바꿔도 됨) */}
+          <CheckRow>
+            <input
+              type="checkbox"
+              checked={form.active}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, active: e.target.checked }))
+              }
+            />
+            <span>사용 여부</span>
+            <MiniStatus $active={form.active}>
+              {form.active ? "사용중" : "중지"}
+            </MiniStatus>
+          </CheckRow>
+
+          <DrawerFooter>
+            <Button variant="cancel" size="m" onClick={closeDrawer}>
+              취소
+            </Button>
+
+            <Button
+              variant="ok"
+              size="m"
+              onClick={drawer.mode === "create" ? handleCreate : handleUpdate}
+              disabled={
+                drawer.mode === "create"
+                  ? !form.workerNo.trim() || !form.name.trim()
+                  : !form.name.trim()
+              }
+            >
+              {drawer.mode === "create" ? "등록" : "수정"}
+            </Button>
+          </DrawerFooter>
+
+          {/* 안내(기준정보 철학) */}
+          {drawer.mode === "edit" && (
+            <Hint>
+              ※ 작업자 번호/입사일은 기준 정보로 고정입니다. (필요 시 신규 등록
+              권장)
+            </Hint>
+          )}
+        </DrawerBody>
+      </SideDrawer>
+      <SideDrawer open={detailOpen} onClose={() => setDetailOpen(false)}>
+        <WorkerDetail
+          worker={selectedWorker}
+          onEdit={() => {
+            setDetailOpen(false);
+            openEdit(selectedWorker); // 기존 수정 Drawer 재사용
+          }}
+        />
       </SideDrawer>
     </Wrapper>
   );
@@ -195,63 +304,84 @@ const Wrapper = styled.div`
 `;
 
 const Header = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
   h2 {
     font-size: 22px;
     font-weight: 700;
+    margin: 0;
   }
 `;
 
-const ChartGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-
-  @media (max-width: 1200px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const Card = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
-
-  h4 {
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-`;
-
-const ChartBox = styled.div`
-  height: 220px;
-
-  svg:focus,
-  svg *:focus {
-    outline: none;
-  }
-`;
-
-const ActionBar = styled.div`
+const DrawerBody = styled.div`
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 6px;
+`;
 
-  span {
-    font-size: 13px;
+const DrawerTitle = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+`;
+
+const Field = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 12px;
     opacity: 0.7;
   }
 
-  button {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    background: var(--main);
-    color: white;
-    cursor: pointer;
+  input,
+  select {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: white;
   }
 
-  .danger {
-    background: #ef4444;
+  input:disabled {
+    opacity: 0.7;
+    background: var(--background2);
   }
+`;
+
+const CheckRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+
+  span {
+    font-size: 12px;
+    opacity: 0.7;
+  }
+`;
+
+const MiniStatus = styled.span`
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: ${(p) => (p.$active ? "var(--main)" : "#888")};
+`;
+
+const DrawerFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 16px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+`;
+
+const Hint = styled.div`
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 8px;
 `;
