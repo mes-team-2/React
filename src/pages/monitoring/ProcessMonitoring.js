@@ -213,8 +213,7 @@ export default function ProcessMonitoring() {
   return (
     <Wrapper>
       <Header>
-        <h2>배터리 핵심 공정 모니터링</h2>
-        <span>자동차 배터리 MES</span>
+        <h2> 공정 모니터링</h2>
       </Header>
 
       {/* ===== 공정 단계 (5개) ===== */}
@@ -254,7 +253,6 @@ export default function ProcessMonitoring() {
             </BarChart>
           </ResponsiveContainer>
         </ChartBoxTall>
-        <Hint>※ C# 설비 시뮬레이터 연동 시 1초 단위로 진행률/지표 갱신</Hint>
       </Card>
 
       {/* ===== 공정별 실시간 그래프 (각 공정 1개씩, 총 5개) ===== */}

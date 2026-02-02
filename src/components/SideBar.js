@@ -118,7 +118,7 @@ const PAGE_LABEL = {
   "/mes/report/trace": "Traceability 조회",
 };
 
-const STORAGE_KEY = "mes_recent_pages";
+const RECENT_PAGES_KEY = "mes_recent_pages";
 
 /* =========================
    사이드바 메뉴 구조
@@ -221,7 +221,7 @@ export default function SideBar() {
   const [dragOverPinIndex, setDragOverPinIndex] = useState(null);
 
   const [recentPages, setRecentPages] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(RECENT_PAGES_KEY);
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -249,7 +249,7 @@ export default function SideBar() {
     setRecentPages((prev) => {
       if (prev.some((p) => p.path === path)) return prev;
       const next = [...prev, { path, label }];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(RECENT_PAGES_KEY, JSON.stringify(next));
       return next;
     });
   }, [location.pathname]);
@@ -265,7 +265,7 @@ export default function SideBar() {
   const removeTab = (path) => {
     setRecentPages((prev) => {
       const next = prev.filter((p) => p.path !== path);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(RECENT_PAGES_KEY, JSON.stringify(next));
       return next;
     });
   };
@@ -273,7 +273,12 @@ export default function SideBar() {
   /* =========================
      대분류/중분류 열림 상태
   ========================= */
-  const [openKeys, setOpenKeys] = useState([]);
+
+  const SIDEBAR_OPEN_KEY = "mes_sidebar_open_keys";
+  const [openKeys, setOpenKeys] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_OPEN_KEY);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // 현재 경로에 해당하는 대분류 자동 오픈
   useEffect(() => {
@@ -402,6 +407,38 @@ export default function SideBar() {
       return next;
     });
   };
+
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (initializedRef.current) return;
+
+    const currentGroup = MENU.find((group) => {
+      if (group.items?.some((it) => location.pathname.startsWith(it.to)))
+        return true;
+
+      if (
+        group.groups?.some((g) =>
+          g.items.some((it) => location.pathname.startsWith(it.to)),
+        )
+      )
+        return true;
+
+      return false;
+    });
+
+    if (currentGroup) {
+      setOpenKeys((prev) =>
+        prev.includes(currentGroup.key) ? prev : [...prev, currentGroup.key],
+      );
+    }
+
+    initializedRef.current = true;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_OPEN_KEY, JSON.stringify(openKeys));
+  }, [openKeys]);
 
   return (
     <Shell>
@@ -994,7 +1031,7 @@ const LogoutArea = styled.div`
 const LogoutButton = styled.button`
   width: 80%;
   height: 25px;
-  padding:  0;
+  padding: 0;
   border-radius: 999px;
   border: none;
   background: var(--main);
@@ -1014,7 +1051,6 @@ const PinnedTabs = styled.div`
   border-right: 1px solid var(--border);
   user-select: none;
 `;
-
 
 const PinnedStar = styled.button`
   display: flex;
