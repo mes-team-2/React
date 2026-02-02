@@ -41,7 +41,6 @@ export default function Worker() {
       workerNo: `W-2026-${String(i + 1).padStart(3, "0")}`,
       name: i % 3 === 0 ? "김현수" : i % 3 === 1 ? "이준호" : "박민지",
       position: i % 2 === 0 ? "작업자" : "반장",
-      line: `라인-${(i % 4) + 1}`,
       joinedAt: "2025/08/01",
       active: i % 7 !== 0, // 일부 비활성 더미
     })),
@@ -56,7 +55,7 @@ export default function Worker() {
     { key: "position", label: "직급", width: 120 },
     {
       key: "active",
-      label: "사용 여부",
+      label: "근무 여부",
       width: 120,
       render: (v) => (
         <Status
@@ -236,21 +235,6 @@ export default function Worker() {
             <label>입사일</label>
             <input value={form.joinedAt} disabled />
           </Field>
-
-          {/* 사용 여부: 최소 형태로 유지(원하면 Process처럼 토글로 바꿔도 됨) */}
-          <CheckRow>
-            <input
-              type="checkbox"
-              checked={form.active}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, active: e.target.checked }))
-              }
-            />
-            <span>사용 여부</span>
-            <MiniStatus $active={form.active}>
-              {form.active ? "사용중" : "중지"}
-            </MiniStatus>
-          </CheckRow>
 
           <DrawerFooter>
             <Button variant="cancel" size="m" onClick={closeDrawer}>

@@ -61,7 +61,7 @@ export default function WorkerDetail({ worker, onClose }) {
           <strong>{worker.position}</strong>
         </InfoItem>
         <InfoItem>
-          <label>근무 상태</label>
+          <label>근무 여부</label>
           <StatusBadge status={worker.status}>{worker.status}</StatusBadge>
         </InfoItem>
         <InfoItem>
