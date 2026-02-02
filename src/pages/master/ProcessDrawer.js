@@ -13,6 +13,10 @@ export default function ProcessDrawer({
   onClose,
   onSubmit,
 }) {
+  const toggleActive = () => {
+    setForm((p) => ({ ...p, active: !p.active }));
+  };
+
   return (
     <SideDrawer
       open={open}
@@ -52,17 +56,31 @@ export default function ProcessDrawer({
           />
         </Field>
 
+        {/* ✅ 사용 여부 토글 (안정형) */}
         <FieldRow>
-          <label>
-            <input
-              type="checkbox"
-              checked={form.active}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, active: e.target.checked }))
-              }
-            />
-            사용 여부
-          </label>
+          <ToggleRow>
+            <span>사용 여부</span>
+
+            <Toggle
+              role="switch"
+              aria-checked={form.active}
+              tabIndex={0}
+              $active={form.active}
+              onClick={toggleActive}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleActive();
+                }
+              }}
+            >
+              <ToggleThumb $active={form.active} />
+            </Toggle>
+
+            <StateText $active={form.active}>
+              {form.active ? "사용중" : "중지"}
+            </StateText>
+          </ToggleRow>
         </FieldRow>
 
         <Footer>
@@ -108,6 +126,48 @@ const Field = styled.div`
 
 const FieldRow = styled.div`
   font-size: 13px;
+`;
+
+const ToggleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  span {
+    font-size: 12px;
+    opacity: 0.7;
+    min-width: 60px;
+  }
+`;
+
+/* ⭐ background 오류 방지: background 대신 background-color 사용 */
+const Toggle = styled.div`
+  width: 44px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: ${(p) => (p.$active ? "var(--main)" : "#c9c9c9")};
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+`;
+
+const ToggleThumb = styled.div`
+  width: 18px;
+  height: 18px;
+  background-color: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+  transform: ${(p) => (p.$active ? "translateX(22px)" : "translateX(0)")};
+`;
+
+const StateText = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${(p) => (p.$active ? "var(--main)" : "#888")};
 `;
 
 const Footer = styled.div`
