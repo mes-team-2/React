@@ -7,6 +7,7 @@ import {
   FiPauseCircle,
   FiBox,
   FiActivity,
+  FiPower,
 } from "react-icons/fi";
 import styled, { css } from "styled-components";
 import { LuHourglass } from "react-icons/lu";
@@ -47,6 +48,20 @@ const STATUS_CONFIG = {
     textColor: "var(--font)",
     bg: "var(--bgComplete)",
     icon: <FiCheckCircle />,
+  },
+  ACTIVE: {
+    label: "사용중",
+    iconColor: "var(--complete)",
+    textColor: "var(--font)",
+    bg: "var(--bgComplete)",
+    icon: <FiCheckCircle />,
+  },
+  INACTIVE: {
+    label: "중지",
+    iconColor: "var(--stop)",
+    textColor: "var(--font)",
+    bg: "var(--bgStop)",
+    icon: <FiXCircle />,
   },
   OK: {
     label: "정상",

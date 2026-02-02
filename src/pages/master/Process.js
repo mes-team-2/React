@@ -1,54 +1,16 @@
 import styled from "styled-components";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import Status from "../../components/Status";
 import Button from "../../components/Button";
 import ProcessDrawer from "./ProcessDrawer";
+import { ProcessAPI } from "../../api/AxiosAPI";
 
-/* =========================
-   공정 기준 관리 (Process Master)
-========================= */
 export default function Process() {
-  const [processes, setProcesses] = useState([
-    {
-      processId: 1,
-      seq: 1,
-      processCode: "PROC-01",
-      processName: "전극 공정",
-      active: true,
-    },
-    {
-      processId: 2,
-      seq: 2,
-      processCode: "PROC-02",
-      processName: "조립 공정",
-      active: true,
-    },
-    {
-      processId: 3,
-      seq: 3,
-      processCode: "PROC-03",
-      processName: "활성화 공정",
-      active: true,
-    },
-    {
-      processId: 4,
-      seq: 4,
-      processCode: "PROC-04",
-      processName: "팩 공정",
-      active: true,
-    },
-    {
-      processId: 5,
-      seq: 5,
-      processCode: "PROC-05",
-      processName: "최종 검사",
-      active: true,
-    },
-  ]);
+  const [processes, setProcesses] = useState([]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState(null); // create | edit
+  const [drawerMode, setDrawerMode] = useState(null);
 
   const [form, setForm] = useState({
     processId: null,
@@ -57,6 +19,19 @@ export default function Process() {
     processName: "",
     active: true,
   });
+
+  const fetchProcesses = async () => {
+    try {
+      const res = await ProcessAPI.getList();
+      setProcesses(res.data);
+    } catch (err) {
+      console.error("공정 목록 조회 실패", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProcesses();
+  }, []);
 
   /* =========================
      Drawer 제어
@@ -87,36 +62,38 @@ export default function Process() {
   /* =========================
      CRUD
   ========================= */
-  const handleCreate = () => {
-    setProcesses((prev) => [
-      ...prev,
-      {
-        ...form,
-        processId: Date.now(),
+  const handleCreate = async () => {
+    try {
+      await ProcessAPI.create({
         seq: Number(form.seq),
-      },
-    ]);
-    closeDrawer();
+        processCode: form.processCode,
+        processName: form.processName,
+        active: form.active,
+      });
+      alert("공정이 등록되었습니다.");
+      closeDrawer();
+      fetchProcesses();
+    } catch (err) {
+      console.error(err);
+      alert("등록 실패");
+    }
   };
 
-  const handleUpdate = () => {
-    setProcesses((prev) =>
-      prev.map((p) =>
-        p.processId === form.processId
-          ? {
-              ...p,
-              processName: form.processName,
-              active: form.active,
-            }
-          : p,
-      ),
-    );
-    closeDrawer();
+  const handleUpdate = async () => {
+    try {
+      await ProcessAPI.update(form.processId, {
+        processName: form.processName,
+        active: form.active,
+      });
+      alert("수정되었습니다.");
+      closeDrawer();
+      fetchProcesses();
+    } catch (err) {
+      console.error(err);
+      alert("수정 실패");
+    }
   };
 
-  /* =========================
-     컬럼
-  ========================= */
   const columns = [
     { key: "seq", label: "순서", width: 80 },
     { key: "processCode", label: "공정 코드", width: 140 },
@@ -125,12 +102,8 @@ export default function Process() {
       key: "active",
       label: "상태",
       width: 120,
-      render: (v) => (
-        <Status
-          type={v ? "success" : "default"}
-          label={v ? "사용중" : "중지"}
-        />
-      ),
+      // [수정] true면 ACTIVE(사용중), false면 INACTIVE(중지) 상태 전달
+      render: (v) => <Status status={v ? "ACTIVE" : "INACTIVE"} />,
     },
   ];
 
@@ -145,7 +118,7 @@ export default function Process() {
 
       <Table
         columns={columns}
-        data={[...processes].sort((a, b) => a.seq - b.seq)}
+        data={processes}
         onRowClick={openEdit}
         selectable={false}
       />
@@ -161,10 +134,6 @@ export default function Process() {
     </Wrapper>
   );
 }
-
-/* =========================
-   styled
-========================= */
 
 const Wrapper = styled.div`
   display: flex;

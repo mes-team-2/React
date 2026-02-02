@@ -116,4 +116,22 @@ export const BomAPI = {
   },
 };
 
+// 공정 관리 API
+export const ProcessAPI = {
+  // 목록 조회
+  getList: async () => {
+    return await AxiosAPI.get("/api/master/processes");
+  },
+
+  // 등록
+  create: async (data) => {
+    return await AxiosAPI.post("/api/master/processes", data);
+  },
+
+  // 수정
+  update: async (processId, data) => {
+    return await AxiosAPI.put(`/api/master/processes/${processId}`, data);
+  },
+};
+
 export default AxiosAPI;
