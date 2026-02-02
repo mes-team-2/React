@@ -41,6 +41,15 @@ AxiosAPI.interceptors.response.use(
 /* ==============================================
    API 호출 함수 모음
 ============================================== */
+
+// 설비 관리 API
+export const MachineAPI = {
+  // 목록 조회
+  getList: async () => {
+    return await AxiosAPI.get("/api/machines");
+  },
+};
+
 export const InventoryAPI = {
   // 1. 자재 전체 목록 조회
   getMaterialList: async () => {
