@@ -66,14 +66,9 @@ export default function MaterialLog() {
         });
         const data = res.data;
 
-        console.log(
-          "전체 txType들:",
-          data.content.map((i) => i.txType),
-        );
-
         setRows(
           data.content.map((item, idx) => ({
-            id: `${item.txTime}-${idx}`,
+            id: item.id,
             occurredAt: item.txTime?.replace(" ", "T"),
             type:
               item.txType?.trim().toUpperCase() === "INBOUND" ? "IN" : "USE",
@@ -115,9 +110,6 @@ export default function MaterialLog() {
         keyword,
       });
       setTotalSummary(res.data);
-      console.log("inQty:", res.data?.inQty);
-      console.log("outQty:", res.data?.outUseQty);
-      console.log("rate:", res.data?.rate);
     };
 
     fetchSummary();
@@ -170,7 +162,7 @@ export default function MaterialLog() {
   };
 
   const onRowClick = (row) => {
-    setSelected(row);
+    setSelected(row.id);
     setDrawerOpen(true);
   };
 
@@ -251,9 +243,12 @@ export default function MaterialLog() {
         />
         <SearchBar
           width="l"
-          placeholder="자재명 / 코드 / LOT 검색"
+          placeholder="자재명 / LOT 검색"
           onChange={setKeyword} // 키워드 상태 업데이트
-          onSearch={() => {}}
+          onSearch={(val) => {
+            setKeyword(val);
+            setPage(0);
+          }}
         />
       </FilterBar>
 

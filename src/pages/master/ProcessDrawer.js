@@ -20,7 +20,7 @@ export default function ProcessDrawer({
   return (
     <SideDrawer
       open={open}
-      width={420}
+      width={430}
       title={mode === "create" ? "공정 등록" : "공정 수정"}
       onClose={onClose}
     >
