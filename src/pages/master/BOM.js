@@ -1,84 +1,57 @@
 import styled from "styled-components";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Table from "../../components/TableStyle";
-import SearchBar from "../../components/SearchBar";
-import Button from "../../components/Button";
 import BOMDetail from "./BOMDetail";
-
-/* =========================
-   제품 3종 고정
-========================= */
-const PRODUCTS = [
-  { id: 1, code: "PROD-12V-S", name: "12V 배터리 소형" },
-  { id: 2, code: "PROD-12V-M", name: "12V 배터리 중형" },
-  { id: 3, code: "PROD-12V-L", name: "12V 배터리 대형" },
-];
-
-/* =========================
-   BOM 데이터
-========================= */
-const BASE_BOM = [
-  {
-    id: 1,
-    materialCode: "MAT-CASE",
-    materialName: "배터리 케이스",
-    qty: 1,
-    unit: "EA",
-    process: "조립공정",
-  },
-  {
-    id: 2,
-    materialCode: "MAT-PLATE-P",
-    materialName: "납극판 (+)",
-    qty: 12,
-    unit: "EA",
-    process: "전극공정",
-  },
-  {
-    id: 3,
-    materialCode: "MAT-PLATE-N",
-    materialName: "납극판 (-)",
-    qty: 12,
-    unit: "EA",
-    process: "전극공정",
-  },
-  {
-    id: 4,
-    materialCode: "MAT-SEP",
-    materialName: "격리막 (Separator)",
-    qty: 24,
-    unit: "EA",
-    process: "적층공정",
-  },
-  {
-    id: 5,
-    materialCode: "MAT-ELEC",
-    materialName: "전해액 (황산)",
-    qty: 450,
-    unit: "ml",
-    process: "충전공정",
-  },
-];
-
-const BOM_BY_PRODUCT = {
-  "PROD-12V-S": BASE_BOM,
-  "PROD-12V-M": BASE_BOM.map((b) => ({ ...b, qty: Math.round(b.qty * 1.3) })),
-  "PROD-12V-L": BASE_BOM.map((b) => ({ ...b, qty: Math.round(b.qty * 1.6) })),
-};
+import { WorkOrderAPI, BomAPI } from "../../api/AxiosAPI";
 
 export default function BOM() {
   const [keyword, setKeyword] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
+
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  const [bomData, setBomData] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
 
-  const products = useMemo(() => {
-    if (!keyword) return PRODUCTS;
-    return PRODUCTS.filter((p) =>
-      p.name.toLowerCase().includes(keyword.toLowerCase()),
-    );
-  }, [keyword]);
+  // 1. 제품 목록 조회
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await WorkOrderAPI.getProductList();
+        setProducts(res.data);
+        if (res.data.length > 0) {
+          setSelectedProduct(res.data[0]);
+        }
+      } catch (err) {
+        console.error("제품 목록 로드 실패", err);
+      }
+    };
+    fetchProducts();
+  }, []);
 
-  const bomData = BOM_BY_PRODUCT[selectedProduct.code];
+  // 2. BOM 조회 (백엔드 데이터 그대로 사용)
+  const loadBom = async () => {
+    if (!selectedProduct) return;
+    try {
+      const res = await BomAPI.getList(selectedProduct.productCode);
+      // 백엔드에서 이미 process(note) 값이 채워져 오므로 그대로 사용합니다.
+      setBomData(res.data);
+    } catch (err) {
+      console.error("BOM 로드 실패", err);
+    }
+  };
+
+  useEffect(() => {
+    loadBom();
+  }, [selectedProduct]);
+
+  // 검색 필터
+  const filteredProducts = useMemo(() => {
+    if (!keyword) return products;
+    return products.filter((p) =>
+      p.productName.toLowerCase().includes(keyword.toLowerCase()),
+    );
+  }, [keyword, products]);
 
   const columns = [
     { key: "materialCode", label: "자재코드", width: 160 },
@@ -95,31 +68,24 @@ export default function BOM() {
       </Header>
 
       <Body>
-        {/* 좌측 제품 목록 */}
         <Left>
-          <SearchBar
-            value={keyword}
-            onChange={setKeyword}
-            placeholder="제품 검색"
-          />
           <ProductList>
-            {products.map((p) => (
+            {filteredProducts.map((p) => (
               <ProductItem
-                key={p.code}
-                $active={p.code === selectedProduct.code}
+                key={p.productCode}
+                $active={selectedProduct?.productCode === p.productCode}
                 onClick={() => setSelectedProduct(p)}
               >
-                {p.name}
+                {p.productName}
               </ProductItem>
             ))}
           </ProductList>
         </Left>
 
-        {/* 우측 BOM */}
         <Right>
           <Selected>
             <span>선택된 품목</span>
-            <strong>{selectedProduct.name}</strong>
+            <strong>{selectedProduct?.productName || "-"}</strong>
           </Selected>
 
           <Table
@@ -131,8 +97,14 @@ export default function BOM() {
         </Right>
       </Body>
 
-      {/* BOM 수정 */}
-      <BOMDetail data={editingRow} onClose={() => setEditingRow(null)} />
+      <BOMDetail
+        data={editingRow}
+        onClose={() => setEditingRow(null)}
+        onSave={() => {
+          setEditingRow(null);
+          loadBom(); // 저장 후 목록 갱신
+        }}
+      />
     </Wrapper>
   );
 }
