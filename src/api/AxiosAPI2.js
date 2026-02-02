@@ -56,9 +56,9 @@ export const InventoryAPI2 = {
     });
   },
   // 자재 이력 상세 조회
-  // getMaterialLots: async (materialId) => {
-  //   return await AxiosAPI2.get(`/api/inventory/materialtx/${materialId}/lots`);
-  // },
+  getMaterialTxDetail: async (materialId) => {
+    return await AxiosAPI2.get(`/api/inventory/materialtx/${materialId}`);
+  },
 };
 
 export default AxiosAPI2;

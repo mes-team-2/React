@@ -269,7 +269,7 @@ export default function MaterialLog() {
       </TableWrap>
 
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        {selected && <MaterialLogDetail row={selected} />}
+        {selected && <MaterialLogDetail id={selected} />}
       </SideDrawer>
     </Wrapper>
   );
