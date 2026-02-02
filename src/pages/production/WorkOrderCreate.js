@@ -1,29 +1,39 @@
-// src/pages/production/WorkOrderCreate.js
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import Button from "../../components/Button";
+import { format } from "date-fns"; // 날짜 변환용
 import { WorkOrderAPI } from "../../api/AxiosAPI";
+import Button from "../../components/Button";
+import SearchDate from "../../components/SearchDate";
+import SelectBar from "../../components/SelectBar";
 
-export default function WorkOrderCreate({ onSubmit }) {
+export default function WorkOrderCreate({ onSubmit, onClose }) {
   // 제품 목록 상태
   const [products, setProducts] = useState([]);
 
-  // 폼 상태 (DTO 구조와 일치시킴)
+  // 폼 상태
   const [form, setForm] = useState({
-    productCode: "", // 백엔드는 Code를 원함
+    productCode: "",
+    productName: "", // 화면 표시용
     plannedQty: "",
-    dueDate: "", // [New] 납기일 필수
+    dueDate: "",
   });
 
-  // [New] 컴포넌트 마운트 시 제품 목록 불러오기
+  // 제품 목록 불러오기
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await WorkOrderAPI.getProductList();
-        setProducts(res.data); // [{productCode: "...", productName: "..."}, ...]
+        // 응답 데이터 구조 확인 필요 (배열인지 체크)
+        if (Array.isArray(res.data)) {
+          setProducts(res.data);
+        } else {
+          console.warn("제품 목록 형식이 배열이 아닙니다:", res.data);
+          setProducts([]);
+        }
       } catch (err) {
         console.error("제품 목록 로드 실패", err);
-        alert("제품 목록을 불러오지 못했습니다.");
+        // 에러 상황에서도 UI가 깨지지 않도록 빈 배열 처리
+        setProducts([]);
       }
     };
     fetchProducts();
@@ -31,33 +41,62 @@ export default function WorkOrderCreate({ onSubmit }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    // 제품 선택 시 productName도 함께 업데이트
+    if (name === "productCode") {
+      const selectedProduct = products.find((p) => p.productCode === value);
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+        productName: selectedProduct ? selectedProduct.productName : "",
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // SearchDate 단일 날짜 변경 핸들러
+  const handleDateChange = (date) => {
+    if (date) {
+      setForm((prev) => ({ ...prev, dueDate: format(date, "yyyy-MM-dd") }));
+    } else {
+      setForm((prev) => ({ ...prev, dueDate: "" }));
+    }
+  };
+
+  const handleProductSelect = (e) => {
+    const value = e.target.value;
+    const selectedProduct = products.find((p) => p.productCode === value);
+    setForm((prev) => ({
+      ...prev,
+      productCode: value,
+      productName: selectedProduct ? selectedProduct.productName : "",
+    }));
   };
 
   const handleSubmit = async () => {
-    // 유효성 검사
     if (!form.productCode || !form.plannedQty || !form.dueDate) {
       alert("제품, 계획 수량, 납기일은 필수 항목입니다.");
       return;
     }
 
     try {
-      // 전송 데이터 구성
       const payload = {
         productCode: form.productCode,
-        plannedQty: parseInt(form.plannedQty), // 숫자로 변환
-        dueDate: form.dueDate, // yyyy-MM-dd
+        plannedQty: parseInt(form.plannedQty),
+        dueDate: form.dueDate,
       };
 
-      // API 호출
       const res = await WorkOrderAPI.createWorkOrder(payload);
-
       alert(res.data.message || "작업지시가 등록되었습니다.");
 
-      // 폼 초기화 (선택 사항)
-      setForm({ productCode: "", plannedQty: "", dueDate: "" });
-
-      // 부모 컴포넌트에 알림 (필요한 경우)
+      // 폼 초기화
+      setForm({
+        productCode: "",
+        productName: "",
+        plannedQty: "",
+        dueDate: "",
+      });
       onSubmit?.(payload);
     } catch (err) {
       console.error(err);
@@ -65,97 +104,214 @@ export default function WorkOrderCreate({ onSubmit }) {
     }
   };
 
+  // SelectBar에 전달할 옵션 데이터 가공
+  const productOptions = products.map((p) => ({
+    value: p.productCode,
+    label: `${p.productName} (${p.productCode})`,
+  }));
+
   return (
     <Wrapper>
-      <Title>작업지시 등록</Title>
+      <Header>
+        <h3>작업지시 등록</h3>
+      </Header>
 
-      <Form>
-        <label>제품</label>
-        {/* value를 productCode로 변경 */}
-        <select
-          name="productCode"
-          value={form.productCode}
-          onChange={handleChange}
-        >
-          <option value="">선택하세요</option>
-          {/* DB에서 가져온 제품 목록 매핑 */}
-          {products.map((p) => (
-            <option key={p.productCode} value={p.productCode}>
-              {p.productName} ({p.productCode})
-            </option>
-          ))}
-        </select>
+      <Content>
+        <Section>
+          <SectionTitle>생산 제품 정보</SectionTitle>
+          <Grid>
+            <FullItem>
+              <label>제품 선택</label>
+              <SelectBar
+                width="100%"
+                type="single"
+                placeholder="제품을 선택하세요"
+                options={productOptions}
+                value={form.productCode}
+                onChange={handleProductSelect}
+              />
+            </FullItem>
+            <FullItem>
+              <label>선택된 제품명</label>
+              <Value>{form.productName || "-"}</Value>
+            </FullItem>
+            <FullItem>
+              <label>선택된 코드</label>
+              <Value>{form.productCode || "-"}</Value>
+            </FullItem>
+          </Grid>
+        </Section>
+        <Section>
+          <SectionTitle>생산 정보</SectionTitle>
+          <Grid>
+            <Item>
+              <label>지시 수량</label>
+              <Input
+                type="number"
+                name="plannedQty"
+                value={form.plannedQty}
+                onChange={handleChange}
+                placeholder="예: 1000"
+              />
+            </Item>
+            <Item>
+              <label>납기일 (Due Date)</label>
+              <SearchDate
+                width="100%"
+                type="single"
+                onChange={handleDateChange}
+                placeholder="납기일 선택"
+              />
+            </Item>
+          </Grid>
+        </Section>
+        <Section>
+          <SectionTitle>기타</SectionTitle>
+          <Grid>
+            <FullItem>
+              <label>비고</label>
+              <Input
+                type="text"
+                name="plannedQty"
+                placeholder="기타 참고사항 입력"
+              />
+            </FullItem>
+          </Grid>
+        </Section>
+      </Content>
 
-        <label>계획 수량</label>
-        <input
-          type="number"
-          name="plannedQty"
-          value={form.plannedQty}
-          onChange={handleChange}
-          placeholder="예: 1000"
-        />
-
-        {/* [New] 납기일 입력 추가 (디자인 스타일 유지) */}
-        <label>납기일 (Due Date)</label>
-        <input
-          type="date"
-          name="dueDate"
-          value={form.dueDate}
-          onChange={handleChange}
-        />
-
-        <CreateBtn onClick={handleSubmit}>작업지시 등록</CreateBtn>
-      </Form>
+      <Footer>
+        <Button variant="cancel" size="l" onClick={onClose}>
+          취소
+        </Button>
+        <Button variant="ok" size="l" onClick={handleSubmit}>
+          등록
+        </Button>
+      </Footer>
     </Wrapper>
   );
 }
 
-/* =========================
-   styled
-========================= */
-
 const Wrapper = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  height: 100%;
 `;
 
-const Title = styled.h3`
-  font-size: 18px;
-  font-weight: 700;
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  h3 {
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
+    margin-bottom: 20px;
+  }
 `;
 
-const Form = styled.div`
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+  padding-right: 10px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
+`;
+
+const Section = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
+`;
 
-  label {
-    font-size: 12px;
-    opacity: 0.7;
-  }
+const SectionTitle = styled.h4`
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
 
-  input,
-  select {
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    font-size: 14px;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
   }
 `;
 
-const CreateBtn = styled.button`
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: none;
-  background: #004dfc;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+`;
 
-  &:hover {
-    background: #003ad6;
+const Item = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  label {
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
   }
+`;
+
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
+`;
+
+const Value = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  height: 38px;
+  font-size: var(--fontSm);
+  color: var(--font);
+`;
+
+// 실제 입력 필드 스타일
+const Input = styled.input`
+  padding: 10px 12px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+
+  &:focus {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const Footer = styled.div`
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  gap: 50px;
 `;

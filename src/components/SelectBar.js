@@ -4,10 +4,11 @@ import { FiChevronDown } from "react-icons/fi";
 
 /**
  * @param {string} value - 현재 선택된 값
- * @param {function} onChange - 변경 핸들러 (e) => ... 형태로 이벤트 객체 모방해서 전달
- * @param {Array} options - 옵션 배열 [{ value: 'key', label: '표시명' }]
- * @param {string} placeholder - 기본 플레이스홀더
- * @param {string} width - 너비 (s, m, l 또는 px값)
+ * @param {function} onChange - 변경 핸들러
+ * @param {Array} options - 옵션 배열
+ * @param {string} placeholder - 플레이스홀더
+ * @param {string} width - 너비
+ * @param {string} type - 'filter' (기본값) | 'single' (등록 폼용)
  */
 const SelectBar = ({
   value,
@@ -15,11 +16,11 @@ const SelectBar = ({
   options = [],
   placeholder = "선택",
   width = "auto",
+  type = "filter",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
-  // 현재 선택된 라벨 찾기
   const selectedLabel = options.find((opt) => {
     const val = typeof opt === "object" ? opt.value : opt;
     return val === value;
@@ -27,7 +28,6 @@ const SelectBar = ({
 
   const displayLabel = selectedLabel || placeholder;
 
-  // 외부 클릭 시 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -45,8 +45,6 @@ const SelectBar = ({
 
   const handleSelect = (option) => {
     const optValue = typeof option === "object" ? option.value : option;
-
-    // 기존 <select>의 onChange와 호환되도록 가짜 이벤트 객체 생성
     if (onChange) {
       onChange({ target: { value: optValue } });
     }
@@ -54,12 +52,12 @@ const SelectBar = ({
   };
 
   return (
-    <Container ref={containerRef} $width={width}>
-      {/* 선택된 값을 보여주는 헤더 영역 */}
+    <Container ref={containerRef} $width={width} $type={type}>
       <SelectTrigger
         onClick={() => setIsOpen(!isOpen)}
         $isOpen={isOpen}
         $isSelected={!!selectedLabel}
+        $type={type}
       >
         <LabelText>{displayLabel}</LabelText>
         <IconWrapper $isOpen={isOpen}>
@@ -67,7 +65,6 @@ const SelectBar = ({
         </IconWrapper>
       </SelectTrigger>
 
-      {/* 펼쳐지는 옵션 목록 영역 */}
       <DropdownMenu $isOpen={isOpen}>
         {options.map((opt, index) => {
           const optValue = typeof opt === "object" ? opt.value : opt;
@@ -92,7 +89,6 @@ const SelectBar = ({
 
 export default SelectBar;
 
-
 const sizeMap = {
   s: "120px",
   m: "180px",
@@ -101,8 +97,11 @@ const sizeMap = {
 
 const Container = styled.div`
   position: relative;
-  width: ${(props) => sizeMap[props.$width] || props.$width};
-  height: 30px;
+  width: ${(props) =>
+    props.$type === "single"
+      ? props.$width || "100%"
+      : sizeMap[props.$width] || props.$width};
+  height: ${(props) => (props.$type === "single" ? "38px" : "30px")};
   box-sizing: border-box;
   font-size: var(--fontSm);
 `;
@@ -113,19 +112,28 @@ const SelectTrigger = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 15px;
-  background-color: var(--background2);
-  border: 1px solid ${(props) => (props.$isOpen ? "var(--font2)" : "transparent")};
-  border-radius: 20px; 
+  padding: ${(props) => (props.$type === "single" ? "0 10px" : "0 15px")};
+  background-color: ${(props) =>
+    props.$type === "single" ? "var(--background)" : "var(--background2)"};
+
+  border: ${(props) =>
+    props.$type === "single"
+      ? "1px solid var(--border)"
+      : props.$isOpen
+        ? "1px solid var(--font2)"
+        : "1px solid transparent"};
+
+  border-radius: ${(props) => (props.$type === "single" ? "12px" : "20px")};
+
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   box-sizing: border-box;
-  color: ${(props) => (props.$isSelected ? "var(--font2)" : "var(--font)")};
-  
+  color: ${(props) => (props.$isOpen ? "var(--font)" : "var(--font2)")};
 
   &:hover {
-    border-color: var(--font2);
-    background-color: var(--background2);
+    border: 1px solid var(--font2);
+    background-color: ${(props) =>
+      props.$type === "single" ? "var(--background)" : "var(--background2)"};
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 `;
@@ -146,38 +154,33 @@ const IconWrapper = styled.div`
   justify-content: center;
   font-size: 16px;
   color: var(--font2);
-  
   padding: 0 2px;
-
   transition: transform 0.3s ease;
   transform: ${(props) => (props.$isOpen ? "rotate(180deg)" : "rotate(0deg)")};
 `;
 
 const DropdownMenu = styled.ul`
   position: absolute;
-  top: 110%; 
+  top: 110%;
   left: 0;
   width: 100%;
-  max-height: 200px; 
+  max-height: 200px;
   overflow-y: auto;
-
   display: flex;
   flex-direction: column;
   gap: 5px;
-  
   background-color: var(--background);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
   padding: 5px;
   margin: 0;
   list-style: none;
-  z-index: 100; 
-
+  z-index: 100;
   opacity: ${(props) => (props.$isOpen ? 1 : 0)};
   visibility: ${(props) => (props.$isOpen ? "visible" : "hidden")};
-  transform: ${(props) => (props.$isOpen ? "translateY(0)" : "translateY(-10px)")};
+  transform: ${(props) =>
+    props.$isOpen ? "translateY(0)" : "translateY(-10px)"};
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &::-webkit-scrollbar {
@@ -191,12 +194,11 @@ const DropdownMenu = styled.ul`
 
 const OptionItem = styled.li`
   padding: 10px 12px;
-  border-radius: 20px;
+  border-radius: 8px; /* Dropdown item radius는 통일 */
   cursor: pointer;
   color: var(--font);
   font-size: var(--fontSm);
   transition: background-color 0.2s;
-  
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -211,7 +213,7 @@ const OptionItem = styled.li`
     `}
 
   &:hover {
-    background-color: var(--background2); 
+    background-color: var(--background2);
     color: var(--main);
   }
 `;

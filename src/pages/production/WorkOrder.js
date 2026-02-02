@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import { format } from "date-fns";
 
-// [1] 공통 컴포넌트 import
 import TableStyle from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import Status from "../../components/Status";
@@ -240,7 +239,10 @@ export default function WorkOrder() {
       </SideDrawer>
 
       <SideDrawer open={createOpen} onClose={() => setCreateOpen(false)}>
-        <WorkOrderCreate onSubmit={handleCreateSubmit} />
+        <WorkOrderCreate
+          onSubmit={handleCreateSubmit}
+          onClose={() => setCreateOpen(false)}
+        />
       </SideDrawer>
     </Wrapper>
   );

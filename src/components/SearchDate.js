@@ -1,55 +1,98 @@
 import styled, { createGlobalStyle, keyframes } from "styled-components";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaCalendarAlt, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 /**
- * @param {string} width 
- * @param {function} onChange 
+ * 날짜 선택 컴포넌트
+ * @param {string} width - 너비 설정 (s, m, l 또는 px)
+ * @param {string} type - 'range' (기본값, 기간선택) | 'single' (단일선택)
+ * @param {function} onChange - 변경 핸들러
+ * - type='range': (startDate, endDate) => void
+ * - type='single': (date) => void
+ * @param {Date} selected - (Single 모드용) 부모에서 제어할 날짜 값
+ * @param {string} placeholder - 플레이스홀더
  */
-const SearchDate = ({ width, onChange }) => {
+const SearchDate = ({
+  width,
+  type = "range", // 기본값은 'range' (기간 선택)
+  onChange,
+  selected, // single 모드에서 외부 주입 값
+  placeholder = "날짜 선택",
+}) => {
+  // [Range 모드 상태]
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
+  // [Single 모드 상태]
+  const [singleDate, setSingleDate] = useState(selected || null);
+
+  // Single 모드일 때 외부 props(selected) 변경 감지
+  useEffect(() => {
+    if (type === "single" && selected !== undefined) {
+      setSingleDate(selected);
+    }
+  }, [selected, type]);
+
+  // Range: 시작일 변경
   const handleStartDateChange = (date) => {
     setStartDate(date);
     if (onChange) onChange(date, endDate);
   };
 
+  // Range: 종료일 변경
   const handleEndDateChange = (date) => {
     setEndDate(date);
     if (onChange) onChange(startDate, date);
   };
 
+  // Single: 날짜 변경
+  const handleSingleChange = (date) => {
+    setSingleDate(date);
+    if (onChange) onChange(date);
+  };
+
   return (
-    <Container width={width}>
+    <Container $width={width} $type={type}>
       <DatePickerStyles />
 
-      <CustomDatePicker
-        selected={startDate}
-        onChange={handleStartDateChange}
-        placeholder="시작일"
-        selectsStart
-        startDate={startDate}
-        endDate={endDate}
-      />
-      <Separator>~</Separator>
-      <CustomDatePicker
-        selected={endDate}
-        onChange={handleEndDateChange}
-        placeholder="종료일"
-        selectsEnd
-        startDate={startDate}
-        endDate={endDate}
-        minDate={startDate}
-      />
+      {type === "single" ? (
+        <CustomDatePicker
+          $type={type}
+          selected={singleDate}
+          onChange={handleSingleChange}
+          placeholder={placeholder}
+        />
+      ) : (
+        <>
+          <CustomDatePicker
+            $type={type}
+            selected={startDate}
+            onChange={handleStartDateChange}
+            placeholder="시작일"
+            selectsStart
+            startDate={startDate}
+            endDate={endDate}
+          />
+          <Separator>~</Separator>
+          <CustomDatePicker
+            $type={type}
+            selected={endDate}
+            onChange={handleEndDateChange}
+            placeholder="종료일"
+            selectsEnd
+            startDate={startDate}
+            endDate={endDate}
+            minDate={startDate}
+          />
+        </>
+      )}
     </Container>
   );
 };
 
 export default SearchDate;
-
 
 const CustomHeader = ({
   date,
@@ -71,9 +114,16 @@ const CustomHeader = ({
   </HeaderContainer>
 );
 
-const CustomDatePicker = ({ selected, onChange, placeholder, ...rest }) => (
+const CustomDatePicker = ({
+  selected,
+  onChange,
+  placeholder,
+  $type,
+  ...rest
+}) => (
   <DateInputWrapper>
     <StyledDatePicker
+      $type={$type}
       selected={selected}
       onChange={onChange}
       dateFormat="yyyy-MM-dd"
@@ -85,17 +135,19 @@ const CustomDatePicker = ({ selected, onChange, placeholder, ...rest }) => (
   </DateInputWrapper>
 );
 
-
 const sizeMap = {
-  s: '200px',
-  m: '300px',
-  l: '400px'
+  s: "200px",
+  m: "300px",
+  l: "400px",
 };
 
 const Container = styled.div`
   display: flex;
-  width: ${props => sizeMap[props.width] || props.width};
-  height: 30px;
+  width: ${(props) =>
+    props.$type === "single"
+      ? props.$width || "100%"
+      : sizeMap[props.$width] || props.$width || "300px"};
+  height: ${(props) => (props.$type === "single" ? "38px" : "30px")};
   align-items: center;
   gap: 2px;
   box-sizing: border-box;
@@ -120,11 +172,16 @@ const DateInputWrapper = styled.div`
 
 const StyledDatePicker = styled(ReactDatePicker)`
   width: 100%;
-  height: 30px;
+  height: 100%;
   padding: 0 15px;
-  border: 1px solid transparent;
-  border-radius: 50px;
-  background-color: var(--background2);
+  border: ${(props) =>
+    props.$type === "single"
+      ? "1px solid var(--border)"
+      : "1px solid transparent"};
+  border-radius: ${(props) => (props.$type === "single" ? "12px" : "50px")};
+
+  background-color: ${(props) =>
+    props.$type === "single" ? "var(--background)" : "var(--background2)"};
   color: var(--font);
   font-size: var(--fontSm);
   box-sizing: border-box;
@@ -134,12 +191,12 @@ const StyledDatePicker = styled(ReactDatePicker)`
 
   &:hover {
     border: 1px solid var(--font2);
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05); 
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
   }
 
   &:focus {
     border: 1px solid var(--font2);
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05); 
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
   }
 
   &::placeholder {
@@ -165,7 +222,6 @@ const Separator = styled.span`
   padding: 0 2px;
 `;
 
-
 const HeaderContainer = styled.div`
   display: flex;
   justify-content: space-between;
@@ -178,7 +234,7 @@ const CurrentMonth = styled.span`
   font-size: var(--fontSm);
   font-weight: bold;
   color: var(--font);
-  letter-spacing: -0.5px; 
+  letter-spacing: -0.5px;
 `;
 
 const NavButton = styled.button`
@@ -187,7 +243,7 @@ const NavButton = styled.button`
   cursor: pointer;
   color: var(--font2);
   font-size: var(--fontXxs);
-  width: 24px;   
+  width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
@@ -204,7 +260,6 @@ const NavButton = styled.button`
     cursor: default;
   }
 `;
-
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(-5px); }
