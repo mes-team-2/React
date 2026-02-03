@@ -4,6 +4,10 @@ import Table from "../../components/TableStyle";
 import { AlertTriangle, PlayCircle, PauseCircle, Power } from "lucide-react";
 import SummaryCard from "../../components/SummaryCard";
 import { MachineAPI } from "../../api/AxiosAPI"; // [New] API Import
+import Button from "../../components/Button";
+import MachineDetail from "./MachineDetail";
+import MachineFormDrawer from "./MachineFormDrawer";
+import SideDrawer from "../../components/SideDrawer";
 
 export default function Machine() {
   const [machines, setMachines] = useState([]); // 실데이터
@@ -11,6 +15,18 @@ export default function Machine() {
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
+  });
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState(null); // create | edit
+  const [selectedMachine, setSelectedMachine] = useState(null);
+
+  const [form, setForm] = useState({
+    machineCode: "",
+    machineName: "",
+    processCode: "",
+    active: true,
   });
 
   // 1. 데이터 조회
@@ -126,7 +142,7 @@ export default function Machine() {
   return (
     <Wrapper>
       <Header>
-        <h2>설비 모니터링</h2>
+        <h2>설비 관리</h2>
       </Header>
 
       {/* ===== 상태 요약 ===== */}
@@ -155,7 +171,25 @@ export default function Machine() {
       )}
 
       {/* ===== 테이블 ===== */}
-      <SectionTitle>실시간 설비 상태</SectionTitle>
+      <TableHeader>
+        <div />
+        <Button
+          variant="ok"
+          size="m"
+          onClick={() => {
+            setForm({
+              machineCode: "",
+              machineName: "",
+              processCode: "",
+              active: true,
+            });
+            setFormMode("create");
+            setFormOpen(true);
+          }}
+        >
+          + 설비 추가
+        </Button>
+      </TableHeader>
 
       <Table
         columns={columns}
@@ -164,6 +198,34 @@ export default function Machine() {
         onSort={handleSort}
         selectedIds={selectedIds}
         onSelectChange={setSelectedIds}
+        onRowClick={(row) => {
+          setSelectedMachine(row);
+          setDetailOpen(true);
+        }}
+      />
+      <SideDrawer open={detailOpen} onClose={() => setDetailOpen(false)}>
+        <MachineDetail
+          machine={selectedMachine}
+          onEdit={() => {
+            setDetailOpen(false);
+            setForm(selectedMachine);
+            setFormMode("edit");
+            setFormOpen(true);
+          }}
+        />
+      </SideDrawer>
+
+      <MachineFormDrawer
+        open={formOpen}
+        mode={formMode}
+        form={form}
+        setForm={setForm}
+        onClose={() => setFormOpen(false)}
+        onSubmit={() => {
+          // 여기서 API 호출 (create / update)
+          setFormOpen(false);
+          fetchMachines();
+        }}
       />
     </Wrapper>
   );
@@ -210,4 +272,10 @@ const ErrorBox = styled.div`
 const SectionTitle = styled.div`
   font-size: 15px;
   font-weight: 600;
+`;
+
+const TableHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
