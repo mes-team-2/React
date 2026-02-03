@@ -59,6 +59,23 @@ export const InventoryAPI2 = {
   getMaterialTxDetail: async (materialId) => {
     return await AxiosAPI2.get(`/api/inventory/materialtx/${materialId}`);
   },
+
+  // LOT 이력 조회
+  getMaterialLotList: async (params) => {
+    return await AxiosAPI2.get(`/api/lots/materialLot`, {
+      params,
+    });
+  },
+  // LOT 이력 전체 조회
+  getMaterialLotSummary: async (params) => {
+    return await AxiosAPI2.get(`/api/lots/materialLot/summary`, {
+      params,
+    });
+  },
+  // LOT 이력 상세 조회
+  getMaterialLotDetail: async (id) => {
+    return await AxiosAPI2.get(`/api/lots/materialLot/${id}`);
+  },
 };
 
 export default AxiosAPI2;

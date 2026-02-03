@@ -4,25 +4,26 @@ import Table from "../../components/TableStyle";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
 import Button from "../../components/Button";
 
-export default function WorkOrderDetail({ workOrder }) {
-  // 백에서 받아온 상세 데이터 상태
+export default function WorkOrderDetail({ workOrder, onStatusChange }) {
   const [detailData, setDetailData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // workOrder(부모에서 넘겨준 요약정보)가 바뀔 때마다 상세 조회 API 호출
+  // [New] 상세 내부에서 상태가 바뀌면 UI 갱신을 위해 로컬 상태 사용
+  const [currentStatus, setCurrentStatus] = useState(workOrder?.status || "-");
+
+  // workOrder가 변경되면 상세 조회
   useEffect(() => {
     const fetchDetail = async () => {
       if (!workOrder?.id) return;
+      // 초기 상태 동기화
+      setCurrentStatus(workOrder.status);
 
       setLoading(true);
       try {
-        // API 호출: /api/workorder/{id}/detail
         const res = await WorkOrderAPI.getDetail(workOrder.id);
-
-        // 데이터가 잘 왔는지 확인용 로그
-        console.log("상세 데이터:", res.data);
-
         setDetailData(res.data);
+        // 상세 데이터의 상태로 최신화
+        if (res.data.status) setCurrentStatus(res.data.status);
       } catch (err) {
         console.error("상세 조회 실패", err);
         setDetailData(null);
@@ -33,27 +34,45 @@ export default function WorkOrderDetail({ workOrder }) {
     fetchDetail();
   }, [workOrder]);
 
+  // [New] 작업 시작 핸들러
+  const handleStartWork = async () => {
+    if (!workOrder?.id) return;
+    try {
+      if (!window.confirm("작업을 시작하시겠습니까?")) return;
+
+      // 작업지시 번호(문자열 ID)를 사용하여 API 호출
+      await WorkOrderAPI.startWork(workOrder.id);
+
+      alert("작업이 시작되었습니다.");
+
+      // 상태 변경 후 데이터 재조회
+      const res = await WorkOrderAPI.getDetail(workOrder.id);
+      setDetailData(res.data);
+      setCurrentStatus(res.data.status); // "IN_PROGRESS"로 변경됨
+
+      // 2. [New] 부모(목록) 화면 새로고침 요청
+      if (onStatusChange) {
+        onStatusChange();
+      }
+    } catch (err) {
+      console.error(err);
+      alert("작업 시작 실패: " + (err.response?.data?.message || "오류"));
+    }
+  };
+
   if (!workOrder) {
     return <Empty>작업지시를 선택하세요.</Empty>;
   }
 
-  // --- 데이터 매핑 (백엔드에서 null이 올 경우 대비) ---
-
-  // LOT 정보
   const lotInfo = detailData?.lotInfo || {
     lotNo: "-",
     qty: 0,
     status: "-",
     createdAt: "-",
   };
-
-  // 공정 진행 리스트
   const processData = detailData?.processList || [];
-
-  // 자재 투입 리스트
   const materialData = detailData?.materialList || [];
 
-  // 테이블 컬럼 정의
   const processColumns = [
     { key: "stepName", label: "공정명", width: 140 },
     { key: "machineName", label: "설비명", width: 140 },
@@ -73,13 +92,13 @@ export default function WorkOrderDetail({ workOrder }) {
     <Container>
       <Header>
         <h3>작업지시 상세</h3>
-        <Button
-          variant="ok"
-          size="s"
-          onClick={() => alert("작업을 시작합니다.")}
-        >
-          작업 시작
-        </Button>
+
+        {/* [New] 대기(WAIT) 상태일 때만 시작 버튼 표시 */}
+        {currentStatus === "WAIT" && (
+          <Button variant="ok" size="s" onClick={handleStartWork}>
+            작업 시작
+          </Button>
+        )}
       </Header>
 
       <Content>
@@ -104,7 +123,8 @@ export default function WorkOrderDetail({ workOrder }) {
             </FullItem>
             <Item>
               <label>작업 상태</label>
-              <Value>{workOrder.status}</Value>
+              {/* 상세 조회된 최신 상태 표시 */}
+              <Value>{currentStatus}</Value>
             </Item>
             <Item>
               <label>지시 수량</label>
@@ -121,7 +141,7 @@ export default function WorkOrderDetail({ workOrder }) {
             </Item>
           </Grid>
         </Section>
-
+        {/* ... (이하 LOT 정보, 공정 이력, 자재 이력 등 기존 코드 유지) ... */}
         <Section>
           <SectionTitle>생산 LOT 정보</SectionTitle>
           {detailData ? (
@@ -138,7 +158,6 @@ export default function WorkOrderDetail({ workOrder }) {
                 <label>생산 수량</label>
                 <Value>{lotInfo.qty}</Value>
               </Item>
-
               <FullItem>
                 <label>LOT 생성일</label>
                 <Value>{lotInfo.createdAt}</Value>
@@ -171,6 +190,7 @@ export default function WorkOrderDetail({ workOrder }) {
   );
 }
 
+// ... (스타일 컴포넌트 기존 유지) ...
 const Container = styled.div`
   padding: 20px;
   display: flex;
@@ -178,26 +198,22 @@ const Container = styled.div`
   gap: 18px;
   height: 100%;
 `;
-
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-
   h3 {
     font-size: var(--fontHd);
     font-weight: var(--bold);
   }
 `;
-
 const Content = styled.div`
   display: flex;
   flex-direction: column;
   gap: 30px;
   overflow-y: auto;
   padding-right: 10px;
-
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -206,13 +222,11 @@ const Content = styled.div`
     border-radius: 3px;
   }
 `;
-
 const Section = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
 `;
-
 const SectionTitle = styled.h4`
   font-size: var(--fontMd);
   font-weight: var(--bold);
@@ -221,7 +235,6 @@ const SectionTitle = styled.h4`
   align-items: center;
   position: relative;
   padding-left: 12px;
-
   &::before {
     content: "";
     position: absolute;
@@ -234,13 +247,11 @@ const SectionTitle = styled.h4`
     border-radius: 2px;
   }
 `;
-
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 `;
-
 const Item = styled.div`
   display: flex;
   flex-direction: column;
@@ -252,11 +263,9 @@ const Item = styled.div`
     padding: 2px;
   }
 `;
-
 const FullItem = styled(Item)`
   grid-column: 1 / -1;
 `;
-
 const Value = styled.div`
   display: flex;
   align-items: center;
@@ -268,14 +277,12 @@ const Value = styled.div`
   font-size: var(--fontSm);
   color: var(--font);
 `;
-
 const Empty = styled.div`
   padding: 60px 20px;
   text-align: center;
   font-size: 14px;
   opacity: 0.6;
 `;
-
 const EmptyBox = styled.div`
   padding: 20px;
   text-align: center;

@@ -242,7 +242,7 @@ export default function WorkOrder() {
       </TableWrap>
 
       <SideDrawer open={detailOpen} onClose={() => setDetailOpen(false)}>
-        <WorkOrderDetail workOrder={selected} />
+        <WorkOrderDetail workOrder={selected} onStatusChange={loadData} />
       </SideDrawer>
 
       <SideDrawer open={createOpen} onClose={() => setCreateOpen(false)}>
