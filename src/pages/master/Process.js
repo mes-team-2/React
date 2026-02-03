@@ -137,7 +137,7 @@ export default function Process() {
       <FilterBar>
         <FilterGroup>
           <SelectBar
-            width="140px"
+            width="s"
             options={STATUS_OPTIONS}
             value={typeFilter}
             onChange={(e) => {

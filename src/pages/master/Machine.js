@@ -2,37 +2,43 @@ import styled from "styled-components";
 import { useMemo, useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import { AlertTriangle, PlayCircle, PauseCircle, Power } from "lucide-react";
+import { LuHourglass } from "react-icons/lu";
 import SummaryCard from "../../components/SummaryCard";
-import { MachineAPI } from "../../api/AxiosAPI"; // [New] API Import
+import { MachineAPI } from "../../api/AxiosAPI";
 import Button from "../../components/Button";
 import MachineDetail from "./MachineDetail";
 import MachineFormDrawer from "./MachineFormDrawer";
+import SearchBar from "../../components/SearchBar";
+import SelectBar from "../../components/SelectBar";
 import SideDrawer from "../../components/SideDrawer";
+import Status from "../../components/Status";
+import { FiRefreshCw } from "react-icons/fi";
 
 export default function Machine() {
-  const [machines, setMachines] = useState([]); // 실데이터
+  const [machines, setMachines] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
-  });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState(null); // create | edit
+  const [formMode, setFormMode] = useState(null);
   const [selectedMachine, setSelectedMachine] = useState(null);
 
   const [form, setForm] = useState({
     machineCode: "",
     machineName: "",
     processCode: "",
-    active: true,
+    active: "YES",
   });
 
-  // 1. 데이터 조회
+  // 데이터 조회 (API 연동)
+
   const fetchMachines = async () => {
     try {
       const res = await MachineAPI.getList();
+      // 백엔드에서 주는 데이터 그대로 사용하되 안전하게 처리
       setMachines(res.data);
     } catch (err) {
       console.error("설비 목록 조회 실패", err);
@@ -41,96 +47,106 @@ export default function Machine() {
 
   useEffect(() => {
     fetchMachines();
-    // 5초마다 갱신 (실시간 모니터링 효과)
     const interval = setInterval(fetchMachines, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  /* =========================
-     상태 요약 (자동 계산)
-  ========================= */
-  const summaryData = useMemo(() => {
-    const counts = { WAITING: 0, RUN: 0, ERROR: 0, STOP: 0 };
+  // 필터링 및 정렬 로직
 
-    machines.forEach((m) => {
-      // 백엔드 Enum은 "WAIT", "RUN", "ERROR", "STOP"
-      // 프론트 매핑 (WAIT -> WAITING 등 필요 시 변환)
-      const status = m.status === "WAIT" ? "WAITING" : m.status;
-      if (counts[status] !== undefined) counts[status]++;
-      else if (status === "STOP") counts.STOP++; // 예외 처리
+  const filteredAndSortedData = useMemo(() => {
+    let result = machines.filter((m) => {
+      const s = searchTerm.toLowerCase();
+      // 설비코드, 설비명, 공정코드 통합 검색
+      const matchesSearch =
+        (m.machineCode || "").toLowerCase().includes(s) ||
+        (m.machineName || "").toLowerCase().includes(s) ||
+        (m.processCode || "").toLowerCase().includes(s);
+
+      // 설비 상태 필터링 (RUN, WAIT, STOP, ERROR)
+      const matchesStatus =
+        statusFilter === "all" ? true : m.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
     });
 
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aVal = String(a[sortConfig.key] || "");
+        const bVal = String(b[sortConfig.key] || "");
+        return sortConfig.direction === "asc"
+          ? aVal.localeCompare(bVal, "ko", { numeric: true })
+          : bVal.localeCompare(aVal, "ko", { numeric: true });
+      });
+    }
+    return result;
+  }, [machines, searchTerm, statusFilter, sortConfig]);
+
+  // 요약 데이터 계산
+
+  const summaryData = useMemo(() => {
+    const counts = { WAIT: 0, RUN: 0, ERROR: 0, STOP: 0 };
+    machines.forEach((m) => {
+      if (counts[m.status] !== undefined) counts[m.status]++;
+    });
     return [
       {
-        label: "WAITING",
-        value: counts.WAITING,
-        color: "#facc15",
-        icon: <PauseCircle />,
+        label: "대기중",
+        value: counts.WAIT,
+        color: "var(--waiting)",
+        icon: <LuHourglass />,
       },
       {
-        label: "RUN",
+        label: "가동중",
         value: counts.RUN,
-        color: "#22c55e",
-        icon: <PlayCircle />,
+        color: "var(--run)",
+        icon: <FiRefreshCw />,
       },
       {
-        label: "ERROR",
+        label: "불량",
         value: counts.ERROR,
-        color: "#ef4444",
+        color: "var(--error)",
         icon: <AlertTriangle />,
       },
       {
-        label: "STOP",
+        label: "중지",
         value: counts.STOP,
-        color: "#9ca3af",
-        icon: <Power />,
+        color: "var(--stop)",
+        icon: <PauseCircle />,
       },
     ];
   }, [machines]);
 
-  /* =========================
-     에러 로그 (자동 추출)
-  ========================= */
   const errorLogs = useMemo(() => {
+    // DTO에서 ERROR일 때만 errorLog가 생성됨
     return machines
       .filter((m) => m.status === "ERROR")
       .map((m) => ({
         code: `ERROR - ${m.machineCode}`,
-        message: `${m.machineName}에서 ${m.errorLog} 발생`,
+        message: m.errorLog,
       }));
   }, [machines]);
 
-  /* =========================
-     테이블 컬럼
-  ========================= */
   const columns = [
-    { key: "machineId", label: "ID", width: 60 },
+    { key: "machineId", label: "ID", width: 50 },
+    {
+      key: "active",
+      label: "사용",
+      width: 150,
+      render: (value) => <Status type="active" status={value === "YES"} />,
+    },
     { key: "machineCode", label: "설비 코드", width: 120 },
     { key: "machineName", label: "설비명", width: 180 },
     { key: "processCode", label: "공정 코드", width: 120 },
-    { key: "status", label: "상태", width: 100 },
-    { key: "active", label: "사용", width: 80 },
+    {
+      key: "status",
+      label: "설비상태",
+      width: 150,
+      render: (value) => (
+        <Status type="machine" status={String(value || "").toUpperCase()} />
+      ),
+    },
     { key: "errorLog", label: "메시지", width: 220 },
   ];
-
-  /* =========================
-     정렬 데이터
-  ========================= */
-  const sortedData = useMemo(() => {
-    if (!sortConfig.key) return machines;
-
-    return [...machines].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return sortConfig.direction === "asc"
-          ? aVal.localeCompare(bVal, "ko", { numeric: true })
-          : bVal.localeCompare(aVal, "ko", { numeric: true });
-      }
-      return 0;
-    });
-  }, [machines, sortConfig]);
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -145,7 +161,6 @@ export default function Machine() {
         <h2>설비 관리</h2>
       </Header>
 
-      {/* ===== 상태 요약 ===== */}
       <SummaryGrid>
         {summaryData.map((item) => (
           <SummaryCard
@@ -158,7 +173,6 @@ export default function Machine() {
         ))}
       </SummaryGrid>
 
-      {/* ===== 에러 로그 (있을 때만 표시) ===== */}
       {errorLogs.length > 0 && (
         <ErrorSection>
           {errorLogs.map((log, idx) => (
@@ -170,9 +184,33 @@ export default function Machine() {
         </ErrorSection>
       )}
 
-      {/* ===== 테이블 ===== */}
-      <TableHeader>
-        <div />
+      <FilterBar>
+        <FilterGroup>
+          <SelectBar
+            width="s"
+            label="설비 상태"
+            options={[
+              { value: "all", label: "전체 상태" },
+              { value: "RUN", label: "가동 중" },
+              { value: "WAIT", label: "대기 중" },
+              { value: "ERROR", label: "에러" },
+              { value: "STOP", label: "중지" },
+            ]}
+            value={statusFilter}
+            onChange={(val) =>
+              setStatusFilter(val?.target ? val.target.value : val)
+            }
+          />
+          <SearchBar
+            width="l"
+            placeholder="설비코드, 설비명, 공정코드로 검색..."
+            value={searchTerm}
+            onChange={(val) =>
+              setSearchTerm(val?.target ? val.target.value : val)
+            }
+          />
+        </FilterGroup>
+
         <Button
           variant="ok"
           size="m"
@@ -181,7 +219,7 @@ export default function Machine() {
               machineCode: "",
               machineName: "",
               processCode: "",
-              active: true,
+              active: "YES",
             });
             setFormMode("create");
             setFormOpen(true);
@@ -189,11 +227,11 @@ export default function Machine() {
         >
           + 설비 추가
         </Button>
-      </TableHeader>
+      </FilterBar>
 
       <Table
         columns={columns}
-        data={sortedData}
+        data={filteredAndSortedData}
         sortConfig={sortConfig}
         onSort={handleSort}
         selectedIds={selectedIds}
@@ -203,6 +241,7 @@ export default function Machine() {
           setDetailOpen(true);
         }}
       />
+
       <SideDrawer open={detailOpen} onClose={() => setDetailOpen(false)}>
         <MachineDetail
           machine={selectedMachine}
@@ -222,7 +261,6 @@ export default function Machine() {
         setForm={setForm}
         onClose={() => setFormOpen(false)}
         onSubmit={() => {
-          // 여기서 API 호출 (create / update)
           setFormOpen(false);
           fetchMachines();
         }}
@@ -234,21 +272,19 @@ export default function Machine() {
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
 `;
+
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
 `;
 const SummaryGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px;
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
 `;
 const ErrorSection = styled.div`
   display: flex;
@@ -256,26 +292,26 @@ const ErrorSection = styled.div`
   gap: 10px;
 `;
 const ErrorBox = styled.div`
-  background: #fee2e2;
+  background: var(--bgError);
   border-radius: 10px;
   padding: 12px 16px;
+  box-shadow: var(--shadow);
   strong {
-    font-size: 13px;
-    color: #b91c1c;
+    font-size: var(--fontSm);
+    color: var(--error);
   }
   p {
-    font-size: 12px;
+    font-size: var(--fontXxs);
     margin-top: 4px;
-    color: #7f1d1d;
   }
 `;
-const SectionTitle = styled.div`
-  font-size: 15px;
-  font-weight: 600;
-`;
-
-const TableHeader = styled.div`
+const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+`;
+const FilterGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
 `;

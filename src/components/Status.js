@@ -10,7 +10,12 @@ import {
   FiPower,
   FiUserCheck,
   FiUserX,
+  FiCircle,
 } from "react-icons/fi";
+import { FaRegPauseCircle } from "react-icons/fa";
+import { IoPauseCircleOutline } from "react-icons/io5";
+import { AiOutlinePauseCircle } from "react-icons/ai";
+import { AlertTriangle, PlayCircle, PauseCircle, Power } from "lucide-react";
 import styled, { css } from "styled-components";
 import { LuHourglass } from "react-icons/lu";
 import { AiFillSafetyCertificate } from "react-icons/ai";
@@ -224,6 +229,34 @@ const STATUS_CONFIG = {
     bg: "var(--bgStop)",
     icon: <FiCheckCircle />,
   },
+  YES: {
+    label: "YES",
+    iconColor: "var(--run)", // 녹색/파란색 계열
+    textColor: "var(--font)",
+    bg: "var(--bgRun)",
+    icon: <FiRefreshCw />,
+  },
+  NO: {
+    label: "NO",
+    iconColor: "var(--stop)", // 회색 계열
+    textColor: "var(--font)",
+    bg: "var(--bgStop)",
+    icon: <PauseCircle />,
+  },
+  ERROR: {
+    label: "불량",
+    iconColor: "var(--error)",
+    textColor: "var(--font)",
+    bg: "var(--bgError)",
+    icon: <FiAlertTriangle />,
+  },
+  STOP: {
+    label: "중지",
+    iconColor: "var(--stop)",
+    textColor: "var(--font)",
+    bg: "var(--bgStop)",
+    icon: <FiPauseCircle />,
+  },
   // 예외 처리 (Default)
   DEFAULT: {
     label: "-",
@@ -240,7 +273,17 @@ const STATUS_CONFIG = {
  */
 
 const Status = ({ status, type = "basic" }) => {
-  const statusKey = status ? status.toUpperCase() : "DEFAULT";
+  // status가 불리언(true/false)으로 올 경우를 대비해 YES/NO 문자열로 치환
+  let displayStatus = status;
+  if (typeof status === "boolean") {
+    displayStatus = status ? "YES" : "NO";
+  }
+  // 안전하게 대문자 변환
+  const statusKey = displayStatus
+    ? String(displayStatus).toUpperCase()
+    : "DEFAULT";
+
+  // 설정값 가져오기
   const config = STATUS_CONFIG[statusKey] || STATUS_CONFIG.DEFAULT;
 
   return (
@@ -294,6 +337,9 @@ const IconWrapper = styled.span`
 const TextWrapper = styled.span`
   line-height: 1;
   color: ${(props) => props.$color};
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 export default Status;
