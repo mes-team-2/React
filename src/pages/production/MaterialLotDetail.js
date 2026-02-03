@@ -2,15 +2,35 @@ import React from "react";
 import styled from "styled-components";
 import { FiBox, FiActivity, FiCalendar } from "react-icons/fi";
 import Status from "../../components/Status";
+import { useEffect, useState } from "react";
+import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
 export default function MaterialLotDetail({ row, onClose }) {
+  const [detail, setDetail] = useState(null);
+
+  useEffect(() => {
+    if (!row?.id) return;
+
+    const fetchDetail = async () => {
+      try {
+        const res = await InventoryAPI2.getMaterialLotDetail(row.id);
+        setDetail(res.data);
+      } catch (e) {
+        console.error("상세 조회 실패", e);
+      }
+    };
+
+    fetchDetail();
+  }, [row?.id]);
+
   if (!row) return null;
+  if (!detail) return null;
 
   // 상태값 매핑 (Status 컴포넌트용)
   let statusKey = "DEFAULT";
-  if (row.status === "WAITING") statusKey = "LOT_WAIT";
-  else if (row.status === "RUNNING") statusKey = "LOT_RUN";
-  else if (row.status === "EMPTY") statusKey = "LOT_ERR";
+  if (detail.status === "AVAILABLE") statusKey = "LOT_WAIT";
+  else if (detail.status === "HOLD") statusKey = "LOT_RUN";
+  else if (detail.status === "EXHAUSTED") statusKey = "LOT_ERR";
 
   return (
     <Container>
@@ -29,7 +49,7 @@ export default function MaterialLotDetail({ row, onClose }) {
           <Grid>
             <FullItem>
               <label>LOT 번호</label>
-              <Value>{row.lot_no}</Value>
+              <Value>{detail.materialLotNo}</Value>
             </FullItem>
 
             <Item>
@@ -40,7 +60,7 @@ export default function MaterialLotDetail({ row, onClose }) {
             </Item>
             <Item>
               <label>최초 입고일</label>
-              <Value>{row.inbound_date}</Value>
+              <Value>{detail.txTime?.replace("T", " ").substring(0, 19)}</Value>
             </Item>
           </Grid>
         </Section>
@@ -50,15 +70,15 @@ export default function MaterialLotDetail({ row, onClose }) {
           <Grid>
             <FullItem>
               <label>자재코드</label>
-              <Value>{row.code}</Value>
+              <Value>{detail.materialCode}</Value>
             </FullItem>
             <FullItem>
               <label>자재명</label>
-              <Value>{row.name}</Value>
+              <Value>{detail.materialName}</Value>
             </FullItem>
             <FullItem>
               <label>단위</label>
-              <Value>{row.unit}</Value>
+              <Value>{detail.unit}</Value>
             </FullItem>
           </Grid>
         </Section>
@@ -69,32 +89,46 @@ export default function MaterialLotDetail({ row, onClose }) {
             <FullItem>
               <label>현재고(A)</label>
               <Value>
-                {row.current.toLocaleString()} <Unit>EA</Unit>
-              </Value>
-            </FullItem>
-            <FullItem>
-              <label>생산 투입중(B)</label>
-              <Value>
-                {row.production.toLocaleString()} <Unit>EA</Unit>
-              </Value>
-            </FullItem>
-            <FullItem>
-              <label>가용 재고(A-B)</label>
-              <Value>
-                {row.available.toLocaleString()} <Unit>EA</Unit>
+                {(detail.remainQty ?? 0).toLocaleString()} <Unit>EA</Unit>
               </Value>
             </FullItem>
           </Grid>
         </Section>
 
         <Section>
-          <SectionTitle>이력 정보</SectionTitle>
-          <Grid>
-            <Item>
-              <label>최근 상태 변경일</label>
-              <Value>{row.date}</Value>
-            </Item>
-          </Grid>
+          <SectionTitle>투입 이력</SectionTitle>
+
+          <HistoryTableWrapper>
+            <HistoryTable>
+              <thead>
+                <tr>
+                  <th>일시</th>
+                  <th>Lot</th>
+                  <th>수량</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.histories && detail.histories.length > 0 ? (
+                  detail.histories.map((h, idx) => (
+                    <tr key={idx}>
+                      <td>{h.inputDate?.replace("T", " ").substring(0, 19)}</td>
+                      <td>{h.lot}</td>
+                      <td>{(h.qty ?? 0).toLocaleString()}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4}>이력이 없습니다.</td>
+                  </tr>
+                )}
+              </tbody>
+            </HistoryTable>
+          </HistoryTableWrapper>
+
+          <RecentBox>
+            <label>최근 상태 변경일</label>
+            <Value>{detail.statusChangedAt}</Value>
+          </RecentBox>
         </Section>
       </Content>
     </Container>
@@ -219,5 +253,53 @@ const Button = styled.button`
   cursor: pointer;
   &:hover {
     opacity: 0.9;
+  }
+`;
+
+const HistoryTableWrapper = styled.div`
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+`;
+
+const HistoryTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fontXs);
+
+  thead {
+    background: var(--background2);
+    position: sticky;
+    top: 0;
+  }
+
+  th,
+  td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    font-weight: var(--bold);
+    color: var(--font);
+  }
+
+  tbody tr:hover {
+    background: var(--background);
+  }
+`;
+
+const RecentBox = styled.div`
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: var(--fontXs);
+    color: var(--font2);
   }
 `;

@@ -1,10 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import styled from "styled-components";
-import {
-  FiEdit,
-  FiRefreshCw,
-  FiAlertTriangle,
-} from "react-icons/fi";
+import { FiEdit, FiRefreshCw, FiAlertTriangle } from "react-icons/fi";
 import { LuHourglass } from "react-icons/lu";
 import Status from "../../components/Status";
 import TableStyle from "../../components/TableStyle";
@@ -16,81 +12,112 @@ import MaterialLotDetail from "./MaterialLotDetail";
 import Pagination from "../../components/Pagination";
 import SelectBar from "../../components/SelectBar";
 import Progress from "../../components/Progress";
+import axios from "axios";
+import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
-const MATERIAL_DATA = [
-  {
-    id: 1,
-    inbound_date: "2025-12-20 12:23",
-    status: "WAITING",
-    lot_no: "LOT-260101-090901",
-    code: "MAT-260101-090901",
-    name: "배터리 케이스 (L3)",
-    current: 5000,
-    production: 0,
-    available: 5000,
-    date: "2026/01/01 12:23",
-  },
-  {
-    id: 2,
-    inbound_date: "2025-12-21 12:23",
-    status: "RUNNING",
-    lot_no: "LOT-260101-090902",
-    code: "MAT-260101-090901",
-    name: "배터리 케이스 (L3)",
-    current: 4000,
-    production: 4000, // 50% 소진 가정
-    available: 0,
-    date: "2026/01/01 12:23",
-  },
-  {
-    id: 3,
-    inbound_date: "2025-12-22 12:23",
-    status: "WAITING",
-    lot_no: "LOT-260101-090903",
-    code: "MAT-260101-090901",
-    name: "배터리 케이스 (L3)",
-    current: 9900,
-    production: 0,
-    available: 9900,
-    date: "2026/01/01 12:23",
-  },
-  {
-    id: 4,
-    inbound_date: "2025-12-23 12:23",
-    status: "EMPTY",
-    lot_no: "LOT-260101-090904",
-    code: "MAT-260101-090901",
-    name: "배터리 케이스 (L3)",
-    current: 0,
-    production: 0,
-    available: 0,
-    date: "2026/01/01 12:23",
-  },
-  {
-    id: 5,
-    inbound_date: "2025-12-24 12:23",
-    status: "RUNNING",
-    lot_no: "LOT-260101-090905",
-    code: "MAT-260101-090901",
-    name: "배터리 케이스 (L3)",
-    current: 4500,
-    production: 500,
-    available: 4000,
-    date: "2026/01/01 12:23",
-  },
-  ...Array.from({ length: 30 }).map((_, i) => ({
-    id: i + 6,
-    inbound_date: "2025-12-25 12:23",
-    status: i % 2 === 0 ? "WAITING" : "RUNNING",
-    lot_no: `LOT-260101-${String(i + 6).padStart(6, '0')}`,
-    code: "MAT-260101-090901",
-    name: "배터리 케이스 (L3)",
-    current: 5000 + i * 10,
-    production: i % 2 !== 0 ? 1000 : 0,
-    available: 5000 + i * 10,
-    date: "2026/01/01 12:23",
-  })),
-];
+// const MATERIAL_DATA = [
+//   {
+//     id: 1,
+//     inbound_date: "2025-12-20 12:23",
+//     status: "WAITING",
+//     lot_no: "LOT-260101-090901",
+//     code: "MAT-260101-090901",
+//     name: "배터리 케이스 (L3)",
+//     current: 5000,
+//     production: 0,
+//     available: 5000,
+//     date: "2026/01/01 12:23",
+//   },
+//   {
+//     id: 2,
+//     inbound_date: "2025-12-21 12:23",
+//     status: "RUNNING",
+//     lot_no: "LOT-260101-090902",
+//     code: "MAT-260101-090901",
+//     name: "배터리 케이스 (L3)",
+//     current: 4000,
+//     production: 4000, // 50% 소진 가정
+//     available: 0,
+//     date: "2026/01/01 12:23",
+//   },
+//   {
+//     id: 3,
+//     inbound_date: "2025-12-22 12:23",
+//     status: "WAITING",
+//     lot_no: "LOT-260101-090903",
+//     code: "MAT-260101-090901",
+//     name: "배터리 케이스 (L3)",
+//     current: 9900,
+//     production: 0,
+//     available: 9900,
+//     date: "2026/01/01 12:23",
+//   },
+//   {
+//     id: 4,
+//     inbound_date: "2025-12-23 12:23",
+//     status: "EMPTY",
+//     lot_no: "LOT-260101-090904",
+//     code: "MAT-260101-090901",
+//     name: "배터리 케이스 (L3)",
+//     current: 0,
+//     production: 0,
+//     available: 0,
+//     date: "2026/01/01 12:23",
+//   },
+//   {
+//     id: 5,
+//     inbound_date: "2025-12-24 12:23",
+//     status: "RUNNING",
+//     lot_no: "LOT-260101-090905",
+//     code: "MAT-260101-090901",
+//     name: "배터리 케이스 (L3)",
+//     current: 4500,
+//     production: 500,
+//     available: 4000,
+//     date: "2026/01/01 12:23",
+//   },
+//   ...Array.from({ length: 30 }).map((_, i) => ({
+//     id: i + 6,
+//     inbound_date: "2025-12-25 12:23",
+//     status: i % 2 === 0 ? "WAITING" : "RUNNING",
+//     lot_no: `LOT-260101-${String(i + 6).padStart(6, '0')}`,
+//     code: "MAT-260101-090901",
+//     name: "배터리 케이스 (L3)",
+//     current: 5000 + i * 10,
+//     production: i % 2 !== 0 ? 1000 : 0,
+//     available: 5000 + i * 10,
+//     date: "2026/01/01 12:23",
+//   })),
+// ];
+
+// 백엔드 데이터 프론트에 맞게 수정
+const mapStatus = (s) => {
+  if (s === "AVAILABLE") return "WAITING";
+  if (s === "HOLD") return "RUNNING";
+  if (s === "EXHAUSTED") return "EMPTY";
+  return s;
+};
+
+// 프론트 데이터 백엔드에 맞게 수정
+const toBackendStatus = (s) => {
+  if (s === "WAITING") return "AVAILABLE";
+  if (s === "RUNNING") return "HOLD";
+  if (s === "EMPTY") return "EXHAUSTED";
+  return undefined;
+};
+
+// 날짜 변환 함수
+// Date → yyyy-MM-dd
+const toLocalDate = (d) => {
+  if (!d) return undefined;
+
+  const date = new Date(d);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 // 날짜 포맷 함수 (yyyy-MM-dd HH:mm)
 const formatDate = (dateStr) => {
@@ -109,6 +136,14 @@ export default function MaterialLot() {
   const [keyword, setKeyword] = useState("");
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [list, setList] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [stats, setStats] = useState({
+    total: 0,
+    running: 0,
+    waiting: 0,
+    empty: 0,
+  });
 
   // 상태 필터 관리
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -128,84 +163,6 @@ export default function MaterialLot() {
     { value: "EMPTY", label: "품절/불량" },
   ];
 
-  // 필터링 로직
-  const filteredList = useMemo(() => {
-    return MATERIAL_DATA.filter((item) => {
-      // 키워드 검색
-      const k = keyword.toLowerCase();
-      const matchSearch =
-        !keyword ||
-        item.name.toLowerCase().includes(k) ||
-        item.code.toLowerCase().includes(k) ||
-        item.lot_no.toLowerCase().includes(k);
-
-      // 날짜 검색
-      let matchDate = true;
-      if (item.date && (dateRange.start || dateRange.end)) {
-        const itemDate = new Date(item.date);
-        itemDate.setHours(0, 0, 0, 0);
-
-        if (dateRange.start) {
-          const startDate = new Date(dateRange.start);
-          startDate.setHours(0, 0, 0, 0);
-          if (itemDate < startDate) matchDate = false;
-        }
-        if (dateRange.end) {
-          const endDate = new Date(dateRange.end);
-          endDate.setHours(0, 0, 0, 0);
-          if (itemDate > endDate) matchDate = false;
-        }
-      }
-
-      // 상태 필터링
-      const matchStatus = statusFilter === "ALL" || item.status === statusFilter;
-
-      return matchSearch && matchDate && matchStatus;
-    });
-  }, [keyword, dateRange, statusFilter]);
-
-  // 정렬 로직
-  const sortedList = useMemo(() => {
-    let sortableItems = [...filteredList];
-    if (sortConfig.key !== null) {
-      sortableItems.sort((a, b) => {
-        let aValue = a[sortConfig.key];
-        let bValue = b[sortConfig.key];
-
-        if (typeof aValue === "number" && typeof bValue === "number") {
-          // 숫자 비교
-        } else {
-          aValue = String(aValue);
-          bValue = String(bValue);
-        }
-
-        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-    return sortableItems;
-  }, [filteredList, sortConfig]);
-
-  // 현재 페이지 데이터 슬라이싱
-  const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * itemsPerPage;
-    return sortedList.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedList, page]);
-
-  // 총 페이지 수 계산
-  const totalPages = Math.ceil(sortedList.length / itemsPerPage);
-
-  // 통계 데이터
-  const stats = useMemo(() => {
-    return {
-      total: MATERIAL_DATA.length,
-      running: MATERIAL_DATA.filter((i) => i.status === "RUNNING").length,
-      waiting: MATERIAL_DATA.filter((i) => i.status === "WAITING").length,
-      error: MATERIAL_DATA.filter((i) => i.status === "EMPTY").length,
-    };
-  }, []);
-
   // 정렬 핸들러
   const handleSort = (key) => {
     let direction = "asc";
@@ -222,6 +179,7 @@ export default function MaterialLot() {
   };
 
   const handleDateChange = (start, end) => {
+    console.log("날짜 변경:", start, end);
     setDateRange({ start, end });
     setPage(1);
   };
@@ -231,6 +189,70 @@ export default function MaterialLot() {
     setDrawerOpen(true);
   };
 
+  // 목록 조회
+  const fetchList = async () => {
+    try {
+      const params = {
+        page: page - 1,
+        size: 20,
+        keyword: keyword || undefined,
+        status:
+          statusFilter === "ALL" ? undefined : toBackendStatus(statusFilter),
+        startDate: toLocalDate(dateRange.start),
+        endDate: toLocalDate(dateRange.end),
+      };
+
+      console.log("fetchList params:", params); // 여기
+
+      const res = await InventoryAPI2.getMaterialLotList(params);
+      const data = res.data;
+
+      // 백엔드 DTO → 프론트 구조 매핑
+      const mapped = data.content.map((i) => ({
+        id: i.id,
+        inbound_date: i.inboundDate,
+        status: mapStatus(i.status),
+        lot_no: i.lotNo,
+        code: i.materialCode,
+        name: i.materialName,
+        current: i.currentQty,
+        production: i.productionQty,
+        date: i.statusChangedAt,
+      }));
+
+      setList(mapped);
+      setTotalPages(data.totalPages);
+    } catch (e) {
+      console.error("LOT 목록 조회 실패", e);
+    }
+  };
+
+  // 합계 조회
+  const fetchSummary = async () => {
+    try {
+      const res = await InventoryAPI2.getMaterialLotSummary();
+      const s = res.data;
+
+      setStats({
+        total: s.total,
+        waiting: s.waiting,
+        running: s.running,
+        empty: s.empty,
+      });
+      console.log("summary raw", res.data);
+    } catch (e) {
+      console.error("LOT 요약 조회 실패", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchList();
+  }, [page, keyword, statusFilter, dateRange.start, dateRange.end]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, []);
+
   // 테이블 컬럼
   const columns = [
     { key: "id", label: "No", width: 50, render: (v) => v },
@@ -238,7 +260,7 @@ export default function MaterialLot() {
       key: "inbound_date",
       label: "입고일자",
       width: 150,
-      render: (v) => formatDate(v)
+      render: (v) => formatDate(v),
     },
     {
       key: "status",
@@ -259,9 +281,14 @@ export default function MaterialLot() {
       key: "current",
       label: "총 재고",
       width: 90,
-      render: (v) => v.toLocaleString()
+      render: (v) => v.toLocaleString(),
     },
-    { key: "production", label: "생산투입", width: 90, render: (v) => v.toLocaleString() },
+    {
+      key: "production",
+      label: "생산투입",
+      width: 90,
+      render: (v) => v.toLocaleString(),
+    },
     {
       key: "usage_rate",
       label: "자재 소진율",
@@ -270,13 +297,13 @@ export default function MaterialLot() {
         // 소진율 계산 로직 변경 production / current (현재 재고가 총량일 경우)
         const rate = row.current > 0 ? (row.production / row.current) * 100 : 0;
         return <Progress value={rate} width="100%" color="var(--main)" />;
-      }
+      },
     },
     {
       key: "date",
       label: "상태변경일시",
       width: 150,
-      render: (v) => formatDate(v)
+      render: (v) => formatDate(v),
     },
   ];
 
@@ -285,10 +312,30 @@ export default function MaterialLot() {
       <Title>자재 LOT 관리</Title>
 
       <Cards>
-        <SummaryCard icon={<FiEdit />} label="전체 LOT" value={stats.total} color="var(--main)" />
-        <SummaryCard icon={<FiRefreshCw />} label="생산중(투입)" value={stats.running} color="var(--run)" />
-        <SummaryCard icon={<LuHourglass />} label="대기중" value={stats.waiting} color="var(--waiting)" />
-        <SummaryCard icon={<FiAlertTriangle />} label="품절/불량" value={stats.error} color="var(--error)" />
+        <SummaryCard
+          icon={<FiEdit />}
+          label="전체 LOT"
+          value={stats.total}
+          color="var(--main)"
+        />
+        <SummaryCard
+          icon={<FiRefreshCw />}
+          label="생산중(투입)"
+          value={stats.running}
+          color="var(--run)"
+        />
+        <SummaryCard
+          icon={<LuHourglass />}
+          label="대기중"
+          value={stats.waiting}
+          color="var(--waiting)"
+        />
+        <SummaryCard
+          icon={<FiAlertTriangle />}
+          label="품절/불량"
+          value={stats.empty}
+          color="var(--error)"
+        />
       </Cards>
 
       <FilterBar>
@@ -311,15 +358,14 @@ export default function MaterialLot() {
           width="l"
           placeholder="LOT번호 / 자재명 / 코드 검색"
           onChange={handleKeywordChange}
-          onSearch={() => { }}
+          onSearch={() => {}}
         />
       </FilterBar>
-
 
       <TableContainer>
         <TableStyle
           columns={columns}
-          data={paginatedData}
+          data={list}
           selectable={false}
           onRowClick={handleRowClick}
           sortConfig={sortConfig}
@@ -344,7 +390,6 @@ export default function MaterialLot() {
   );
 }
 
-
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -365,7 +410,7 @@ const Cards = styled.div`
 const FilterBar = styled.div`
   display: flex;
   align-items: center;
- gap: 20px;
+  gap: 20px;
 `;
 
 const TableContainer = styled.div`
