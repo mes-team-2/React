@@ -430,7 +430,7 @@ export default function Dashboard() {
             </div>
             <ProgressBar
               $percent={PROCESS_EFF.availability}
-              $color="var(--run)"
+              $color="var(--main)"
             />
           </EfficiencyItem>
 
@@ -441,7 +441,7 @@ export default function Dashboard() {
             </div>
             <ProgressBar
               $percent={PROCESS_EFF.performance}
-              $color="var(--kpi)"
+              $color="var(--main)"
             />
           </EfficiencyItem>
 
@@ -453,7 +453,7 @@ export default function Dashboard() {
             {/* 불량률은 낮을수록 좋으므로 Warning 색상 사용 */}
             <ProgressBar
               $percent={PROCESS_EFF.defectRate * 5}
-              $color="var(--error)"
+              $color="var(--main)"
             />
           </EfficiencyItem>
 
@@ -464,7 +464,7 @@ export default function Dashboard() {
             </div>
             <ProgressBar
               $percent={PROCESS_EFF.materialUsage}
-              $color="var(--waiting)"
+              $color="var(--main)"
             />
           </EfficiencyItem>
         </WidgetCard>
@@ -594,7 +594,10 @@ const TimeCard = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--main);
+    color: var(--font);
+    svg {
+      color: var(--main);
+    }
   }
 `;
 
