@@ -6,7 +6,7 @@ import Button from "../../components/Button";
 import SearchBar from "../../components/SearchBar";
 import SelectBar from "../../components/SelectBar";
 import MachineFormDrawer from "./MachineFormDrawer";
-
+import styled from "styled-components";
 import { MachineAPI } from "../../api/AxiosAPI";
 
 import { AlertTriangle, PauseCircle } from "lucide-react";
@@ -195,9 +195,6 @@ export default function Machine() {
     }));
   };
 
-  /* =========================
-     Row 클릭 시: ✅ Detail 없이 바로 수정 Drawer
-  ========================= */
   const openEdit = (row) => {
     setForm({
       machineId: row.machineId,
@@ -212,20 +209,12 @@ export default function Machine() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* 제목 */}
-      <div>
+    <Wrapper>
+      <Header>
         <h2>설비 관리</h2>
-      </div>
+      </Header>
 
-      {/* 요약 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 18,
-        }}
-      >
+      <SummaryGrid>
         {summaryData.map((item) => (
           <SummaryCard
             key={item.label}
@@ -235,29 +224,22 @@ export default function Machine() {
             color={item.color}
           />
         ))}
-      </div>
+      </SummaryGrid>
 
       {/* 에러 로그 */}
       {errorLogs.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <ErrorSection>
           {errorLogs.map((log, idx) => (
-            <div key={idx} style={{ padding: "12px 16px", borderRadius: 10 }}>
+            <ErrorBox key={idx}>
               <strong>{log.code}</strong>
               <p style={{ marginTop: 4 }}>{log.message}</p>
-            </div>
+            </ErrorBox>
           ))}
-        </div>
+        </ErrorSection>
       )}
 
-      {/* 필터바 + 버튼 (테이블 우측 상단 영역을 유지하고 싶으면 여기 스타일만 네 기존대로) */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+      <FilterBar>
+        <FilterGroup>
           <SelectBar
             width="s"
             label="설비 상태"
@@ -277,7 +259,7 @@ export default function Machine() {
             value={searchTerm}
             onChange={setSearchTerm}
           />
-        </div>
+        </FilterGroup>
 
         <Button
           variant="ok"
@@ -296,9 +278,8 @@ export default function Machine() {
         >
           + 설비 추가
         </Button>
-      </div>
+      </FilterBar>
 
-      {/* 테이블 */}
       <Table
         columns={columns}
         data={filteredAndSortedData}
@@ -306,18 +287,63 @@ export default function Machine() {
         onSort={handleSort}
         selectedIds={selectedIds}
         onSelectChange={setSelectedIds}
-        onRowClick={openEdit} // ✅ 클릭하면 바로 수정 Drawer
+        onRowClick={openEdit}
       />
 
-      {/* 폼 Drawer */}
       <MachineFormDrawer
         open={formOpen}
         mode={formMode}
         form={form}
         setForm={setForm}
         onClose={() => setFormOpen(false)}
-        onSubmit={handleSave} // ✅ MachineAPI.create/update 살아있음
+        onSubmit={handleSave}
       />
-    </div>
+    </Wrapper>
   );
 }
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const Header = styled.div`
+  h2 {
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
+  }
+`;
+const SummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+`;
+const ErrorSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+const ErrorBox = styled.div`
+  background: var(--bgError);
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: var(--shadow);
+  strong {
+    font-size: var(--fontSm);
+    color: var(--error);
+  }
+  p {
+    font-size: var(--fontXxs);
+    margin-top: 4px;
+  }
+`;
+const FilterBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+const FilterGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+`;
