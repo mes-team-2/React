@@ -108,8 +108,9 @@ const Login = () => {
       });
 
       if (res.status === 200) {
-        const { accessToken } = res.data;
-        login(accessToken, id);
+        const { accessToken, refreshToken, workerName, workerCode, role } =
+          res.data;
+        login(accessToken, workerCode, role, workerName, refreshToken);
         // ✅ 로그인 성공 후 원래 가려던 페이지로
         navigate(fromPath, { replace: true });
       }

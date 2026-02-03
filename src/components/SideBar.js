@@ -212,6 +212,11 @@ export default function SideBar() {
   const dragMovedRef = useRef(false);
   const dragPinIndexRef = useRef(null);
 
+  const [userInfo, setUserInfo] = useState({
+    name: "Guest",
+    code: "",
+  });
+
   const location = useLocation();
   const navigate = useNavigate();
   const tabsRef = useRef(null);
@@ -253,6 +258,15 @@ export default function SideBar() {
       return next;
     });
   }, [location.pathname]);
+
+  useEffect(() => {
+    const name = localStorage.getItem("workerName");
+    const code = localStorage.getItem("workerCode");
+
+    if (name && code) {
+      setUserInfo({ name, code });
+    }
+  }, []);
 
   useEffect(() => {
     if (!tabsRef.current) return;
@@ -517,8 +531,8 @@ export default function SideBar() {
               <IconUser />
             </UserAvatar>
             <UserInfo>
-              <UserName>Kim Harin</UserName>
-              <UserId>Z20180355</UserId>
+              <UserName>{userInfo.name}</UserName>
+              <UserId>{userInfo.code}</UserId>
             </UserInfo>
           </UserProfile>
         </ScrollContainer>
