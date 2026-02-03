@@ -128,6 +128,11 @@ export const WorkOrderAPI = {
     return await AxiosAPI.post("/api/workorder", data);
   },
 
+  // 작업 시작
+  startWork: async (workOrderNo) => {
+    return await AxiosAPI.post(`/api/workorder/${workOrderNo}/start`);
+  },
+
   // 작업지시 목록 조회
   getList: async () => {
     return await AxiosAPI.get("/api/workorder");
