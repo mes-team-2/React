@@ -336,6 +336,9 @@ export default function Dashboard() {
                   innerRadius={40}
                   outerRadius={70}
                   paddingAngle={2}
+                  isAnimationActive={true}
+                  animationDuration={350}
+                  animationEasing="ease-out"
                 >
                   {DEFECT_TYPE_DATA.map((_, i) => (
                     <Cell
