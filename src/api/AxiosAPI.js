@@ -70,6 +70,14 @@ export const MachineAPI = {
   getList: async () => {
     return await AxiosAPI.get("/api/machines");
   },
+  // 등록
+  create: async (data) => {
+    return await AxiosAPI.post("/api/machines", data);
+  },
+  // 수정
+  update: async (id, data) => {
+    return await AxiosAPI.put(`/api/machines/${id}`, data);
+  },
 };
 
 export const InventoryAPI = {

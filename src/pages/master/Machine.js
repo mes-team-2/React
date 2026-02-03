@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import { useMemo, useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
-import { AlertTriangle, PlayCircle, PauseCircle, Power } from "lucide-react";
+import { AlertTriangle, PauseCircle } from "lucide-react";
 import { LuHourglass } from "react-icons/lu";
 import SummaryCard from "../../components/SummaryCard";
 import { MachineAPI } from "../../api/AxiosAPI";
@@ -26,19 +26,18 @@ export default function Machine() {
   const [formMode, setFormMode] = useState(null);
   const [selectedMachine, setSelectedMachine] = useState(null);
 
+  // [수정 1] 초기값을 Boolean true로 변경
   const [form, setForm] = useState({
+    machineId: null,
     machineCode: "",
     machineName: "",
     processCode: "",
-    active: "YES",
+    active: true,
   });
-
-  // 데이터 조회 (API 연동)
 
   const fetchMachines = async () => {
     try {
       const res = await MachineAPI.getList();
-      // 백엔드에서 주는 데이터 그대로 사용하되 안전하게 처리
       setMachines(res.data);
     } catch (err) {
       console.error("설비 목록 조회 실패", err);
@@ -51,21 +50,50 @@ export default function Machine() {
     return () => clearInterval(interval);
   }, []);
 
-  // 필터링 및 정렬 로직
+  // 저장 핸들러
+  const handleSave = async () => {
+    if (!form.machineCode || !form.machineName) {
+      alert("설비 코드와 설비명은 필수입니다.");
+      return;
+    }
+
+    try {
+      if (formMode === "create") {
+        await MachineAPI.create({
+          machineCode: form.machineCode,
+          machineName: form.machineName,
+          processCode: form.processCode,
+          active: form.active, // [수정] 이제 true/false가 전송됨
+        });
+        alert("설비가 등록되었습니다.");
+      } else {
+        await MachineAPI.update(form.machineId, {
+          machineName: form.machineName,
+          processCode: form.processCode,
+          active: form.active,
+        });
+        alert("수정되었습니다.");
+      }
+
+      setFormOpen(false);
+      fetchMachines();
+    } catch (err) {
+      console.error(err);
+      alert("저장 실패: " + (err.response?.data || "오류 발생"));
+    }
+  };
+
+  // ... (필터링, 요약 로직 기존 유지) ...
 
   const filteredAndSortedData = useMemo(() => {
     let result = machines.filter((m) => {
       const s = searchTerm.toLowerCase();
-      // 설비코드, 설비명, 공정코드 통합 검색
       const matchesSearch =
         (m.machineCode || "").toLowerCase().includes(s) ||
         (m.machineName || "").toLowerCase().includes(s) ||
         (m.processCode || "").toLowerCase().includes(s);
-
-      // 설비 상태 필터링 (RUN, WAIT, STOP, ERROR)
       const matchesStatus =
         statusFilter === "all" ? true : m.status === statusFilter;
-
       return matchesSearch && matchesStatus;
     });
 
@@ -80,8 +108,6 @@ export default function Machine() {
     }
     return result;
   }, [machines, searchTerm, statusFilter, sortConfig]);
-
-  // 요약 데이터 계산
 
   const summaryData = useMemo(() => {
     const counts = { WAIT: 0, RUN: 0, ERROR: 0, STOP: 0 };
@@ -117,13 +143,9 @@ export default function Machine() {
   }, [machines]);
 
   const errorLogs = useMemo(() => {
-    // DTO에서 ERROR일 때만 errorLog가 생성됨
     return machines
       .filter((m) => m.status === "ERROR")
-      .map((m) => ({
-        code: `ERROR - ${m.machineCode}`,
-        message: m.errorLog,
-      }));
+      .map((m) => ({ code: `ERROR - ${m.machineCode}`, message: m.errorLog }));
   }, [machines]);
 
   const columns = [
@@ -132,7 +154,7 @@ export default function Machine() {
       key: "active",
       label: "사용",
       width: 150,
-      render: (value) => <Status type="active" status={value === "YES"} />,
+      render: (value) => <Status type="active" status={value === "YES"} />, // 목록 조회는 여전히 "YES"/"NO"로 옴
     },
     { key: "machineCode", label: "설비 코드", width: 120 },
     { key: "machineName", label: "설비명", width: 180 },
@@ -197,29 +219,27 @@ export default function Machine() {
               { value: "STOP", label: "중지" },
             ]}
             value={statusFilter}
-            onChange={(val) =>
-              setStatusFilter(val?.target ? val.target.value : val)
-            }
+            onChange={(e) => setStatusFilter(e.target.value)}
           />
           <SearchBar
             width="l"
             placeholder="설비코드, 설비명, 공정코드로 검색..."
             value={searchTerm}
-            onChange={(val) =>
-              setSearchTerm(val?.target ? val.target.value : val)
-            }
+            onChange={setSearchTerm}
           />
         </FilterGroup>
 
         <Button
           variant="ok"
           size="m"
+          // [수정 2] 등록 버튼 클릭 시 초기값을 true로 설정
           onClick={() => {
             setForm({
+              machineId: null,
               machineCode: "",
               machineName: "",
               processCode: "",
-              active: "YES",
+              active: true,
             });
             setFormMode("create");
             setFormOpen(true);
@@ -247,7 +267,16 @@ export default function Machine() {
           machine={selectedMachine}
           onEdit={() => {
             setDetailOpen(false);
-            setForm(selectedMachine);
+            setForm({
+              machineId: selectedMachine.machineId,
+              machineCode: selectedMachine.machineCode,
+              machineName: selectedMachine.machineName,
+              processCode: selectedMachine.processCode,
+              // [수정 3] "YES"/"NO" 문자열을 Boolean으로 변환하여 폼에 주입
+              active:
+                selectedMachine.active === "YES" ||
+                selectedMachine.active === true,
+            });
             setFormMode("edit");
             setFormOpen(true);
           }}
@@ -260,10 +289,7 @@ export default function Machine() {
         form={form}
         setForm={setForm}
         onClose={() => setFormOpen(false)}
-        onSubmit={() => {
-          setFormOpen(false);
-          fetchMachines();
-        }}
+        onSubmit={handleSave}
       />
     </Wrapper>
   );
@@ -274,7 +300,6 @@ const Wrapper = styled.div`
   flex-direction: column;
   gap: 20px;
 `;
-
 const Header = styled.div`
   h2 {
     font-size: var(--fontHd);
