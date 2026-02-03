@@ -1,6 +1,7 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom"; // [추가] URL 파라미터 읽기
+import { useMemo, useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { FiX } from "react-icons/fi";
 import Table from "../../components/TableStyle";
 import Status from "../../components/Status";
 import {
@@ -14,22 +15,12 @@ import {
   Legend,
 } from "recharts";
 
-// [수정] props 이름을 lot -> propsLot으로 변경하여 내부 변수와 분리
-export default function LotDetail({ lot: propsLot }) {
-  const { lotId } = useParams(); // [추가] URL에서 lotId 가져오기
+export default function ProductLotQrDetail() {
+  const { lotId } = useParams(); // URL에서 LOT ID 추출
+  const navigate = useNavigate();
 
-  // [핵심 수정] props로 받은 lot이 있으면 그걸 쓰고, 없으면 URL의 lotId로 임시 객체 생성
-  const lot =
-    propsLot ||
-    (lotId
-      ? {
-          lotId: lotId, // 여기에 URL 파라미터 매핑
-          productCode: "-",
-          productName: "-",
-          currentQty: 0,
-          workOrderNo: "-",
-        }
-      : null);
+  const [lotData, setLotData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [processSort, setProcessSort] = useState({
     key: null,
@@ -44,98 +35,102 @@ export default function LotDetail({ lot: propsLot }) {
     direction: "asc",
   });
 
-  // 공정 정보 데이터 (Process Log)
-  const processLogs = useMemo(() => {
-    if (!lot) return [];
-    return [
-      {
-        id: 1,
-        date: "2026-01-20",
-        process: "극판 적층",
-        machine: "STACK-02",
-        start: "09:00:00",
-        end: "09:35:00",
-        status: "COMPLETE",
-      },
-      {
-        id: 2,
-        date: "2026-01-20",
-        process: "COS 용접",
-        machine: "COS-01",
-        start: "09:40:00",
-        end: "10:10:00",
-        status: "COMPLETE",
-      },
-      {
-        id: 3,
-        date: "2026-01-20",
-        process: "화성(충전)",
-        machine: "FORM-10",
-        start: "10:20:00",
-        end: "11:40:00",
-        status: "COMPLETE",
-      },
-      {
-        id: 4,
-        date: "2026-01-20",
-        process: "최종 성능 검사",
-        machine: "TEST-03",
-        start: "11:50:00",
-        end: "12:10:00",
-        status: "COMPLETE",
-      },
-    ];
-  }, [lot]);
+  // 데이터 조회 시뮬레이션
+  useEffect(() => {
+    if (!lotId) return;
+    setLoading(true);
 
-  // 생산 정보 (투입 자재) 데이터 (Material Input)
-  const materialLogs = useMemo(() => {
-    if (!lot) return [];
-    return [
-      {
-        id: 1,
-        materialCode: "MAT-CASE-01",
-        materialName: "배터리 케이스 (L3)",
-        lotNo: "MATLOT-2512-001",
-        qty: 100,
-      },
-      {
-        id: 2,
-        materialCode: "MAT-LEAD-A",
-        materialName: "납판 (음극)",
-        lotNo: "MATLOT-2512-055",
-        qty: 600,
-      },
-      {
-        id: 3,
-        materialCode: "MAT-LEAD-C",
-        materialName: "납판 (양극)",
-        lotNo: "MATLOT-2512-056",
-        qty: 600,
-      },
-      {
-        id: 4,
-        materialCode: "MAT-ELEC-S",
-        materialName: "전해액 (황산)",
-        lotNo: "MATLOT-2601-002",
-        qty: 50,
-      },
-    ];
-  }, [lot]);
-
-  // 품질 검사 데이터 (Quality Check)
-  const qualityLogs = useMemo(() => {
-    if (!lot) return [];
-    return [
-      { id: 1, item: "OCV(개방회로전압)", ok: 490, ng: 10 },
-      { id: 2, item: "내압 테스트", ok: 495, ng: 5 },
-      { id: 3, item: "누액 검사", ok: 498, ng: 2 },
-      { id: 4, item: "외관 검사", ok: 500, ng: 0 },
-    ];
-  }, [lot]);
+    // 실제 API 호출 부분 (지금은 mock data / 나중에 백이랑 연결 必)
+    setTimeout(() => {
+      setLotData({
+        productCode: "BAT-12V-65AH",
+        productName: "12V 중형 배터리 (Standard)",
+        currentQty: 1000,
+        workOrderNo: `WO-${lotId.split("-")[1] || "TEMP"}`,
+        lotNo: lotId,
+        status: "COMPLETED",
+        processLogs: [
+          {
+            id: 1,
+            date: "2026-01-20",
+            process: "극판 적층",
+            machine: "STACK-02",
+            start: "09:00:00",
+            end: "09:35:00",
+            status: "COMPLETE",
+          },
+          {
+            id: 2,
+            date: "2026-01-20",
+            process: "COS 용접",
+            machine: "COS-01",
+            start: "09:40:00",
+            end: "10:10:00",
+            status: "COMPLETE",
+          },
+          {
+            id: 3,
+            date: "2026-01-20",
+            process: "화성(충전)",
+            machine: "FORM-10",
+            start: "10:20:00",
+            end: "11:40:00",
+            status: "COMPLETE",
+          },
+          {
+            id: 4,
+            date: "2026-01-20",
+            process: "최종 성능 검사",
+            machine: "TEST-03",
+            start: "11:50:00",
+            end: "12:10:00",
+            status: "COMPLETE",
+          },
+        ],
+        materialLogs: [
+          {
+            id: 1,
+            materialCode: "MAT-CASE-01",
+            materialName: "배터리 케이스 (L3)",
+            lotNo: "MATLOT-2512-001",
+            qty: 100,
+          },
+          {
+            id: 2,
+            materialCode: "MAT-LEAD-A",
+            materialName: "납판 (음극)",
+            lotNo: "MATLOT-2512-055",
+            qty: 600,
+          },
+          {
+            id: 3,
+            materialCode: "MAT-LEAD-C",
+            materialName: "납판 (양극)",
+            lotNo: "MATLOT-2512-056",
+            qty: 600,
+          },
+          {
+            id: 4,
+            materialCode: "MAT-ELEC-S",
+            materialName: "전해액 (황산)",
+            lotNo: "MATLOT-2601-002",
+            qty: 50,
+          },
+        ],
+        qualityLogs: [
+          { id: 1, item: "OCV(개방회로전압)", ok: 490, ng: 10 },
+          { id: 2, item: "내압 테스트", ok: 495, ng: 5 },
+          { id: 3, item: "누액 검사", ok: 498, ng: 2 },
+          { id: 4, item: "외관 검사", ok: 500, ng: 0 },
+        ],
+      });
+      setLoading(false);
+    }, 500);
+  }, [lotId]);
 
   // 정렬 유틸
   const sortData = (data, config) => {
-    if (!config.key) return data;
+    if (!config.key || !data) return data || [];
     return [...data].sort((a, b) => {
       const aVal = a?.[config.key];
       const bVal = b?.[config.key];
@@ -149,19 +144,19 @@ export default function LotDetail({ lot: propsLot }) {
   };
 
   const sortedProcess = useMemo(
-    () => sortData(processLogs, processSort),
-    [processLogs, processSort],
+    () => sortData(lotData?.processLogs, processSort),
+    [lotData, processSort],
   );
   const sortedMaterial = useMemo(
-    () => sortData(materialLogs, materialSort),
-    [materialLogs, materialSort],
+    () => sortData(lotData?.materialLogs, materialSort),
+    [lotData, materialSort],
   );
   const sortedQuality = useMemo(
-    () => sortData(qualityLogs, qualitySort),
-    [qualityLogs, qualitySort],
+    () => sortData(lotData?.qualityLogs, qualitySort),
+    [lotData, qualitySort],
   );
 
-  // 공정 정보 컬럼
+  // 컬럼 정의
   const processColumns = [
     { key: "date", label: "일자", width: 100 },
     { key: "process", label: "공정", width: 140 },
@@ -176,7 +171,6 @@ export default function LotDetail({ lot: propsLot }) {
     },
   ];
 
-  // 생산 정보(투입자재) 컬럼
   const materialColumns = [
     { key: "materialCode", label: "자재코드", width: 140 },
     { key: "materialName", label: "자재명", width: 180 },
@@ -189,19 +183,10 @@ export default function LotDetail({ lot: propsLot }) {
     },
   ];
 
-  // 품질 검사 컬럼
   const qualityColumns = [
     { key: "item", label: "검사 항목", width: 180 },
-    {
-      key: "ok",
-      label: "OK",
-      width: 80,
-    },
-    {
-      key: "ng",
-      label: "NG",
-      width: 80,
-    },
+    { key: "ok", label: "OK", width: 80 },
+    { key: "ng", label: "NG", width: 80 },
     {
       key: "passRate",
       label: "양품률",
@@ -234,22 +219,48 @@ export default function LotDetail({ lot: propsLot }) {
     },
   ];
 
-  if (!lot) return <Empty>LOT를 선택하세요.</Empty>;
+  if (loading)
+    return <LoadingWrapper>데이터를 불러오는 중입니다...</LoadingWrapper>;
+  if (!lotData) return <Empty>해당 LOT 정보를 찾을 수 없습니다.</Empty>;
 
   return (
     <Wrapper>
       <Header>
         <h3>제품 LOT 상세 조회</h3>
+        <CloseButton onClick={() => navigate(-1)}>
+          <FiX size={24} />
+        </CloseButton>
       </Header>
+
       <Content>
         <Section>
           <SectionTitle>LOT 정보</SectionTitle>
           <Grid>
             <FullItem>
               <label>LOT 번호</label>
-              {/* props로 오든 URL로 오든 lotId를 출력합니다 */}
-              <Value>{lot.lotId || lot.lotNo || lotId}</Value>
+              <Value>{lotData.lotNo}</Value>
             </FullItem>
+            <FullItem>
+              <label>LOT 생성일</label>
+              <Value>{lotData.processLogs[0]?.date || "-"}</Value>
+            </FullItem>
+            <Item>
+              <label>LOT 상태</label>
+
+              <Status status={lotData.status} type="wide" />
+            </Item>
+            <Item>
+              <label>상태 변경 일시</label>
+              <Value>-</Value>
+            </Item>
+            <Item>
+              <label>생산 수량</label>
+              <Value>{Number(lotData.currentQty).toLocaleString()}</Value>
+            </Item>
+            <Item>
+              <label>현재 수량</label>
+              <Value>{Number(lotData.currentQty).toLocaleString()}</Value>
+            </Item>
           </Grid>
         </Section>
 
@@ -258,20 +269,17 @@ export default function LotDetail({ lot: propsLot }) {
           <Grid>
             <FullItem>
               <label>제품코드</label>
-              <Value>{lot.productCode}</Value>
+              <Value>{lotData.productCode}</Value>
             </FullItem>
             <FullItem>
               <label>제품명</label>
-              <Value>{lot.productName}</Value>
+              <Value>{lotData.productName}</Value>
             </FullItem>
-            <Item>
-              <label>현재 수량</label>
-              <Value>{Number(lot.currentQty ?? 0).toLocaleString()}</Value>
-            </Item>
-            <Item>
+
+            <FullItem>
               <label>작업지시</label>
-              <Value>{lot.workOrderNo}</Value>
-            </Item>
+              <Value>{lotData.workOrderNo}</Value>
+            </FullItem>
           </Grid>
         </Section>
 
@@ -291,7 +299,6 @@ export default function LotDetail({ lot: propsLot }) {
             selectable={false}
           />
         </Section>
-
         <Section>
           <SectionTitle>투입 자재 정보</SectionTitle>
           <Table
@@ -332,7 +339,7 @@ export default function LotDetail({ lot: propsLot }) {
             <ChartBox>
               <ResponsiveContainer>
                 <BarChart
-                  data={qualityLogs}
+                  data={lotData.qualityLogs}
                   layout="vertical"
                   margin={{ left: 40 }}
                 >
@@ -341,7 +348,7 @@ export default function LotDetail({ lot: propsLot }) {
                     horizontal={true}
                     vertical={true}
                   />
-                  <XAxis type="number" unit="%" />
+                  <XAxis type="number" />
                   <YAxis
                     type="category"
                     dataKey="item"
@@ -371,24 +378,38 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 18px;
-  height: 100%;
+  height: 100vh;
+  background-color: var(--background);
+  box-sizing: border-box;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
   h3 {
     font-size: var(--fontHd);
     font-weight: var(--bold);
-    margin-bottom: 20px;
+    margin: 0;
   }
 `;
 
-const Empty = styled.div`
-  padding: 40px 20px;
-  color: var(--font2);
-  text-align: center;
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--font);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--background2);
+  }
 `;
 
 const Content = styled.div`
@@ -396,7 +417,9 @@ const Content = styled.div`
   flex-direction: column;
   gap: 30px;
   overflow-y: auto;
-  padding-right: 10px;
+  padding-right: 5px;
+  padding-bottom: 40px;
+  flex: 1;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -421,6 +444,7 @@ const SectionTitle = styled.h4`
   align-items: center;
   position: relative;
   padding-left: 12px;
+  margin: 0;
 
   &::before {
     content: "";
@@ -463,8 +487,8 @@ const Value = styled.div`
   padding: 10px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--background);
-  height: 38px;
+  background: white;
+  min-height: 38px;
   font-size: var(--fontSm);
   color: var(--font);
 `;
@@ -473,6 +497,7 @@ const ChartCard = styled.div`
   border-radius: 16px;
   padding: 14px;
   border: 1px solid var(--border);
+  background: white;
 `;
 
 const ChartBox = styled.div`
@@ -483,4 +508,19 @@ const ChartBox = styled.div`
 const ResultText = styled.span`
   font-weight: var(--bold);
   color: ${(props) => (props.$type === "ok" ? "var(--main)" : "var(--error)")};
+`;
+
+const Empty = styled.div`
+  padding: 40px;
+  text-align: center;
+  color: var(--font2);
+`;
+
+const LoadingWrapper = styled.div`
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  color: var(--font2);
 `;

@@ -40,6 +40,8 @@ import ProductionReport from "./pages/report/ProductionReport";
 import ProcessLog from "./pages/production/ProcessLog";
 import Test from "./pages/Test";
 
+import ProductLotQrDetail from "./pages/production/ProductLotQrDetail";
+
 import { AuthProvider } from "./context/AuthContext";
 
 /* 아직 안 만든 페이지는 임시 */
@@ -62,6 +64,12 @@ function App() {
             <Route
               path="/"
               element={<Navigate to="/mes/dashboard" replace />}
+            />
+
+            <Route path="/test-work-start" element={<Test />} />
+            <Route
+              path="/lot-qr-detail/:lotId"
+              element={<ProductLotQrDetail />}
             />
 
             {/* ================= MES 레이아웃 ================= */}
@@ -115,9 +123,6 @@ function App() {
 
               {/* 테스트 */}
               <Route path="test" element={<Test />} />
-
-              {/* QR 찍으면 랜딩 될 제품 LOT 상세 조회 페이지 */}
-              <Route path="/mes/product-lot/:lotId" element={<Test />} />
             </Route>
           </Route>
 

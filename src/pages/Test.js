@@ -1,227 +1,239 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
-import { useParams, useNavigate } from "react-router-dom";
-import { FiCheckCircle, FiBox, FiClock, FiActivity } from "react-icons/fi";
+import { QRCodeCanvas } from "qrcode.react";
 import Button from "../components/Button";
 
 export default function Test() {
-  // URL에서 :lotId 파라미터 추출 (예: LOT-20260204-A01)
-  const { lotId } = useParams();
-  const navigate = useNavigate();
+  // 모바일 테스트를 위해 본인 PC IP 입력 필수
+  const [hostUrl, setHostUrl] = useState("http://172.30.1.10:3000");
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [isStarted, setIsStarted] = useState(false);
+  const [lotInfo, setLotInfo] = useState(null);
 
-  // 데이터 조회 시뮬레이션 (실제로는 API 호출)
-  useEffect(() => {
-    // 0.5초 뒤에 데이터를 불러온 척 함
-    setTimeout(() => {
-      setData({
-        lotNo: lotId,
-        productName: "12V 중형 배터리 (Standard)",
-        productCode: "BAT-12V-65AH",
-        qty: 1000,
-        status: "PROCESS", // PROCESS, WAIT, DONE
-        startDate: "2026-02-04 09:00",
-        manager: "김하린",
-      });
-      setLoading(false);
-    }, 500);
-  }, [lotId]);
+  // 작업 시작 핸들러
+  const handleStartWork = () => {
+    // 1. 실제로는 API 호출 (await axios.post('/api/work/start', ...))
+    // 2. 서버로부터 생성된 LOT 번호를 응답받음
+    const newLotNo = `LOT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-A01`;
 
-  if (loading) {
-    return (
-      <MobileWrapper>
-        <LoadingMessage>데이터를 불러오는 중...</LoadingMessage>
-      </MobileWrapper>
-    );
-  }
+    setLotInfo({
+      lotNo: newLotNo,
+      productName: "12V 중형 배터리 (Standard)",
+      qty: 1000,
+      startTime: new Date().toLocaleTimeString(),
+    });
+    setIsStarted(true);
+  };
+
+  // QR에 담길 URL (상세 페이지 주소)
+  const qrUrl = lotInfo ? `${hostUrl}/lot-qr-detail/${lotInfo.lotNo}` : "";
 
   return (
-    <MobileWrapper>
-      <Header>
-        <h3>작업지시 상세 정보</h3>
-        <p>모바일 스캔 확인용 페이지</p>
-      </Header>
-
+    <Container>
       <Card>
-        <StatusBadge $status={data.status}>
-          <FiCheckCircle /> 생산 진행중
-        </StatusBadge>
+        <Header>
+          <h2>작업 시작 / QR 생성 시뮬레이션</h2>
+          <p>작업 시작 버튼을 누르면 LOT와 QR이 생성됩니다.</p>
+        </Header>
 
-        <TitleSection>
-          <Label>LOT NO</Label>
-          <LotNumber>{data.lotNo}</LotNumber>
-        </TitleSection>
+        {!isStarted ? (
+          <StartSection>
+            <InputGroup>
+              <label>Host URL (PC IP)</label>
+              <input
+                value={hostUrl}
+                onChange={(e) => setHostUrl(e.target.value)}
+                placeholder="http://192.168.x.x:3000"
+              />
+              <span>※ 모바일 스캔을 위해 정확한 IP를 입력하세요.</span>
+            </InputGroup>
 
-        <Divider />
+            <Button variant="ok" size="xl" onClick={handleStartWork}>
+              작업 시작 (LOT 생성)
+            </Button>
+          </StartSection>
+        ) : (
+          <ResultSection>
+            <StatusBadge>🟢 생산 진행중</StatusBadge>
+            <InfoGrid>
+              <Item>
+                <label>생성된 LOT 번호</label>
+                <strong>{lotInfo.lotNo}</strong>
+              </Item>
+              <Item>
+                <label>제품명</label>
+                <strong>{lotInfo.productName}</strong>
+              </Item>
+              <Item>
+                <label>지시 수량</label>
+                <strong>{lotInfo.qty} EA</strong>
+              </Item>
+              <Item>
+                <label>시작 시간</label>
+                <strong>{lotInfo.startTime}</strong>
+              </Item>
+            </InfoGrid>
 
-        <InfoGrid>
-          <InfoItem>
-            <Label>
-              <FiBox /> 제품명
-            </Label>
-            <Value>{data.productName}</Value>
-            <SubValue>{data.productCode}</SubValue>
-          </InfoItem>
+            <QRBox>
+              <QRCodeCanvas
+                value={qrUrl}
+                size={180}
+                bgColor={"#ffffff"}
+                fgColor={"#000000"}
+                level={"H"}
+                includeMargin={true}
+              />
+              <UrlText>{qrUrl}</UrlText>
+              <p>모바일로 스캔하여 상세 정보를 확인하세요.</p>
+            </QRBox>
 
-          <InfoItem>
-            <Label>
-              <FiActivity /> 지시 수량
-            </Label>
-            <Value>{data.qty.toLocaleString()} EA</Value>
-          </InfoItem>
-
-          <InfoItem>
-            <Label>
-              <FiClock /> 작업 시작일
-            </Label>
-            <Value>{data.startDate}</Value>
-          </InfoItem>
-
-          <InfoItem>
-            <Label>담당자</Label>
-            <Value>{data.manager}</Value>
-          </InfoItem>
-        </InfoGrid>
+            <Button
+              variant="cancel"
+              size="m"
+              onClick={() => setIsStarted(false)}
+            >
+              초기화
+            </Button>
+          </ResultSection>
+        )}
       </Card>
-
-      <ActionArea>
-        <Button
-          variant="ok"
-          size="l"
-          style={{ width: "100%" }}
-          onClick={() => alert("작업 시작 처리됨")}
-        >
-          작업 시작
-        </Button>
-        <Button
-          variant="cancel"
-          size="l"
-          style={{ width: "100%" }}
-          onClick={() => navigate(-1)}
-        >
-          뒤로 가기
-        </Button>
-      </ActionArea>
-    </MobileWrapper>
+    </Container>
   );
 }
 
-/* --- 모바일 최적화 스타일 --- */
-const MobileWrapper = styled.div`
-  max-width: 480px; /* 모바일 너비 제한 */
-  margin: 0 auto;
-  min-height: 100vh;
-  background-color: #f5f6f8;
-  padding: 20px;
+const Container = styled.div`
   display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-`;
-
-const Header = styled.div`
-  margin-bottom: 20px;
-  text-align: center;
-  h3 {
-    font-size: 20px;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 5px;
-  }
-  p {
-    font-size: 13px;
-    color: #888;
-  }
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 20px;
 `;
 
 const Card = styled.div`
   background: white;
-  border-radius: 20px;
-  padding: 25px 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-bottom: 20px;
+`;
+
+const Header = styled.div`
+  background: #fff;
+  padding: 24px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+  h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    color: #333;
+  }
+  p {
+    margin: 0;
+    color: #888;
+    font-size: 14px;
+  }
+`;
+
+const StartSection = styled.div`
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+`;
+
+const InputGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  label {
+    font-weight: bold;
+    color: #555;
+  }
+  input {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  span {
+    font-size: 12px;
+    color: #e74c3c;
+  }
+`;
+
+const ResultSection = styled.div`
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: fadeIn 0.5s ease-out;
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 `;
 
 const StatusBadge = styled.div`
-  align-self: center;
-  background-color: #e0f2fe;
-  color: #0284c7;
-  padding: 6px 14px;
+  background: #e6fcf5;
+  color: #0ca678;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-`;
-
-const TitleSection = styled.div`
-  text-align: center;
-`;
-
-const LotNumber = styled.div`
-  font-size: 24px;
-  font-weight: 800;
-  color: #333;
-  word-break: break-all;
-  margin-top: 4px;
-`;
-
-const Divider = styled.div`
-  height: 1px;
-  background-color: #eee;
-  margin: 5px 0;
+  font-weight: bold;
+  font-size: 14px;
 `;
 
 const InfoGrid = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 12px;
 `;
 
-const InfoItem = styled.div`
+const Item = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
+  label {
+    font-size: 12px;
+    color: #888;
+  }
+  strong {
+    font-size: 14px;
+    color: #333;
+  }
 `;
 
-const Label = styled.div`
-  font-size: 12px;
-  color: #888;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const Value = styled.div`
-  font-size: 16px;
-  color: #333;
-  font-weight: 500;
-`;
-
-const SubValue = styled.span`
-  font-size: 13px;
-  color: #999;
-`;
-
-const ActionArea = styled.div`
-  margin-top: auto;
+const QRBox = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
+  margin: 10px 0;
+  p {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+  }
 `;
 
-const LoadingMessage = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 16px;
-  color: #666;
+const UrlText = styled.div`
+  font-size: 11px;
+  color: #aaa;
+  word-break: break-all;
+  text-align: center;
+  max-width: 250px;
 `;
