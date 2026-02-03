@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom"; // [추가] URL 파라미터 읽기
+import { useParams } from "react-router-dom";
 import Table from "../../components/TableStyle";
 import Status from "../../components/Status";
 import {
@@ -247,9 +247,23 @@ export default function LotDetail({ lot: propsLot }) {
           <Grid>
             <FullItem>
               <label>LOT 번호</label>
-              {/* props로 오든 URL로 오든 lotId를 출력합니다 */}
               <Value>{lot.lotId || lot.lotNo || lotId}</Value>
             </FullItem>
+            <FullItem>
+              <label>LOT 생성일</label>
+              <Value>
+                {processLogs[0]?.date} {processLogs[0]?.start?.slice(0, 5)}
+              </Value>
+            </FullItem>
+            <Item>
+              <label>LOT 상태</label>
+
+              <Status status={lot.status || "PROCESS"} type="wide" />
+            </Item>
+            <Item>
+              <label>현재 수량</label>
+              <Value>{Number(lot.currentQty ?? 0).toLocaleString()}</Value>
+            </Item>
           </Grid>
         </Section>
 
@@ -264,16 +278,14 @@ export default function LotDetail({ lot: propsLot }) {
               <label>제품명</label>
               <Value>{lot.productName}</Value>
             </FullItem>
-            <Item>
-              <label>현재 수량</label>
-              <Value>{Number(lot.currentQty ?? 0).toLocaleString()}</Value>
-            </Item>
-            <Item>
+            <FullItem>
               <label>작업지시</label>
               <Value>{lot.workOrderNo}</Value>
-            </Item>
+            </FullItem>
           </Grid>
         </Section>
+
+        {/* ... (이하 기존 코드 동일) */}
 
         <Section>
           <SectionTitle>공정 이력</SectionTitle>
