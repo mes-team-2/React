@@ -26,20 +26,6 @@ const safeFormatDate = (dateStr) => {
   return format(date, "yyyy-MM-dd HH:mm");
 };
 
-// 랜덤으로 담당자를 생성함
-const getManagerById = (id) => {
-  const managers = ["이현수", "김하린", "우민규", "양찬종"];
-  let sum = 0;
-  if (typeof id === "string") {
-    for (let i = 0; i < id.length; i++) {
-      sum += id.charCodeAt(i);
-    }
-  } else if (typeof id === "number") {
-    sum = id;
-  }
-  return managers[sum % managers.length];
-};
-
 export default function WorkOrder() {
   const [workOrders, setWorkOrders] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -78,7 +64,7 @@ export default function WorkOrder() {
         endDate: safeFormatDate(item.endDate),
         dueDate: safeFormatDate(item.dueDate),
         createdAt: safeFormatDate(item.createdAt || new Date()),
-        manager: getManagerById(item.id),
+        manager: item.manager || "-",
       }));
 
       setWorkOrders(formattedData);

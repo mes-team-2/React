@@ -10,6 +10,9 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
   // 제품 목록 상태
   const [products, setProducts] = useState([]);
 
+  const myName = localStorage.getItem("workerName") || "Unknown";
+  const myCode = localStorage.getItem("workerCode") || "";
+
   // 폼 상태
   const [form, setForm] = useState({
     productCode: "",
@@ -87,6 +90,7 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
         plannedQty: parseInt(form.plannedQty),
         dueDate: form.dueDate,
         note: form.note,
+        workerCode: myCode,
       };
 
       const res = await WorkOrderAPI.createWorkOrder(payload);
