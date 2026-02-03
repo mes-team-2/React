@@ -42,6 +42,28 @@ AxiosAPI.interceptors.response.use(
    API 호출 함수 모음
 ============================================== */
 
+// 작업자 관리 API
+export const WorkerAPI = {
+  // 목록 조회
+  getList: async () => {
+    return await AxiosAPI.get("/api/master/workers");
+  },
+
+  // 등록
+  create: async (data) => {
+    return await AxiosAPI.post("/api/master/workers", data);
+  },
+
+  // 수정
+  update: async (workerId, data) => {
+    return await AxiosAPI.put(`/api/master/workers/${workerId}`, data);
+  },
+
+  getDetail: async (workerId) => {
+    return await AxiosAPI.get(`/api/master/workers/${workerId}/detail`);
+  },
+};
+
 // 설비 관리 API
 export const MachineAPI = {
   // 목록 조회

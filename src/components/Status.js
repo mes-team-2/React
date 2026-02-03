@@ -8,6 +8,8 @@ import {
   FiBox,
   FiActivity,
   FiPower,
+  FiUserCheck,
+  FiUserX,
 } from "react-icons/fi";
 import styled, { css } from "styled-components";
 import { LuHourglass } from "react-icons/lu";
@@ -69,6 +71,20 @@ const STATUS_CONFIG = {
     textColor: "var(--font)",
     bg: "var(--bgComplete)",
     icon: <FiCheckCircle />,
+  },
+  ON: {
+    label: "출근",
+    iconColor: "var(--run)", // 녹색/파란색 계열
+    textColor: "var(--font)",
+    bg: "var(--bgRun)",
+    icon: <FiUserCheck />,
+  },
+  OFF: {
+    label: "퇴근",
+    iconColor: "var(--stop)", // 회색 계열
+    textColor: "var(--font)",
+    bg: "var(--bgStop)",
+    icon: <FiUserX />,
   },
   // 생산 관리 (ProductLot 등)
   WAIT: {
