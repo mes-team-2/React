@@ -1,10 +1,8 @@
 import styled from "styled-components";
 import SideDrawer from "../../components/SideDrawer";
+import SelectBar from "../../components/SelectBar";
 import Button from "../../components/Button";
 
-/* =========================
-   공정 등록 / 수정 Drawer
-========================= */
 export default function ProcessDrawer({
   open,
   mode, // create | edit
@@ -13,168 +11,234 @@ export default function ProcessDrawer({
   onClose,
   onSubmit,
 }) {
-  const toggleActive = () => {
-    setForm((p) => ({ ...p, active: !p.active }));
+  const activeOptions = [
+    { value: true, label: "사용중" },
+    { value: false, label: "중지" },
+  ];
+
+  // 유효성 검사 및 제출 핸들러
+  const handleSubmit = () => {
+    // 필수값 체크
+    if (!form.processName) {
+      alert("공정명을 입력해주세요.");
+      return;
+    }
+    if (!form.seq) {
+      alert("공정 순서를 입력해주세요.");
+      return;
+    }
+    if (form.active === undefined || form.active === null) {
+      alert("사용 여부를 선택해주세요.");
+      return;
+    }
+
+    // 유효성 통과 시 부모의 onSubmit 호출
+    onSubmit();
   };
 
   return (
     <SideDrawer
       open={open}
-      width={430}
       title={mode === "create" ? "공정 등록" : "공정 수정"}
       onClose={onClose}
     >
-      <Form>
-        <Field>
-          <label>공정 순서</label>
-          <input
-            type="number"
-            value={form.seq}
-            disabled={mode === "edit"}
-            onChange={(e) => setForm((p) => ({ ...p, seq: e.target.value }))}
-          />
-        </Field>
+      <Wrap>
+        <Header>
+          <h3>신규 공정 등록</h3>
+        </Header>
+        <Content>
+          <Section>
+            <SectionTitle>공정 정보</SectionTitle>
+            <DataGrid>
+              <FullWidthItem>
+                <label>공정 코드</label>
+                <Input
+                  value={form.processCode}
+                  disabled={true} // 사용자 입력 불가
+                  readOnly // 읽기 전용
+                  placeholder="자동 생성"
+                />
+              </FullWidthItem>
 
-        <Field>
-          <label>공정 코드</label>
-          <input
-            value={form.processCode}
-            disabled={mode === "edit"}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, processCode: e.target.value }))
-            }
-          />
-        </Field>
-
-        <Field>
-          <label>공정명</label>
-          <input
-            value={form.processName}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, processName: e.target.value }))
-            }
-          />
-        </Field>
-
-        {/* ✅ 사용 여부 토글 (안정형) */}
-        <FieldRow>
-          <ToggleRow>
-            <span>사용 여부</span>
-
-            <Toggle
-              role="switch"
-              aria-checked={form.active}
-              tabIndex={0}
-              $active={form.active}
-              onClick={toggleActive}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  toggleActive();
-                }
-              }}
-            >
-              <ToggleThumb $active={form.active} />
-            </Toggle>
-
-            <StateText $active={form.active}>
-              {form.active ? "사용중" : "중지"}
-            </StateText>
-          </ToggleRow>
-        </FieldRow>
+              <FullWidthItem>
+                <label>공정명</label>
+                <Input
+                  value={form.processName}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, processName: e.target.value }))
+                  }
+                  placeholder="공정 이름을 입력하세요"
+                />
+              </FullWidthItem>
+            </DataGrid>
+          </Section>
+          <Section>
+            <SectionTitle>공정 가동 정보</SectionTitle>
+            <DataGrid>
+              <Item>
+                <label>공정 순서</label>
+                <Input
+                  type="number"
+                  value={form.seq}
+                  disabled={mode === "edit"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForm((p) => ({
+                      ...p,
+                      seq: val,
+                      // create 모드일 때 공정 순서에 따라 공정 코드 자동 생성 (PROC-001 형식)
+                      processCode:
+                        mode === "create" && val
+                          ? `PROC-${val.padStart(3, "0")}`
+                          : p.processCode,
+                    }));
+                  }}
+                  placeholder="공정 순서를 입력하세요"
+                />
+              </Item>
+              <Item>
+                <label>사용 여부</label>
+                <SelectBar
+                  width="100%"
+                  type="single"
+                  placeholder="상태 선택"
+                  options={activeOptions}
+                  value={form.active}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, active: e.target.value }))
+                  }
+                />
+              </Item>
+            </DataGrid>
+          </Section>
+        </Content>
 
         <Footer>
-          <Button variant="cancel" size="m" onClick={onClose}>
+          <Button variant="cancel" size="l" onClick={onClose}>
             취소
           </Button>
-
-          <Button variant="ok" size="m" onClick={onSubmit}>
+          <Button variant="ok" size="l" onClick={handleSubmit}>
             {mode === "create" ? "등록" : "수정"}
           </Button>
         </Footer>
-      </Form>
+      </Wrap>
     </SideDrawer>
   );
 }
 
-/* =========================
-   styled
-========================= */
-
-const Form = styled.div`
+const Wrap = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
+  height: 100%;
 `;
 
-const Field = styled.div`
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  h3 {
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
+    margin-bottom: 20px;
+  }
+`;
+
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  padding-right: 5px;
+  flex: 1;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
+`;
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+`;
+
+const SectionTitle = styled.h4`
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
+  }
+`;
+
+const DataGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+`;
+
+const Item = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
-
   label {
-    font-size: 12px;
-    opacity: 0.7;
-  }
-
-  input {
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
   }
 `;
 
-const FieldRow = styled.div`
-  font-size: 13px;
+const FullWidthItem = styled(Item)`
+  grid-column: 1 / -1;
 `;
 
-const ToggleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
+const Input = styled.input`
+  width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  height: 38px;
+  font-size: var(--fontXs);
+  color: var(--font);
+  box-sizing: border-box;
+  outline: none;
+  transition: all 0.2s;
 
-  span {
-    font-size: 12px;
-    opacity: 0.7;
-    min-width: 60px;
+  &:focus {
+    border-color: var(--font2);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
   }
-`;
-
-/* ⭐ background 오류 방지: background 대신 background-color 사용 */
-const Toggle = styled.div`
-  width: 44px;
-  height: 22px;
-  border-radius: 11px;
-  background-color: ${(p) => (p.$active ? "var(--main)" : "#c9c9c9")};
-  position: relative;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  flex-shrink: 0;
-`;
-
-const ToggleThumb = styled.div`
-  width: 18px;
-  height: 18px;
-  background-color: #fff;
-  border-radius: 50%;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: transform 0.2s ease;
-  transform: ${(p) => (p.$active ? "translateX(22px)" : "translateX(0)")};
-`;
-
-const StateText = styled.span`
-  font-size: 12px;
-  font-weight: 600;
-  color: ${(p) => (p.$active ? "var(--main)" : "#888")};
+  &:disabled {
+    background-color: var(--background2);
+    color: var(--font2);
+    cursor: not-allowed;
+  }
 `;
 
 const Footer = styled.div`
+  margin-top: auto;
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 16px;
-  margin-top: 10px;
-  border-top: 1px solid var(--border);
+  justify-content: center;
+  gap: 50px;
 `;
