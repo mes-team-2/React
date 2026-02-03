@@ -1,198 +1,227 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import QRCodeCreate from "../components/QRCodeCreate";
-
+import { useParams, useNavigate } from "react-router-dom";
+import { FiCheckCircle, FiBox, FiClock, FiActivity } from "react-icons/fi";
 import Button from "../components/Button";
 
 export default function Test() {
-  /* =========================
-      1. 상태 관리
-  ========================= */
-  const [lotList, setLotList] = useState([]); // 생성된 LOT 목록 관리
-  const [currentLot, setCurrentLot] = useState(""); // 방금 생성된 최신 LOT
+  // URL에서 :lotId 파라미터 추출 (예: LOT-20260204-A01)
+  const { lotId } = useParams();
+  const navigate = useNavigate();
 
-  /* =========================
-      2. LOT 생성 로직 (자동 QR 연동)
-  ========================= */
-  const handleGenerateLot = () => {
-    // 실제 환경에서는 API 호출 후 응답받은 번호를 사용함
-    // 여기서는 테스트를 위해 날짜 조합으로 유니크한 LOT 번호 생성
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
-    const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
-    const newLotNo = `LOT-${dateStr}-${randomStr}`;
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
 
-    // 최신 LOT 상태 업데이트 -> QRCodeCreate가 이 값을 받아 자동으로 생성됨
-    setCurrentLot(newLotNo);
+  // 데이터 조회 시뮬레이션 (실제로는 API 호출)
+  useEffect(() => {
+    // 0.5초 뒤에 데이터를 불러온 척 함
+    setTimeout(() => {
+      setData({
+        lotNo: lotId,
+        productName: "12V 중형 배터리 (Standard)",
+        productCode: "BAT-12V-65AH",
+        qty: 1000,
+        status: "PROCESS", // PROCESS, WAIT, DONE
+        startDate: "2026-02-04 09:00",
+        manager: "김하린",
+      });
+      setLoading(false);
+    }, 500);
+  }, [lotId]);
 
-    // 목록에도 추가
-    setLotList((prev) => [
-      { id: prev.length + 1, lotNo: newLotNo, date: now.toLocaleString() },
-      ...prev,
-    ]);
-  };
+  if (loading) {
+    return (
+      <MobileWrapper>
+        <LoadingMessage>데이터를 불러오는 중...</LoadingMessage>
+      </MobileWrapper>
+    );
+  }
 
   return (
-    <Wrapper>
+    <MobileWrapper>
       <Header>
-        <h2>제품 LOT 관리</h2>
-        <p>생성 버튼 클릭 시 자동으로 QR코드가 발행됩니다.</p>
+        <h3>작업지시 상세 정보</h3>
+        <p>모바일 스캔 확인용 페이지</p>
       </Header>
 
-      <MainContent>
-        {/* 왼쪽: LOT 생성 및 최신 QR 확인 영역 */}
-        <CreateSection>
-          <Card>
-            <h3>신규 LOT 발행</h3>
-            <Button variant="ok" size="l" onClick={handleGenerateLot}>
-              새 제품 LOT 생성하기
-            </Button>
+      <Card>
+        <StatusBadge $status={data.status}>
+          <FiCheckCircle /> 생산 진행중
+        </StatusBadge>
 
-            {/* LOT가 있을 때만 QR 컴포넌트가 나타남 */}
-            {currentLot ? (
-              <QRContainer>
-                <QRCodeCreate value={currentLot} size={50} />
-              </QRContainer>
-            ) : (
-              <EmptyBox>버튼을 눌러 LOT를 생성하세요.</EmptyBox>
-            )}
-          </Card>
-        </CreateSection>
+        <TitleSection>
+          <Label>LOT NO</Label>
+          <LotNumber>{data.lotNo}</LotNumber>
+        </TitleSection>
 
-        {/* 오른쪽: 이력 목록 영역 */}
-        <ListSection>
-          <Card>
-            <h3>발행 이력 (최근 5건)</h3>
-            <HistoryList>
-              {lotList.length > 0 ? (
-                lotList.slice(0, 5).map((item) => (
-                  <HistoryItem
-                    key={item.id}
-                    onClick={() => setCurrentLot(item.lotNo)}
-                  >
-                    <div>
-                      <strong>{item.lotNo}</strong>
-                      <span>{item.date}</span>
-                    </div>
-                    <small>클릭 시 QR 보기</small>
-                  </HistoryItem>
-                ))
-              ) : (
-                <p>생성된 이력이 없습니다.</p>
-              )}
-            </HistoryList>
-          </Card>
-        </ListSection>
-      </MainContent>
-    </Wrapper>
+        <Divider />
+
+        <InfoGrid>
+          <InfoItem>
+            <Label>
+              <FiBox /> 제품명
+            </Label>
+            <Value>{data.productName}</Value>
+            <SubValue>{data.productCode}</SubValue>
+          </InfoItem>
+
+          <InfoItem>
+            <Label>
+              <FiActivity /> 지시 수량
+            </Label>
+            <Value>{data.qty.toLocaleString()} EA</Value>
+          </InfoItem>
+
+          <InfoItem>
+            <Label>
+              <FiClock /> 작업 시작일
+            </Label>
+            <Value>{data.startDate}</Value>
+          </InfoItem>
+
+          <InfoItem>
+            <Label>담당자</Label>
+            <Value>{data.manager}</Value>
+          </InfoItem>
+        </InfoGrid>
+      </Card>
+
+      <ActionArea>
+        <Button
+          variant="ok"
+          size="l"
+          style={{ width: "100%" }}
+          onClick={() => alert("작업 시작 처리됨")}
+        >
+          작업 시작
+        </Button>
+        <Button
+          variant="cancel"
+          size="l"
+          style={{ width: "100%" }}
+          onClick={() => navigate(-1)}
+        >
+          뒤로 가기
+        </Button>
+      </ActionArea>
+    </MobileWrapper>
   );
 }
 
-/* =========================
-      3. 스타일 정의
-  ========================= */
-const Wrapper = styled.div`
+/* --- 모바일 최적화 스타일 --- */
+const MobileWrapper = styled.div`
+  max-width: 480px; /* 모바일 너비 제한 */
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f5f6f8;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px;
+  box-sizing: border-box;
 `;
 
 const Header = styled.div`
-  h2 {
-    font-size: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+  h3 {
+    font-size: 20px;
     font-weight: 700;
-    color: var(--font);
+    color: #333;
+    margin-bottom: 5px;
   }
   p {
-    font-size: 14px;
-    color: var(--font2);
-    margin-top: 5px;
-  }
-`;
-
-const MainContent = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
+    font-size: 13px;
+    color: #888;
   }
 `;
 
 const Card = styled.div`
-  background: var(--background);
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  h3 {
-    font-size: 18px;
-    margin-bottom: 20px;
-    font-weight: 600;
-  }
-`;
-
-const CreateSection = styled.div`
+  background: white;
+  border-radius: 20px;
+  padding: 25px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
 `;
 
-const QRContainer = styled.div`
-  margin-top: 30px;
+const StatusBadge = styled.div`
+  align-self: center;
+  background-color: #e0f2fe;
+  color: #0284c7;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+`;
+
+const TitleSection = styled.div`
+  text-align: center;
+`;
+
+const LotNumber = styled.div`
+  font-size: 24px;
+  font-weight: 800;
+  color: #333;
+  word-break: break-all;
+  margin-top: 4px;
+`;
+
+const Divider = styled.div`
+  height: 1px;
+  background-color: #eee;
+  margin: 5px 0;
+`;
+
+const InfoGrid = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 18px;
 `;
 
-const EmptyBox = styled.div`
-  margin-top: 30px;
-  height: 200px;
+const InfoItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const Label = styled.div`
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
   display: flex;
   align-items: center;
+  gap: 6px;
+`;
+
+const Value = styled.div`
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+`;
+
+const SubValue = styled.span`
+  font-size: 13px;
+  color: #999;
+`;
+
+const ActionArea = styled.div`
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const LoadingMessage = styled.div`
+  display: flex;
   justify-content: center;
-  border: 2px dashed var(--border);
-  border-radius: 12px;
-  color: var(--font2);
-  font-size: 14px;
-`;
-
-const ListSection = styled.div``;
-
-const HistoryList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const HistoryItem = styled.div`
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  &:hover {
-    background: var(--background2);
-    border-color: var(--main);
-  }
-  div {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  strong {
-    font-size: 14px;
-    color: var(--font);
-  }
-  span {
-    font-size: 12px;
-    color: var(--font2);
-  }
-  small {
-    color: var(--main);
-    font-size: 11px;
-  }
+  height: 100vh;
+  font-size: 16px;
+  color: #666;
 `;

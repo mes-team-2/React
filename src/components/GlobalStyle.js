@@ -53,6 +53,7 @@ const GlobalStyle = createGlobalStyle`
     --shadow : 5px 3px 6px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.15);
 
     /* 폰트 사이즈 정의 */
+    --fontMini : 9px;  /* 아주 작은 텍스트 (캡션, 라벨) */
     --fontXxs : 11px;  /* 아주 작은 텍스트 (캡션, 라벨) */
     --fontXs : 12px;  /* 아주 작은 텍스트 (캡션, 라벨) */
     --fontSm : 14px;  /* 작은 텍스트 (보조 설명) */

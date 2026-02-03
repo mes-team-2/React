@@ -115,6 +115,9 @@ function App() {
 
               {/* 테스트 */}
               <Route path="test" element={<Test />} />
+
+              {/* QR 찍으면 랜딩 될 제품 LOT 상세 조회 페이지 */}
+              <Route path="/mes/product-lot/:lotId" element={<Test />} />
             </Route>
           </Route>
 

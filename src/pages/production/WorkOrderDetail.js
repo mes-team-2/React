@@ -2,6 +2,7 @@ import styled from "styled-components";
 import { useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
+import Button from "../../components/Button";
 
 export default function WorkOrderDetail({ workOrder }) {
   // 백에서 받아온 상세 데이터 상태
@@ -72,6 +73,13 @@ export default function WorkOrderDetail({ workOrder }) {
     <Container>
       <Header>
         <h3>작업지시 상세</h3>
+        <Button
+          variant="ok"
+          size="s"
+          onClick={() => alert("작업을 시작합니다.")}
+        >
+          작업 시작
+        </Button>
       </Header>
 
       <Content>
@@ -175,10 +183,11 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
+
   h3 {
     font-size: var(--fontHd);
     font-weight: var(--bold);
-    margin-bottom: 20px;
   }
 `;
 
