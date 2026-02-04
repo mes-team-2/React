@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Table from "../../components/TableStyle";
 import BOMDetail from "./BOMDetail";
 import { WorkOrderAPI, BomAPI, InventoryAPI } from "../../api/AxiosAPI";
+import Button from "../../components/Button";
 
 export default function BOM() {
   const [products, setProducts] = useState([]);
@@ -11,7 +12,7 @@ export default function BOM() {
   const [mergedData, setMergedData] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
 
-  // 1. 제품 목록 조회
+  // 제품 목록 조회
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -27,11 +28,11 @@ export default function BOM() {
     fetchProducts();
   }, []);
 
-  // 2. 데이터 로드 및 병합 (중복 제거 핵심 로직)
+  // 데이터 로드 및 병합
   const loadData = useCallback(async () => {
     if (!selectedProduct) return;
 
-    // [중요] 기존 데이터를 비워서 화면 잔상 제거
+    // 기존 데이터를 비워서 화면 잔상 제거
     setMergedData([]);
 
     try {
@@ -43,41 +44,28 @@ export default function BOM() {
       const bomList = bomRes.data;
       const allMaterials = matRes.data;
 
-      // ---------------------------------------------------------
-      // Step 1. 자재 마스터 중복 제거 (Map 사용)
-      // DB에 중복된 자재가 있어도 materialCode가 같으면 하나만 남깁니다.
-      // ---------------------------------------------------------
       const uniqueMaterialMap = new Map();
       allMaterials.forEach((m) => {
-        // 이미 맵에 있으면 건너뜀 (첫 번째 발견된 것만 사용)
         if (!uniqueMaterialMap.has(m.materialCode)) {
           uniqueMaterialMap.set(m.materialCode, m);
         }
       });
 
-      // ---------------------------------------------------------
-      // Step 2. BOM 데이터 매핑 (빠른 조회를 위해 Map 변환)
-      // ---------------------------------------------------------
       const bomMap = new Map();
       bomList.forEach((b) => {
         bomMap.set(b.materialCode, b);
       });
 
-      // ---------------------------------------------------------
-      // Step 3. 병합 (Unique 자재 목록 기준)
-      // ---------------------------------------------------------
       const finalData = [];
 
       uniqueMaterialMap.forEach((mat, code) => {
         if (bomMap.has(code)) {
-          // Case A: BOM에 설정된 자재 -> BOM 정보 사용
           finalData.push({
             ...bomMap.get(code),
             isBom: true, // 정렬용 플래그
             productCode: selectedProduct.productCode,
           });
         } else {
-          // Case B: BOM에 없는 자재 -> 0으로 초기화해서 표시
           finalData.push({
             id: null, // 신규 등록용
             materialCode: mat.materialCode,
@@ -136,31 +124,41 @@ export default function BOM() {
 
       <Body>
         <Left>
+          <Selected>완제품 목록 </Selected>
           <ProductList>
             {filteredProducts.map((p) => (
-              <ProductItem
+              <Product
                 key={p.productCode}
                 $active={selectedProduct?.productCode === p.productCode}
                 onClick={() => setSelectedProduct(p)}
               >
-                {p.productName}
-              </ProductItem>
+                <ProductItem>{p.productName}</ProductItem>
+                <ProductCode>{p.productCode}</ProductCode>
+              </Product>
             ))}
           </ProductList>
         </Left>
 
         <Right>
           <Selected>
-            <span>선택된 품목</span>
-            <strong>{selectedProduct?.productName || "-"}</strong>
+            선택된 품목 : {selectedProduct?.productName || "-"}
+            <Button
+              variant="ok"
+              size="m"
+              onClick={() => {
+                if (selectedProduct) {
+                  setEditingRow({
+                    ...selectedProduct,
+                    bomList: mergedData,
+                  });
+                }
+              }}
+            >
+              수정{" "}
+            </Button>
           </Selected>
 
-          <Table
-            columns={columns}
-            data={mergedData}
-            selectable={false}
-            onRowClick={(row) => setEditingRow(row)}
-          />
+          <Table columns={columns} data={mergedData} selectable={false} />
         </Right>
       </Body>
 
@@ -176,22 +174,23 @@ export default function BOM() {
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 `;
 const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  h2 {
+    font-size: var(--fontXl);
+    font-weight: var(--bold);
+    color: var(--font);
+  }
 `;
 const Body = styled.div`
   display: flex;
   gap: 20px;
 `;
 const Left = styled.div`
-  width: 260px;
+  width: 180px;
   background: white;
-  border-radius: 16px;
-  padding: 14px;
+  padding: 20px 0;
 `;
 const ProductList = styled.div`
   margin-top: 10px;
@@ -199,30 +198,53 @@ const ProductList = styled.div`
   flex-direction: column;
   gap: 6px;
 `;
-const ProductItem = styled.div`
-  padding: 10px;
-  border-radius: 10px;
+
+const Product = styled.div`
+  padding: 7px 10px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   cursor: pointer;
-  background: ${(p) => (p.$active ? "#eef2ff" : "transparent")};
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+
+  background: ${(props) =>
+    props.$active
+      ? "linear-gradient(135deg, #fdfbfb 0%, var(--main2) 100%)"
+      : "transparent"};
+
   &:hover {
-    background: #f4f6fb;
+    transform: translateY(-1px);
+    background: ${(props) =>
+      props.$active
+        ? "linear-gradient(135deg, #fdfbfb 0%, var(--main2) 100%)"
+        : "var(--background)"};
   }
 `;
+
+const ProductItem = styled.div`
+  font-size: var(--fontXxs);
+  font-weight: var(--medium);
+`;
+
+const ProductCode = styled.div`
+  font-size: var(--fontMini);
+  font-weight: var(--normal);
+  color: var(--font2);
+`;
+
 const Right = styled.div`
   flex: 1;
   background: white;
   border-radius: 16px;
-  padding: 16px;
+  padding: 20px 0;
 `;
 const Selected = styled.div`
-  margin-bottom: 12px;
-  span {
-    font-size: 12px;
-    opacity: 0.6;
-  }
-  strong {
-    display: block;
-    margin-top: 4px;
-    font-size: 15px;
-  }
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fontMd);
+  font-weight: var(--medium);
 `;

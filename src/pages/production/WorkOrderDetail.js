@@ -93,7 +93,6 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
       <Header>
         <h3>작업지시 상세</h3>
 
-        {/* [New] 대기(WAIT) 상태일 때만 시작 버튼 표시 */}
         {currentStatus === "WAIT" && (
           <Button variant="ok" size="s" onClick={handleStartWork}>
             작업 시작
@@ -141,7 +140,7 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
             </Item>
           </Grid>
         </Section>
-        {/* ... (이하 LOT 정보, 공정 이력, 자재 이력 등 기존 코드 유지) ... */}
+
         <Section>
           <SectionTitle>생산 LOT 정보</SectionTitle>
           {detailData ? (
@@ -190,7 +189,6 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
   );
 }
 
-// ... (스타일 컴포넌트 기존 유지) ...
 const Container = styled.div`
   padding: 20px;
   display: flex;
