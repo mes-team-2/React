@@ -8,6 +8,7 @@ import SearchDate from "../../components/SearchDate";
 import SelectBar from "../../components/SelectBar";
 import Button from "../../components/Button";
 import WorkerDetail from "./WorkerDetail";
+import WorkerCreate from "./WorkerCreate";
 import { WorkerAPI } from "../../api/AxiosAPI";
 
 export default function Worker() {
@@ -18,7 +19,10 @@ export default function Worker() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState({ start: null, end: null });
 
+  // Drawer 상태 관리
   const [drawer, setDrawer] = useState({ open: false, mode: null });
+  const [selectedRow, setSelectedRow] = useState(null); // 수정할 데이터 임시 저장
+
   const [form, setForm] = useState({
     id: null,
     workerNo: "",
@@ -121,46 +125,8 @@ export default function Worker() {
     setDrawer({ open: true, mode: "create" });
   };
 
-  const openEdit = (row) => {
-    setForm(row);
-    setDrawer({ open: true, mode: "edit" });
-  };
-
   const closeDrawer = () => {
     setDrawer({ open: false, mode: null });
-  };
-
-  const handleCreate = async () => {
-    if (!form.workerNo.trim() || !form.name.trim()) return;
-    try {
-      await WorkerAPI.create({
-        workerNo: form.workerNo,
-        name: form.name,
-        position: form.position,
-      });
-      alert("등록되었습니다.");
-      closeDrawer();
-      fetchWorkers();
-    } catch (err) {
-      console.error(err);
-      alert("등록 실패");
-    }
-  };
-
-  const handleUpdate = async () => {
-    try {
-      await WorkerAPI.update(form.id, {
-        name: form.name,
-        position: form.position,
-        active: form.active,
-      });
-      alert("수정되었습니다.");
-      closeDrawer();
-      fetchWorkers();
-    } catch (err) {
-      console.error(err);
-      alert("수정 실패");
-    }
   };
 
   const columns = [
@@ -204,7 +170,7 @@ export default function Worker() {
 
           <SearchBar
             width="280px"
-            placeholder="사원번호 또는 이름을 입력하세요"
+            placeholder="사원번호 / 사원명 검색"
             value={searchTerm}
             onChange={setSearchTerm}
           />
@@ -227,69 +193,23 @@ export default function Worker() {
         }}
       />
 
-      <SideDrawer open={drawer.open} width={360} onClose={closeDrawer}>
-        <DrawerBody>
-          <DrawerTitle>
-            {drawer.mode === "create" ? "작업자 등록" : "작업자 수정"}
-          </DrawerTitle>
-
-          <Field>
-            <label>작업자 번호</label>
-            <input
-              value={form.workerNo}
-              disabled={drawer.mode === "edit"}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, workerNo: e.target.value }))
-              }
-              placeholder="예: OP-001"
-            />
-          </Field>
-
-          <Field>
-            <label>이름</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            />
-          </Field>
-
-          <Field>
-            <label>직급</label>
-            <select
-              value={form.position}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, position: e.target.value }))
-              }
-            >
-              <option value="작업자">작업자</option>
-              <option value="관리자">관리자</option>
-            </select>
-          </Field>
-
-          <Field>
-            <label>입사일</label>
-            <input value={form.joinedAt} disabled placeholder="자동 생성됨" />
-          </Field>
-
-          <DrawerFooter>
-            <Button variant="cancel" size="m" onClick={closeDrawer}>
-              취소
-            </Button>
-            <Button
-              variant="ok"
-              size="m"
-              onClick={drawer.mode === "create" ? handleCreate : handleUpdate}
-            >
-              {drawer.mode === "create" ? "등록" : "수정"}
-            </Button>
-          </DrawerFooter>
-        </DrawerBody>
-      </SideDrawer>
+      <WorkerCreate
+        open={drawer.open}
+        mode={drawer.mode}
+        initialData={selectedRow}
+        onClose={closeDrawer}
+        onSuccess={fetchWorkers}
+      />
 
       <SideDrawer open={detailOpen} onClose={() => setDetailOpen(false)}>
         <WorkerDetail
           worker={selectedWorker}
           onClose={() => setDetailOpen(false)}
+          onEdit={() => {
+            setDetailOpen(false);
+            setSelectedRow(selectedWorker);
+            setDrawer({ open: true, mode: "edit" });
+          }}
         />
       </SideDrawer>
     </Wrapper>
@@ -320,44 +240,4 @@ const FilterGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 20px;
-`;
-
-const DrawerBody = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 6px;
-`;
-const DrawerTitle = styled.div`
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 6px;
-`;
-const Field = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  label {
-    font-size: 12px;
-    opacity: 0.7;
-  }
-  input,
-  select {
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: white;
-  }
-  input:disabled {
-    opacity: 0.7;
-    background: var(--background2);
-  }
-`;
-const DrawerFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 16px;
-  margin-top: 6px;
-  border-top: 1px solid var(--border);
 `;
