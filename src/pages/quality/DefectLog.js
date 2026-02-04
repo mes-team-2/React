@@ -1,69 +1,109 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import DefectLogDetail from "./DefectLogDetail";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 
 export default function QualityDefectLog() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
   const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState([]);
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
 
-  /* =========================
-     불량 유형별 차트 데이터
-  ========================= */
-  const defectChartData = [
-    { type: "전압 불량", qty: 45 },
-    { type: "외관 불량", qty: 30 },
-    { type: "누액", qty: 15 },
-    { type: "단락", qty: 8 },
-  ];
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+
+    const d = new Date(value);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  };
 
   /* =========================
-     테이블 컬럼
+     LOT 기준 그룹핑
+  ========================= */
+  const lotGroupedRows = useMemo(() => {
+    const map = {};
+
+    rows.forEach((r) => {
+      const key = r.lotNo;
+      const rawTime = r.occurredAt ?? r.createdAt;
+
+      if (!map[key]) {
+        map[key] = {
+          lotNo: r.lotNo,
+          totalDefectQty: 0,
+          occurredAtRaw: rawTime,
+          occurredAtText: formatDateTime(rawTime),
+          defects: [],
+        };
+      }
+
+      map[key].totalDefectQty += r.defectQty;
+
+      map[key].defects.push({
+        defectType: r.defectType,
+        defectQty: r.defectQty,
+        processCode: r.processCode,
+        machineCode: r.machineCode,
+        occurredAtRaw: rawTime,
+        occurredAtText: formatDateTime(rawTime),
+      });
+
+      if (
+        rawTime &&
+        (!map[key].occurredAtRaw || rawTime > map[key].occurredAtRaw)
+      ) {
+        map[key].occurredAtRaw = rawTime;
+        map[key].occurredAtText = formatDateTime(rawTime);
+      }
+    });
+
+    return Object.values(map);
+  }, [rows]);
+
+  /* =========================
+     서버 데이터 조회
+  ========================= */
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const res = await axios.get("http://localhost:8088/api/defect-logs", {
+          params: { date: today },
+          withCredentials: true,
+        });
+        setRows(res.data);
+      } catch (e) {
+        console.error("불량 로그 조회 실패", e);
+      }
+    };
+
+    fetchLogs();
+  }, []);
+
+  /* =========================
+     테이블 컬럼 (LOT 요약)
   ========================= */
   const columns = [
     { key: "lotNo", label: "LOT No", width: 160 },
-    { key: "process", label: "공정", width: 140 },
-    { key: "machine", label: "설비", width: 160 },
-    { key: "defectType", label: "불량 유형", width: 160 },
-    { key: "defectQty", label: "불량 수량", width: 120 },
-    { key: "occurredAt", label: "발생 시각", width: 180 },
-    { key: "worker", label: "작업자", width: 130 },
+    { key: "totalDefectQty", label: "총 불량 수량", width: 120 },
+    {
+      key: "occurredAtText",
+      label: "최근 발생 시각",
+      width: 180,
+    },
   ];
-
-  /* =========================
-     더미 데이터
-  ========================= */
-  const tableData = useMemo(
-    () =>
-      Array.from({ length: 18 }).map((_, i) => ({
-        id: i + 1,
-        lotNo: `LOT-202601-${String(i + 1).padStart(3, "0")}`,
-        workOrderNo: `WO-202601-${String(Math.floor(i / 2) + 1).padStart(
-          3,
-          "0",
-        )}`,
-        process: i % 3 === 0 ? "조립" : i % 3 === 1 ? "활성화" : "검사",
-        machine: `설비-${(i % 4) + 1}`,
-        defectType: i % 2 === 0 ? "전압 불량" : "외관 불량",
-        defectQty: 1 + (i % 4),
-        occurredAt: "2026-01-06 14:30",
-      })),
-    [],
-  );
 
   /* =========================
      정렬
@@ -80,23 +120,6 @@ export default function QualityDefectLog() {
     });
   };
 
-  const sortedData = useMemo(() => {
-    if (!sortConfig.key) return tableData;
-
-    return [...tableData].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (typeof aVal === "string") {
-        return sortConfig.direction === "asc"
-          ? aVal.localeCompare(bVal, "ko", { numeric: true })
-          : bVal.localeCompare(aVal, "ko", { numeric: true });
-      }
-
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
-    });
-  }, [tableData, sortConfig]);
-
   /* =========================
      Row 클릭 → 상세 Drawer
   ========================= */
@@ -111,25 +134,9 @@ export default function QualityDefectLog() {
         <h2>불량 / 품질 로그</h2>
       </Header>
 
-      {/* ===== 차트 ===== */}
-      <Card>
-        <CardTitle>불량 유형별 발생 현황</CardTitle>
-        <ChartBox>
-          <ResponsiveContainer>
-            <BarChart data={defectChartData}>
-              <XAxis dataKey="type" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="qty" fill="#ef4444" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartBox>
-      </Card>
-
-      {/* ===== 테이블 ===== */}
       <Table
         columns={columns}
-        data={sortedData}
+        data={lotGroupedRows}
         sortConfig={sortConfig}
         onSort={handleSort}
         selectedIds={selectedIds}
@@ -147,7 +154,7 @@ export default function QualityDefectLog() {
 }
 
 /* =========================
-   styled
+   styled (변경 없음)
 ========================= */
 
 const Wrapper = styled.div`
@@ -160,27 +167,6 @@ const Header = styled.div`
   h2 {
     font-size: 22px;
     font-weight: 700;
-  }
-`;
-
-const Card = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
-`;
-
-const CardTitle = styled.h4`
-  font-size: 14px;
-  margin-bottom: 12px;
-`;
-
-const ChartBox = styled.div`
-  height: 260px;
-
-  svg:focus,
-  svg *:focus {
-    outline: none;
   }
 `;
 
