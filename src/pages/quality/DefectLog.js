@@ -80,8 +80,10 @@ export default function DefectLog() {
       if (!map[key]) {
         map[key] = {
           lotNo: r.lotNo,
+          processCode: r.processCode,
           processName: r.processName ?? r.processCode ?? "-",
           machineName: r.machineName ?? r.machineCode ?? "-",
+          machineCode: r.machineCode,
           defectQty: 0,
           occurredAtRaw: rawTime,
           occurredAtText: formatDateTime(rawTime),
