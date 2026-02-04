@@ -185,4 +185,11 @@ export const ProcessAPI = {
   },
 };
 
+export const LogAPI = {
+  // 공정 이력 검색
+  getProcessLogs: async (params) => {
+    return await AxiosAPI.get("/api/log/process", { params });
+  },
+};
+
 export default AxiosAPI;
