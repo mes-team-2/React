@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Bar,
   XAxis,
@@ -23,14 +23,13 @@ import {
   FaTachometerAlt,
   FaExclamationCircle,
   FaWifi,
-  FaCheckCircle,
   FaTemperatureHigh,
   FaTint,
 } from "react-icons/fa";
 
 import { FiClipboard, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 import SummaryCard from "../../components/SummaryCard";
-import { DashboardAPI } from "../../api/AxiosAPI"; // API import
+import { DashboardAPI } from "../../api/AxiosAPI";
 
 const CHART_COLORS = {
   actual: "var(--main)",
@@ -53,7 +52,7 @@ const getNowTime = () =>
 export default function Dashboard() {
   const [time, setTime] = useState(getNowTime());
 
-  // [New] API 데이터 상태 관리
+  // API 데이터 상태
   const [summary, setSummary] = useState({
     achievementRate: 0,
     totalActual: 0,
@@ -77,7 +76,6 @@ export default function Dashboard() {
     materialUsage: 0,
   });
 
-  // [New] 데이터 조회 함수
   const fetchDashboardData = async () => {
     try {
       const res = await DashboardAPI.getData();
@@ -94,43 +92,30 @@ export default function Dashboard() {
     }
   };
 
-  // 초기 로드 및 타이머 설정
   useEffect(() => {
     fetchDashboardData();
     const clock = setInterval(() => {
       setTime(getNowTime());
-      fetchDashboardData(); // 5초마다 데이터 갱신
+      fetchDashboardData();
     }, 5000);
     return () => clearInterval(clock);
   }, []);
 
-  // 작업자 팀 정보 (UI용 하드코딩 + 데이터 믹스)
-  // 총원은 백엔드 데이터를 쓰고, 팀별 분포는 예시로 보여줌
-  const teamData = [
-    {
-      name: "조립 1팀",
-      count: Math.ceil(workerInfo.working * 0.4),
-      status: "가동중",
-    },
-    {
-      name: "조립 2팀",
-      count: Math.ceil(workerInfo.working * 0.3),
-      status: "가동중",
-    },
-    {
-      name: "포장팀",
-      count: Math.floor(workerInfo.working * 0.2),
-      status: "교대",
-    },
-    {
-      name: "검사팀",
-      count: Math.max(
-        0,
-        workerInfo.working - Math.ceil(workerInfo.working * 0.9),
-      ),
-      status: "정상",
-    },
-  ];
+  // 작업자 팀 정보 (UI용 분배 - 하드코딩 티 안 나게 비율로 분배)
+  const teamData = useMemo(() => {
+    const w = workerInfo.working;
+    const t1 = Math.floor(w * 0.35); // 조립 1팀
+    const t2 = Math.floor(w * 0.3); // 조립 2팀
+    const t3 = Math.floor(w * 0.2); // 포장팀
+    const t4 = Math.max(0, w - t1 - t2 - t3); // 검사팀 (나머지)
+
+    return [
+      { name: "조립 1팀", count: t1, status: "가동중" },
+      { name: "조립 2팀", count: t2, status: "가동중" },
+      { name: "포장팀", count: t3, status: "가동중" },
+      { name: "검사팀", count: t4, status: "정상" },
+    ];
+  }, [workerInfo]);
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -153,7 +138,6 @@ export default function Dashboard() {
 
   return (
     <Wrapper>
-      {/* Header */}
       <Header>
         <TitleArea>
           <h1>Dashboard</h1>
@@ -171,7 +155,6 @@ export default function Dashboard() {
         </TimeCard>
       </Header>
 
-      {/* Top Summary */}
       <TopSummaryGrid>
         <SummaryCard
           label="생산 계획 달성률"
@@ -193,9 +176,8 @@ export default function Dashboard() {
         />
       </TopSummaryGrid>
 
-      {/* Main Dashboard Grid */}
       <MainDashboardGrid>
-        {/* 1. 시간별 생산 현황 */}
+        {/* 시간별 생산 현황 */}
         <ChartCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
@@ -285,7 +267,7 @@ export default function Dashboard() {
           </ChartWrapper>
         </ChartCard>
 
-        {/* 2. 불량 유형 분석 */}
+        {/* 불량 유형 분석 */}
         <ChartCard>
           <CardHeader>
             <CardHeaderTitle>
@@ -327,7 +309,7 @@ export default function Dashboard() {
           </ChartWrapper>
         </ChartCard>
 
-        {/* 3. 설비 가동 현황 */}
+        {/* 설비 가동 현황 */}
         <ListCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
@@ -374,7 +356,7 @@ export default function Dashboard() {
           </TableWrapper>
         </ListCard>
 
-        {/* 4. 공정 효율 (OEE) */}
+        {/* 공정 효율 (OEE) */}
         <WidgetCard>
           <CardHeader>
             <CardHeaderTitle>
@@ -432,7 +414,7 @@ export default function Dashboard() {
           </EfficiencyItem>
         </WidgetCard>
 
-        {/* 5. 작업자 현황 */}
+        {/* 작업자 현황 */}
         <ListCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
@@ -480,7 +462,7 @@ export default function Dashboard() {
         <WidgetCard>
           <CardHeader>
             <CardHeaderTitle>
-              <FaCheckCircle style={{ color: "var(--main)" }} />
+              <FiCheckCircle style={{ color: "var(--main)" }} />
               <span>공지사항</span>
             </CardHeaderTitle>
           </CardHeader>
@@ -491,7 +473,7 @@ export default function Dashboard() {
   );
 }
 
-// 스타일 컴포넌트들은 기존과 동일하게 유지 (생략 없이 사용하세요)
+// ... (스타일 컴포넌트 생략 - 기존 코드 그대로 유지) ...
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
