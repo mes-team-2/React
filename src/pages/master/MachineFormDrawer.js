@@ -19,7 +19,7 @@ export default function MachineFormDrawer({
   ];
 
   // form.active의 현재 값을 무조건 문자열 "true" 혹은 "false"로 정규화함
-  const currentActive = form.active ? "true" : "false";
+  const currentActive = form.active === true ? "true" : "false";
 
   return (
     <SideDrawer open={open} onClose={onClose}>
@@ -60,14 +60,19 @@ export default function MachineFormDrawer({
                   리액트는 key가 바뀌면 컴포넌트를 죽이고 새로 만들기 때문에 내부 로직에 상관없이 값이 바뀜
                 */}
                 <SelectBar
-                  key={`select-${currentActive}`}
                   width="100%"
                   type="single"
                   placeholder="상태 선택"
                   options={activeOptions}
                   value={currentActive}
-                  onChange={(val) => {
-                    setForm((p) => ({ ...p, active: val === "true" }));
+                  onChange={(e) => {
+                    console.log(
+                      "active type:",
+                      typeof form.active,
+                      form.active,
+                    );
+                    const raw = e?.target?.value; // ← 핵심
+                    setForm((p) => ({ ...p, active: raw === "true" }));
                   }}
                 />
               </Item>
