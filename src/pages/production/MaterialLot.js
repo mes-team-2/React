@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FiEdit, FiRefreshCw, FiAlertTriangle } from "react-icons/fi";
 import { LuHourglass } from "react-icons/lu";
@@ -12,83 +12,7 @@ import MaterialLotDetail from "./MaterialLotDetail";
 import Pagination from "../../components/Pagination";
 import SelectBar from "../../components/SelectBar";
 import Progress from "../../components/Progress";
-import axios from "axios";
 import { InventoryAPI2 } from "../../api/AxiosAPI2";
-
-// const MATERIAL_DATA = [
-//   {
-//     id: 1,
-//     inbound_date: "2025-12-20 12:23",
-//     status: "WAITING",
-//     lot_no: "LOT-260101-090901",
-//     code: "MAT-260101-090901",
-//     name: "배터리 케이스 (L3)",
-//     current: 5000,
-//     production: 0,
-//     available: 5000,
-//     date: "2026/01/01 12:23",
-//   },
-//   {
-//     id: 2,
-//     inbound_date: "2025-12-21 12:23",
-//     status: "RUNNING",
-//     lot_no: "LOT-260101-090902",
-//     code: "MAT-260101-090901",
-//     name: "배터리 케이스 (L3)",
-//     current: 4000,
-//     production: 4000, // 50% 소진 가정
-//     available: 0,
-//     date: "2026/01/01 12:23",
-//   },
-//   {
-//     id: 3,
-//     inbound_date: "2025-12-22 12:23",
-//     status: "WAITING",
-//     lot_no: "LOT-260101-090903",
-//     code: "MAT-260101-090901",
-//     name: "배터리 케이스 (L3)",
-//     current: 9900,
-//     production: 0,
-//     available: 9900,
-//     date: "2026/01/01 12:23",
-//   },
-//   {
-//     id: 4,
-//     inbound_date: "2025-12-23 12:23",
-//     status: "EMPTY",
-//     lot_no: "LOT-260101-090904",
-//     code: "MAT-260101-090901",
-//     name: "배터리 케이스 (L3)",
-//     current: 0,
-//     production: 0,
-//     available: 0,
-//     date: "2026/01/01 12:23",
-//   },
-//   {
-//     id: 5,
-//     inbound_date: "2025-12-24 12:23",
-//     status: "RUNNING",
-//     lot_no: "LOT-260101-090905",
-//     code: "MAT-260101-090901",
-//     name: "배터리 케이스 (L3)",
-//     current: 4500,
-//     production: 500,
-//     available: 4000,
-//     date: "2026/01/01 12:23",
-//   },
-//   ...Array.from({ length: 30 }).map((_, i) => ({
-//     id: i + 6,
-//     inbound_date: "2025-12-25 12:23",
-//     status: i % 2 === 0 ? "WAITING" : "RUNNING",
-//     lot_no: `LOT-260101-${String(i + 6).padStart(6, '0')}`,
-//     code: "MAT-260101-090901",
-//     name: "배터리 케이스 (L3)",
-//     current: 5000 + i * 10,
-//     production: i % 2 !== 0 ? 1000 : 0,
-//     available: 5000 + i * 10,
-//     date: "2026/01/01 12:23",
-//   })),
-// ];
 
 // 백엔드 데이터 프론트에 맞게 수정
 const mapStatus = (s) => {
@@ -150,7 +74,6 @@ export default function MaterialLot() {
 
   // 페이지네이션 상태
   const [page, setPage] = useState(1);
-  const itemsPerPage = 20; // 페이지당 20개씩 보여주기
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
