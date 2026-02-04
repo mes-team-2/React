@@ -2,40 +2,140 @@ import styled from "styled-components";
 import { useMemo, useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
-import SearchDate from "../../components/SearchDate";
+import SelectBar from "../../components/SelectBar";
 import SideDrawer from "../../components/SideDrawer";
+import Pagination from "../../components/Pagination";
 import ProcessLogDetail from "./ProcessLogDetail";
-import Status from "../../components/Status";
 import { LogAPI } from "../../api/AxiosAPI";
 
 export default function ProcessLog() {
   const [data, setData] = useState([]);
+
+  // 필터 상태
   const [keyword, setKeyword] = useState("");
-  // 날짜 범위 상태
-  const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [processFilter, setProcessFilter] = useState("all");
+  const [lotFilter, setLotFilter] = useState("all");
+
   const [selectedLog, setSelectedLog] = useState(null);
   const [open, setOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  // 데이터 로드 (백엔드 API 호출)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  const lotOptions = useMemo(() => {
+    const uniqueLots = Array.from(
+      new Set(data.map((item) => item.lotNo)),
+    ).filter(Boolean);
+    const options = uniqueLots.map((lot) => ({
+      value: lot,
+      label: lot,
+    }));
+    return [{ value: "all", label: "전체 LOT" }, ...options];
+  }, [data]);
+
+  // 공정 선택 옵션
+  const processOptions = [
+    { value: "all", label: "전체 공정" },
+    { value: "전극", label: "전극공정" },
+    { value: "조립", label: "조립공정" },
+    { value: "활성화", label: "활성화공정" },
+    { value: "팩", label: "팩공정" },
+    { value: "검사", label: "검사공정" },
+  ];
+
+  // 데이터 로드
   const loadData = async () => {
     try {
-      const params = {
-        keyword: keyword || null,
-        startDate: dateRange.start || null,
-        endDate: dateRange.end || null,
-      };
+      const params = { keyword: null };
       const res = await LogAPI.getProcessLogs(params);
       setData(res.data);
+      setCurrentPage(1);
     } catch (err) {
       console.error("공정 이력 조회 실패", err);
     }
   };
 
-  // 날짜나 키워드가 바뀌면 조회 (원하면 검색 버튼 클릭 시로 변경 가능)
   useEffect(() => {
     loadData();
-  }, [dateRange]);
+  }, []);
+
+  // 데이터 가공 파이프라인
+  const processedData = useMemo(() => {
+    let result = [...data];
+
+    // 공정명 필터
+    if (processFilter !== "all") {
+      result = result.filter((item) =>
+        (item.processStep || "").includes(processFilter),
+      );
+    }
+
+    // LOT 번호 필터
+    if (lotFilter !== "all") {
+      result = result.filter((item) => item.lotNo === lotFilter);
+    }
+
+    // 검색어 필터
+    if (keyword) {
+      const lowerKey = keyword.toLowerCase();
+      result = result.filter((item) => {
+        const lot = (item.lotNo || "").toLowerCase();
+        const process = (item.processStep || "").toLowerCase();
+        const machine = (item.machineName || "").toLowerCase();
+
+        // 셋 중 하나라도 검색어를 포함하면 통과
+        return (
+          lot.includes(lowerKey) ||
+          process.includes(lowerKey) ||
+          machine.includes(lowerKey)
+        );
+      });
+    }
+
+    // 정렬
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aVal = a[sortConfig.key] || "";
+        const bVal = b[sortConfig.key] || "";
+
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+        }
+        return sortConfig.direction === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      });
+    }
+
+    return result;
+  }, [data, keyword, processFilter, lotFilter, sortConfig]);
+
+  const totalPages = Math.ceil(processedData.length / itemsPerPage);
+
+  // 현재 페이지 데이터 슬라이싱
+  const currentData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return processedData.slice(startIndex, startIndex + itemsPerPage);
+  }, [processedData, currentPage]);
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  // 핸들러들
+  const handleProcessFilterChange = (e) => {
+    setProcessFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleLotFilterChange = (e) => {
+    setLotFilter(e.target.value);
+    setCurrentPage(1);
+  };
 
   const columns = [
     { key: "lotNo", label: "LOT 번호", width: 160 },
@@ -48,31 +148,6 @@ export default function ProcessLog() {
     { key: "endTime", label: "종료 시간", width: 160 },
   ];
 
-  // 클라이언트 측 정렬 (이미 백엔드에서 최신순 정렬해서 줌)
-  const sortedData = useMemo(() => {
-    if (!sortConfig.key) return data;
-    return [...data].sort((a, b) => {
-      const aVal = a[sortConfig.key] || "";
-      const bVal = b[sortConfig.key] || "";
-
-      // 숫자일 경우 숫자 정렬
-      if (typeof aVal === "number" && typeof bVal === "number") {
-        return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
-      }
-      // 문자열 정렬
-      return sortConfig.direction === "asc"
-        ? String(aVal).localeCompare(String(bVal))
-        : String(bVal).localeCompare(String(aVal));
-    });
-  }, [data, sortConfig]);
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
-  };
-
   return (
     <Wrapper>
       <Header>
@@ -80,31 +155,55 @@ export default function ProcessLog() {
       </Header>
 
       <FilterBar>
-        <div style={{ display: "flex", gap: "10px" }}>
-          {/* 날짜 선택 컴포넌트 연결 */}
-          <SearchDate onChange={(start, end) => setDateRange({ start, end })} />
+        <FilterGroup>
+          <SelectBar
+            width="l"
+            placeholder="LOT 선택"
+            options={lotOptions}
+            value={lotFilter}
+            onChange={handleLotFilterChange}
+          />
+
+          <SelectBar
+            width="140px"
+            placeholder="공정 선택"
+            options={processOptions}
+            value={processFilter}
+            onChange={handleProcessFilterChange}
+          />
+
           <SearchBar
             width="300px"
-            placeholder="LOT 번호, 공정, 설비 검색..."
+            placeholder="LOT / 공정 / 설비 검색"
             value={keyword}
             onChange={setKeyword}
-            onSearch={loadData} // 엔터/클릭 시 재조회
+            onSearch={loadData}
           />
-        </div>
+        </FilterGroup>
       </FilterBar>
 
       <Table
         columns={columns}
-        data={sortedData}
+        data={currentData}
         sortConfig={sortConfig}
         onSort={handleSort}
         onRowClick={(row) => {
           setSelectedLog(row);
           setOpen(true);
         }}
+        selectable={false}
       />
 
-      {/* 우측 사이드 드로어 (상세 정보) */}
+      {processedData.length > 0 && (
+        <PaginationWrapper>
+          <Pagination
+            page={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </PaginationWrapper>
+      )}
+
       <SideDrawer open={open} onClose={() => setOpen(false)}>
         <ProcessLogDetail log={selectedLog} />
       </SideDrawer>
@@ -116,14 +215,34 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
 `;
+
 const Header = styled.div`
   h2 {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: var(--fontXl);
+    font-weight: var(--bold);
+    color: var(--font);
   }
 `;
+
 const FilterBar = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const PaginationWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 20px;
+  padding-bottom: 20px;
 `;
