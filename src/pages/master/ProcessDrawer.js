@@ -238,33 +238,3 @@ const Footer = styled.div`
   justify-content: center;
   gap: 50px;
 `;
-
-/* Toggle 관련 스타일 (기존 유지) */
-const Toggle = styled.div`
-  width: 44px;
-  height: 22px;
-  border-radius: 11px;
-  background-color: ${(p) => (p.$active ? "var(--main)" : "#c9c9c9")};
-  position: relative;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  flex-shrink: 0;
-`;
-
-const ToggleThumb = styled.div`
-  width: 18px;
-  height: 18px;
-  background-color: #fff;
-  border-radius: 50%;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: transform 0.2s ease;
-  transform: ${(p) => (p.$active ? "translateX(22px)" : "translateX(0)")};
-`;
-
-const StateText = styled.span`
-  font-size: 13px;
-  font-weight: 600;
-  color: ${(p) => (p.$active ? "var(--main)" : "#888")};
-`;

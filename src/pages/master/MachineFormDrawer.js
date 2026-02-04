@@ -3,6 +3,7 @@ import SideDrawer from "../../components/SideDrawer";
 import Button from "../../components/Button";
 import SelectBar from "../../components/SelectBar";
 import Status from "../../components/Status";
+import { MachineAPI } from "../../api/AxiosAPI";
 
 export default function MachineFormDrawer({
   open,
@@ -19,7 +20,32 @@ export default function MachineFormDrawer({
   ];
 
   // form.active의 현재 값을 무조건 문자열 "true" 혹은 "false"로 정규화함
-  const currentActive = form.active === true ? "true" : "false";
+  const currentActive = form.active ? "true" : "false";
+
+  // 설비 코드 중복 체크 핸들러
+  const handleCheckDuplicate = async () => {
+    // 수정 모드이거나 입력값이 없으면 체크하지 않음
+    if (mode === "edit" || !form.machineCode) return;
+
+    try {
+      // 전체 설비 목록을 가져옴
+      const res = await MachineAPI.getList();
+      const allMachines = res.data;
+
+      // 입력한 코드와 일치하는 설비가 있는지 확인
+      const isDuplicate = allMachines.some(
+        (machine) => machine.machineCode === form.machineCode,
+      );
+
+      // 중복이면 경고창 띄우고 입력값 초기화
+      if (isDuplicate) {
+        alert("이미 등록된 설비 코드입니다.");
+        setForm((prev) => ({ ...prev, machineCode: "" }));
+      }
+    } catch (err) {
+      console.error("중복 체크 중 오류 발생:", err);
+    }
+  };
 
   return (
     <SideDrawer open={open} onClose={onClose}>
@@ -40,6 +66,8 @@ export default function MachineFormDrawer({
                   onChange={(e) =>
                     setForm((p) => ({ ...p, machineCode: e.target.value }))
                   }
+                  // 포커스가 벗어날 때(입력 완료 후) 중복 체크 실행
+                  onBlur={handleCheckDuplicate}
                 />
               </FullItem>
 
@@ -55,10 +83,6 @@ export default function MachineFormDrawer({
 
               <Item>
                 <label>사용 여부</label>
-                {/* 핵심: key 값에 currentActive를 넣음
-                  이렇게 하면 사용중지에서 사용중으로 바뀔 때 key가 변경됨
-                  리액트는 key가 바뀌면 컴포넌트를 죽이고 새로 만들기 때문에 내부 로직에 상관없이 값이 바뀜
-                */}
                 <SelectBar
                   width="100%"
                   type="single"
@@ -71,7 +95,7 @@ export default function MachineFormDrawer({
                       typeof form.active,
                       form.active,
                     );
-                    const raw = e?.target?.value; // ← 핵심
+                    const raw = e?.target?.value;
                     setForm((p) => ({ ...p, active: raw === "true" }));
                   }}
                 />
@@ -79,7 +103,6 @@ export default function MachineFormDrawer({
               <Item>
                 <label>설비상태</label>
                 <Status
-                  // 정규화된 currentActive 값에 따라 YES/NO를 출력함
                   status={currentActive === "true" ? "YES" : "NO"}
                   type="wide"
                 />
@@ -103,7 +126,6 @@ export default function MachineFormDrawer({
                 <label>공정명</label>
                 <Input
                   value={form.processName || ""}
-                  // 이전 코드에 있던 processCode 업데이트 오타 수정함
                   onChange={(e) =>
                     setForm((p) => ({ ...p, processName: e.target.value }))
                   }
