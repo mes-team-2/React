@@ -19,7 +19,7 @@ export default function MachineFormDrawer({
   ];
 
   // form.active의 현재 값을 무조건 문자열 "true" 혹은 "false"로 정규화함
-  const currentActive = String(form.active) === "true" ? "true" : "false";
+  const currentActive = form.active ? "true" : "false";
 
   return (
     <SideDrawer open={open} onClose={onClose}>
@@ -67,8 +67,7 @@ export default function MachineFormDrawer({
                   options={activeOptions}
                   value={currentActive}
                   onChange={(val) => {
-                    // 선택 시 부모의 상태를 즉시 업데이트함
-                    setForm((p) => ({ ...p, active: String(val) }));
+                    setForm((p) => ({ ...p, active: val === "true" }));
                   }}
                 />
               </Item>

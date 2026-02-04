@@ -93,7 +93,6 @@ export default function Product() {
 
       <SideDrawer
         open={drawer.open}
-        width={drawer.type === "detail" ? 720 : 420}
         title={
           drawer.type === "create"
             ? "제품 등록"
