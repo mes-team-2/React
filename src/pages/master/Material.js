@@ -251,7 +251,7 @@ export default function Material() {
       </ChartGrid> */}
 
       <FilterBar>
-        <InputGroup>
+        <FilterGroup>
           <SearchDate
             width="m"
             onChange={handleDateChange}
@@ -263,7 +263,7 @@ export default function Material() {
             onChange={setKeyword} // 키워드 상태 업데이트
             onSearch={() => {}}
           />
-        </InputGroup>
+        </FilterGroup>
         <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
           + 신규 자재 등록
         </Button>
@@ -341,14 +341,13 @@ const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
   margin-top: 20px;
 `;
 
-const InputGroup = styled.div`
+const FilterGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
 `;
 
 const TableContainer = styled.div`
