@@ -5,6 +5,7 @@ import { FiCheckCircle } from "react-icons/fi";
 import { AiFillSafetyCertificate } from "react-icons/ai";
 import SideDrawer from "../../components/SideDrawer";
 import FgInventoryDetail from "./FgInventoryDetail";
+import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
 import TableStyle from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
@@ -23,6 +24,31 @@ const formatDate = (dateStr) => {
   const hh = String(date.getHours()).padStart(2, "0");
   const min = String(date.getMinutes()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+};
+
+// 날짜 params용
+const toDateParam = (date) => {
+  if (!date) return null;
+
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const getSafeQty = (name) => {
+  switch (name) {
+    case "12V 소형 배터리":
+      return 100;
+    case "12V 중형 배터리":
+      return 120;
+    case "12V 대형 배터리":
+      return 50;
+    default:
+      return 30; // 기본 안전재고
+  }
 };
 
 const FgInventory = () => {
@@ -53,67 +79,45 @@ const FgInventory = () => {
     { value: "DANGER", label: "경고(품절)" },
   ];
 
-  // 초기 데이터
   useEffect(() => {
-    const dummyData = [
-      {
-        id: 1,
-        p_code: "BAT-12V-100A",
-        p_name: "리튬이온 배터리 (100Ah)",
-        lot: "LOT260120-01",
-        qty: 450,
-        safe_qty: 100,
-        unit: "EA",
-        loc: "A-101",
-        date: "2026-01-28 10:30",
-      },
-      {
-        id: 2,
-        p_code: "BAT-12V-120A",
-        p_name: "리튬이온 배터리 (120Ah)",
-        lot: "LOT260120-05",
-        qty: 80,
-        safe_qty: 100,
-        unit: "EA",
-        loc: "B-202",
-        date: "2026-01-28 11:20",
-      },
-      {
-        id: 3,
-        p_code: "BAT-12V-100A",
-        p_name: "리튬이온 배터리 (100Ah)",
-        lot: "LOT260121-02",
-        qty: 300,
-        safe_qty: 150,
-        unit: "EA",
-        loc: "A-103",
-        date: "2026-01-28 14:15",
-      },
-      {
-        id: 4,
-        p_code: "BAT-12V-080A",
-        p_name: "납축전지 (80Ah)",
-        lot: "LOT260122-01",
-        qty: 5,
-        safe_qty: 50,
-        unit: "SET",
-        loc: "C-001",
-        date: "2026-01-27 09:00",
-      },
-      {
-        id: 5,
-        p_code: "BAT-12V-200A",
-        p_name: "산업용 배터리 (200Ah)",
-        lot: "LOT260123-11",
-        qty: 20,
-        safe_qty: 30,
-        unit: "EA",
-        loc: "A-105",
-        date: "2026-01-26 16:45",
-      },
-    ];
-    setInventoryData(dummyData);
-  }, []);
+    const fetchInventory = async () => {
+      try {
+        const response = await InventoryAPI2.getFgInventory({
+          keyword: searchTerm || null,
+          startDate: toDateParam(searchDateRange.start),
+          endDate: toDateParam(searchDateRange.end),
+        });
+
+        const mapped = response.data.map((item, idx) => ({
+          id: idx + 1,
+          p_code: item.productCode,
+          p_name: item.productName,
+          unit: item.unit,
+          qty: item.stockQty,
+          safe_qty: getSafeQty(item.productName),
+          date: item.updatedAt,
+        }));
+
+        setInventoryData(mapped);
+      } catch (error) {
+        console.error("재고 조회 실패", error);
+      }
+    };
+
+    fetchInventory();
+  }, [searchTerm, searchDateRange]);
+
+  // 초기 데이터
+  // useEffect(() => {
+  //   const dummyData = [
+  //     { id: 1, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260120-01', qty: 450, safe_qty: 100, unit: 'EA', loc: 'A-101', date: '2026-01-28 10:30' },
+  //     { id: 2, p_code: 'BAT-12V-120A', p_name: '리튬이온 배터리 (120Ah)', lot: 'LOT260120-05', qty: 80, safe_qty: 100, unit: 'EA', loc: 'B-202', date: '2026-01-28 11:20' },
+  //     { id: 3, p_code: 'BAT-12V-100A', p_name: '리튬이온 배터리 (100Ah)', lot: 'LOT260121-02', qty: 300, safe_qty: 150, unit: 'EA', loc: 'A-103', date: '2026-01-28 14:15' },
+  //     { id: 4, p_code: 'BAT-12V-080A', p_name: '납축전지 (80Ah)', lot: 'LOT260122-01', qty: 5, safe_qty: 50, unit: 'SET', loc: 'C-001', date: '2026-01-27 09:00' },
+  //     { id: 5, p_code: 'BAT-12V-200A', p_name: '산업용 배터리 (200Ah)', lot: 'LOT260123-11', qty: 20, safe_qty: 30, unit: 'EA', loc: 'A-105', date: '2026-01-26 16:45' },
+  //   ];
+  //   setInventoryData(dummyData);
+  // }, []);
 
   // 헬퍼 함수
   // 현재 재고가 0보다 작으면 위험 (DANGER)
@@ -149,8 +153,7 @@ const FgInventory = () => {
       data = data.filter(
         (item) =>
           item.p_code.toLowerCase().includes(lowerTerm) ||
-          item.p_name.toLowerCase().includes(lowerTerm) ||
-          item.lot.toLowerCase().includes(lowerTerm),
+          item.p_name.toLowerCase().includes(lowerTerm),
       );
     }
 
@@ -197,7 +200,11 @@ const FgInventory = () => {
   // 테이블 컬럼 정의
   const columns = useMemo(
     () => [
-      { key: "id", label: "No", width: 60, render: (val) => val },
+      {
+        key: "id",
+        label: "No",
+        width: 60,
+      },
       {
         key: "p_code",
         label: "제품코드",
@@ -260,6 +267,7 @@ const FgInventory = () => {
   const handleRowClick = (row) => {
     const detailData = {
       productName: row.p_name,
+      productCode: row.p_code,
       stockQty: row.qty,
       safeQty: row.safe_qty,
       status: row.status,
@@ -317,7 +325,7 @@ const FgInventory = () => {
         />
         <SearchBar
           width="l"
-          placeholder="제품코드, 명, LOT No 입력"
+          placeholder="제품코드, 제품명 입력"
           onSearch={handleSearch}
           onChange={(val) => {}}
         />

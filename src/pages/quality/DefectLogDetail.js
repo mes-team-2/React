@@ -9,10 +9,52 @@ export default function QualityDefectLogDetail({ log }) {
   });
 
   /* =========================
-     세부 테이블 데이터
+     불량 유형별 집계 + 최근 발생 시각
   ========================= */
-  const detailRows = useMemo(() => {
-    return log.defects ?? [];
+  const defectSummary = useMemo(() => {
+    if (!log?.defects) return [];
+
+    const DEFECT_TYPE_BY_PROCESS = {
+      "MAC-A-01": ["SCRATCH", "THICKNESS_ERROR"],
+      "MAC-A-02": ["MISALIGNMENT", "MISSING_PART"],
+      "MAC-A-03": ["LOW_VOLTAGE", "HIGH_TEMP"],
+      "MAC-A-04": ["WELDING_ERROR", "LABEL_ERROR"],
+      "MAC-A-05": ["DIMENSION_ERROR", "FOREIGN_MATERIAL"],
+    };
+
+    const allowedTypes =
+      DEFECT_TYPE_BY_PROCESS[String(log.machineCode).trim()] ?? [];
+
+    const map = {};
+
+    log.defects.forEach((d) => {
+      if (!allowedTypes.includes(d.defectType)) return;
+
+      const type = d.defectType;
+      const qty = Number(d.defectQty ?? 0);
+      const time = d.occurredAtRaw;
+
+      if (!map[type]) {
+        map[type] = {
+          defectType: type,
+          qty: 0,
+          occurredAtRaw: time,
+          occurredAtText: d.occurredAtText,
+        };
+      }
+
+      map[type].qty += qty;
+
+      if (
+        time &&
+        (!map[type].occurredAtRaw || time > map[type].occurredAtRaw)
+      ) {
+        map[type].occurredAtRaw = time;
+        map[type].occurredAtText = d.occurredAtText;
+      }
+    });
+
+    return Object.values(map);
   }, [log]);
   if (!log) {
     return <Empty>불량 항목을 선택하세요.</Empty>;
@@ -20,10 +62,10 @@ export default function QualityDefectLogDetail({ log }) {
 
   const columns = [
     { key: "defectType", label: "불량 유형", width: 180 },
-    { key: "defectQty", label: "불량 수량", width: 120 },
+    { key: "qty", label: "총 불량 수량", width: 120 },
     {
       key: "occurredAtText",
-      label: "발생 시각",
+      label: "최근 발생 시각",
       width: 180,
     },
   ];
@@ -40,23 +82,27 @@ export default function QualityDefectLogDetail({ log }) {
       <InfoGrid>
         <InfoItem>
           <label>공정</label>
-          <strong>{log.defects[0]?.processCode ?? "-"}</strong>
+          <strong>{log.processName ?? "-"}</strong>
         </InfoItem>
         <InfoItem>
           <label>설비</label>
-          <strong>{log.defects[0]?.machineCode ?? "-"}</strong>
+          <strong>{log.machineName ?? "-"}</strong>
         </InfoItem>
         <InfoItem>
-          <label>총 불량 수량</label>
-          <strong>{log.totalDefectQty}</strong>
+          <label>불량 합계</label>
+          <strong>{log.defectQty ?? 0}</strong>
+        </InfoItem>
+        <InfoItem>
+          <label>LOT 최근 발생</label>
+          <strong>{log.occurredAtText ?? "-"}</strong>
         </InfoItem>
       </InfoGrid>
 
       <Section>
-        <SectionTitle>LOT 내 불량 이력</SectionTitle>
+        <SectionTitle>불량 유형별 이력</SectionTitle>
         <Table
           columns={columns}
-          data={detailRows}
+          data={defectSummary}
           sortConfig={sortConfig}
           onSort={(key) =>
             setSortConfig((prev) => ({
@@ -97,6 +143,15 @@ const Header = styled.div`
     font-size: 12px;
     opacity: 0.6;
   }
+`;
+
+const Badge = styled.div`
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
 `;
 
 const InfoGrid = styled.div`

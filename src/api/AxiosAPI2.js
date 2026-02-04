@@ -76,6 +76,18 @@ export const InventoryAPI2 = {
   getMaterialLotDetail: async (id) => {
     return await AxiosAPI2.get(`/api/lots/materialLot/${id}`);
   },
+
+  // 완성품 재고 조회
+  getFgInventory: async (params) => {
+    return await AxiosAPI2.get(`/api/inventory/fginventory`, {
+      params,
+    });
+  },
+
+  // 완성품 재고 상세 조회
+  getFgInventoryDetail: async (productCode) => {
+    return await AxiosAPI2.get(`/api/inventory/fginventory/${productCode}`);
+  },
 };
 
 export default AxiosAPI2;
