@@ -241,7 +241,7 @@ const STATUS_CONFIG = {
     iconColor: "var(--stop)", // 회색 계열
     textColor: "var(--font)",
     bg: "var(--bgStop)",
-    icon: <PauseCircle />,
+    icon: <FiPauseCircle />,
   },
   ERROR: {
     label: "불량",
@@ -316,6 +316,8 @@ const BadgeWrapper = styled.div`
           border-radius: 10px;
           border: 1px solid var(--border);
           justify-content: flex-start;
+          font-size: var(--fontSm);
+          font-weight: var(--normal);
         `
       : css`
           min-width: 110px;
