@@ -2,9 +2,18 @@ import styled from "styled-components";
 import { useEffect, useMemo, useState } from "react";
 import Table from "../../components/TableStyle";
 import Button from "../../components/Button";
+import SelectBar from "../../components/SelectBar";
 import { InventoryAPI } from "../../api/AxiosAPI";
+import { Trash2 } from "lucide-react";
+import SideDrawer from "../../components/SideDrawer";
 
-export default function ProductForm({ mode, initialData, onSubmit }) {
+export default function ProductForm({
+  mode,
+  initialData,
+  onSubmit,
+  onClose,
+  open,
+}) {
   const [product, setProduct] = useState({
     productCode: "",
     productName: "",
@@ -13,8 +22,16 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
     unit: "EA",
   });
 
-  const [materials, setMaterials] = useState([]);
+  const [bomList, setBomList] = useState([]); // 선택된 BOM 리스트
+  const [materials, setMaterials] = useState([]); // 전체 자재 목록 (API 로드)
+
   const [selectedIds, setSelectedIds] = useState([]);
+
+  const [newRow, setNewRow] = useState({
+    materialCode: "",
+    qty: "",
+    process: "",
+  });
 
   // 수정 모드 초기값 세팅
   useEffect(() => {
@@ -31,44 +48,91 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
 
   // 자재 목록 조회
   useEffect(() => {
-    if (mode === "create") {
-      fetchMaterials();
-    }
-  }, [mode]);
-
-  const fetchMaterials = async () => {
-    try {
-      const res = await InventoryAPI.getMaterialList();
-      if (res.status === 200) {
-        setMaterials(
-          res.data.map((m) => ({
-            ...m,
-            // 테이블 컴포넌트가 id를 필요로 하므로 materialCode를 id로 사용
-            id: m.materialCode,
-            qty: "0",
-          })),
-        );
+    const fetchMaterials = async () => {
+      try {
+        const res = await InventoryAPI.getMaterialList();
+        if (res.status === 200) {
+          setMaterials(res.data);
+        }
+      } catch (err) {
+        console.error("자재 목록 로드 실패", err);
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    };
+    fetchMaterials();
+  }, []);
 
+  // SelectBar 옵션
+  const materialOptions = useMemo(() => {
+    return materials.map((m) => ({
+      value: m.materialCode,
+      label: `${m.materialName} (${m.materialCode})`,
+    }));
+  }, [materials]);
+
+  const processOptions = [
+    { value: "전극공정", label: "전극공정" },
+    { value: "조립공정", label: "조립공정" },
+    { value: "활성화공정", label: "활성화공정" },
+    { value: "팩공정", label: "팩공정" },
+    { value: "검사공정", label: "검사공정" },
+  ];
+
+  // 제품 정보 변경
   const handleProductChange = (e) => {
     const { name, value } = e.target;
     setProduct((prev) => ({ ...prev, [name]: value }));
   };
 
-  // [핵심 수정 1] materialCode를 기준으로 수량 업데이트 + 자동 선택 로직
+  // BOM 추가 로직
+  const handleAddRow = () => {
+    if (!newRow.materialCode || !newRow.qty) {
+      alert("자재와 소요량을 입력해주세요.");
+      return;
+    }
+    // 중복 체크
+    if (bomList.some((b) => b.materialCode === newRow.materialCode)) {
+      alert("이미 추가된 자재입니다.");
+      return;
+    }
+
+    const selectedMaterial = materials.find(
+      (m) => m.materialCode === newRow.materialCode,
+    );
+
+    const newItem = {
+      id: `temp-${Date.now()}`, // 임시 ID
+      materialCode: newRow.materialCode,
+      materialName: selectedMaterial?.materialName || "",
+      unit: selectedMaterial?.unit || "EA",
+      qty: Number(newRow.qty),
+      process: newRow.process || "전극공정", // 기본값
+    };
+
+    setBomList([...bomList, newItem]);
+    setNewRow({ materialCode: "", qty: "", process: "" }); // 초기화
+  };
+
+  // BOM 수정/삭제
+  const handleRowChange = (id, field, value) => {
+    setBomList((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const handleDeleteRow = (id) => {
+    setBomList((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // materialCode를 기준으로 수량 업데이트 + 자동 선택 로직
   const handleQtyChange = (code, value) => {
     const numValue = Number(value);
 
-    // 1. 수량 상태 업데이트
+    // 수량 상태 업데이트
     setMaterials((prev) =>
       prev.map((m) => (m.materialCode === code ? { ...m, qty: value } : m)),
     );
 
-    // 2. [편의성] 수량이 0보다 크면 자동으로 체크박스 선택
+    // 수량이 0보다 크면 자동으로 체크박스 선택
     if (numValue > 0) {
       setSelectedIds((prev) => {
         if (!prev.includes(code)) return [...prev, code];
@@ -90,13 +154,17 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
   }, [materials, selectedIds]);
 
   const handleSubmit = () => {
-    if (mode === "create") {
-      // BOM 항목이 없어도 경고 없이 제품만 등록되던 문제 방지 (선택사항)
-      /* if (bomItems.length === 0) {
-         if(!window.confirm("BOM 없이 제품만 등록하시겠습니까?")) return;
-      }
-      */
+    if (
+      !product.productCode?.toString().trim() ||
+      !product.productName?.toString().trim() ||
+      !product.voltage ||
+      !product.capacityAh
+    ) {
+      alert("모든 제품 정보를 입력해주세요.");
+      return;
+    }
 
+    if (mode === "create") {
       const payload = {
         product: {
           productCode: product.productCode,
@@ -105,7 +173,14 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
           capacityAh: Number(product.capacityAh),
           unit: product.unit,
         },
-        bomItems: bomItems,
+        // 구성된 BOM 리스트를 전송
+        bomItems: bomList.map((item) => ({
+          materialCode: item.materialCode,
+          materialName: item.materialName,
+          qty: Number(item.qty),
+          unit: item.unit,
+          process: item.process,
+        })),
       };
       onSubmit(payload);
     } else {
@@ -117,132 +192,350 @@ export default function ProductForm({ mode, initialData, onSubmit }) {
   };
 
   const columns = [
-    { key: "materialCode", label: "자재 코드", width: 160 },
-    { key: "materialName", label: "자재명", width: 200 },
+    { key: "materialCode", label: "자재 코드", width: 140 },
+    { key: "materialName", label: "자재명", width: 80 },
     {
       key: "qty",
       label: "소요량",
-      width: 120,
+      width: 80,
       render: (_, row) => (
-        <input
+        <TableInput
           type="number"
           min={0}
           value={row.qty}
-          // [핵심 수정 2] row.no가 아니라 row.materialCode 사용
-          onChange={(e) => handleQtyChange(row.materialCode, e.target.value)}
-          style={{ width: "80px", padding: "4px" }}
-          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => handleRowChange(row.id, "qty", e.target.value)}
           placeholder="0"
         />
       ),
     },
-    { key: "unit", label: "단위", width: 80 },
+    { key: "unit", label: "단위", width: 50 },
+    {
+      key: "process",
+      label: "투입 공정",
+      width: 100,
+      render: (_, row) => (
+        <TableSelect
+          value={row.process}
+          onChange={(e) => handleRowChange(row.id, "process", e.target.value)}
+        >
+          {processOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </TableSelect>
+      ),
+    },
+    {
+      key: "manage",
+      label: "관리",
+      width: 60,
+      render: (_, row) => (
+        <DeleteBtn onClick={() => handleDeleteRow(row.id)}>
+          <Trash2 size={16} />
+        </DeleteBtn>
+      ),
+    },
   ];
 
   return (
-    <Wrapper>
-      <Section>
-        <h4>제품 기본 정보</h4>
+    <SideDrawer open={open} onClose={onClose} title="제품 등록">
+      <Container>
+        <Header>
+          <h3>{mode === "create" ? "제품 등록" : "제품 수정"}</h3>
+        </Header>
 
-        <Field>
-          <label>제품 코드</label>
-          <input
-            name="productCode"
-            value={product.productCode}
-            onChange={handleProductChange}
-            disabled={mode === "edit"}
-            placeholder="예: BAT-12V-100AH"
-          />
-        </Field>
+        <Content>
+          <Section>
+            <SectionTitle>제품 정보</SectionTitle>
+            <Grid>
+              <FullItem>
+                <label>제품 코드</label>
+                <Input
+                  name="productCode"
+                  value={product.productCode}
+                  onChange={handleProductChange}
+                  disabled={mode === "edit"}
+                  placeholder="제품코드를 입력하세요"
+                />
+              </FullItem>
+              <FullItem>
+                <label>제품명</label>
+                <Input
+                  name="productName"
+                  value={product.productName}
+                  onChange={handleProductChange}
+                  placeholder="제품명을 입력하세요"
+                />
+              </FullItem>
+              <Item>
+                <label>전압(V)</label>
+                <Input
+                  type="number"
+                  name="voltage"
+                  value={product.voltage}
+                  onChange={handleProductChange}
+                  disabled={mode === "edit"}
+                />
+              </Item>
+              <Item>
+                <label>용량(Ah)</label>
+                <Input
+                  type="number"
+                  name="capacityAh"
+                  value={product.capacityAh}
+                  onChange={handleProductChange}
+                  placeholder="제품명 용량(Ah)을 입력하세요"
+                />
+              </Item>
+            </Grid>
+          </Section>
 
-        <Field>
-          <label>제품명</label>
-          <input
-            name="productName"
-            value={product.productName}
-            onChange={handleProductChange}
-            placeholder="예: 고성능 배터리"
-          />
-        </Field>
+          {mode === "create" && (
+            <>
+              <Section>
+                <SectionTitle>BOM 자재 추가</SectionTitle>
+                <FilterBar>
+                  <div style={{ flex: 2 }}>
+                    <SelectBar
+                      type="single"
+                      width="100%"
+                      placeholder="자재 선택"
+                      options={materialOptions}
+                      value={newRow.materialCode}
+                      onChange={(e) =>
+                        setNewRow((p) => ({
+                          ...p,
+                          materialCode: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div style={{ flex: 1.5 }}>
+                    <SelectBar
+                      type="single"
+                      width="100%"
+                      placeholder="공정 선택"
+                      options={processOptions}
+                      value={newRow.process}
+                      onChange={(e) =>
+                        setNewRow((p) => ({ ...p, process: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <Input
+                      type="number"
+                      placeholder="소요량"
+                      value={newRow.qty}
+                      onChange={(e) =>
+                        setNewRow((p) => ({ ...p, qty: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <Button variant="ok" size="form" onClick={handleAddRow}>
+                    + 추가
+                  </Button>
+                </FilterBar>
+              </Section>
+              <Section>
+                <SectionTitle>BOM 리스트 ({bomList.length})</SectionTitle>
+                <TableWrap>
+                  <Table
+                    columns={columns}
+                    data={bomList}
+                    selectable={false}
+                    hover={false}
+                  />
+                </TableWrap>
+              </Section>
+            </>
+          )}
+        </Content>
 
-        <Row>
-          <Field>
-            <label>전압(V)</label>
-            <input
-              type="number"
-              name="voltage"
-              value={product.voltage}
-              onChange={handleProductChange}
-              disabled={mode === "edit"}
-            />
-          </Field>
-          <Field>
-            <label>용량(Ah)</label>
-            <input
-              type="number"
-              name="capacityAh"
-              value={product.capacityAh}
-              onChange={handleProductChange}
-            />
-          </Field>
-        </Row>
-      </Section>
-
-      {mode === "create" && (
-        <Section>
-          <h4>BOM 레시피 구성 (수량 입력 시 자동 선택)</h4>
-          <Table
-            columns={columns}
-            data={materials}
-            selectedIds={selectedIds} // Table 컴포넌트가 ID 배열을 받음
-            onSelectChange={setSelectedIds}
-          />
-        </Section>
-      )}
-
-      <Footer>
-        <Button variant="ok" size="m" onClick={handleSubmit}>
-          {mode === "create" ? "제품 + BOM 등록" : "수정하기"}
-        </Button>
-      </Footer>
-    </Wrapper>
+        <Footer>
+          <Button variant="cancel" size="l" onClick={onClose}>
+            취소
+          </Button>
+          <Button variant="ok" size="m" onClick={handleSubmit}>
+            {mode === "create" ? "등록하기" : "수정하기"}
+          </Button>
+        </Footer>
+      </Container>
+    </SideDrawer>
   );
 }
 
-const Wrapper = styled.div`
+const Container = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
+  height: 100%;
 `;
-const Section = styled.section`
+const Header = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  h4 {
-    font-size: 14px;
-    font-weight: 600;
+  justify-content: space-between;
+  align-items: center;
+  h3 {
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
+    margin-bottom: 20px;
   }
 `;
-const Row = styled.div`
+const Content = styled.div`
   display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+  padding-right: 10px;
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
+`;
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 `;
-const Field = styled.div`
+const SectionTitle = styled.h4`
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
+  }
+`;
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+`;
+const Item = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex: 1;
   label {
-    font-size: 12px;
-    opacity: 0.7;
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
   }
-  input {
-    padding: 8px 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
+`;
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
+`;
+const Value = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  height: 38px;
+  font-size: var(--fontSm);
+  color: var(--font);
+`;
+const Input = styled.input`
+  padding: 10px 12px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  transition: all 0.2s;
+  box-sizing: border-box;
+  &:focus {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+`;
+const FilterBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  & > :first-child {
+    flex-grow: 1;
+  }
+`;
+const TableInput = styled.input`
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  box-sizing: border-box;
+  transition: all 0.2s;
+  &:focus {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+`;
+const TableSelect = styled.select`
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-sizing: border-box;
+  &:focus {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+`;
+const TableWrap = styled.div`
+  margin-bottom: 50px;
+`;
+const DeleteBtn = styled.button`
+  background: var(--bgError);
+  color: var(--error);
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  &:hover {
+    background: #ffdbdb;
   }
 `;
 const Footer = styled.div`
+  margin-top: auto;
+  background: white;
+  padding: 20px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  gap: 15px;
 `;

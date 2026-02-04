@@ -171,47 +171,53 @@ export default function Product() {
         selectable={false}
       />
 
-      <SideDrawer
-        open={drawer.open}
-        title={
-          drawer.type === "create"
-            ? "제품 등록"
-            : drawer.type === "edit"
-              ? "제품 수정"
-              : "제품 기준 상세"
-        }
-        onClose={closeDrawer}
-      >
-        {drawer.type === "detail" && selected && (
-          <>
-            <ProductDetail product={selected} />
-            <DrawerFooter>
-              <Button
-                variant="ok"
-                size="m"
-                onClick={() => openDrawer("edit", selected)}
-              >
-                수정
-              </Button>
-              <Button variant="cancel" size="m" onClick={closeDrawer}>
-                닫기
-              </Button>
-            </DrawerFooter>
-          </>
-        )}
+      {/* [상세 보기용 Drawer]
+        - ProductDetail은 SideDrawer를 내장하고 있지 않으므로 여기서 감싸줍니다.
+      */}
+      {drawer.type === "detail" && (
+        <SideDrawer
+          open={drawer.open}
+          title="제품 기준 상세"
+          onClose={closeDrawer}
+        >
+          {selected && (
+            <>
+              <ProductDetail product={selected} />
+              <DrawerFooter>
+                <Button
+                  variant="ok"
+                  size="m"
+                  onClick={() => openDrawer("edit", selected)}
+                >
+                  수정
+                </Button>
+                <Button variant="cancel" size="m" onClick={closeDrawer}>
+                  닫기
+                </Button>
+              </DrawerFooter>
+            </>
+          )}
+        </SideDrawer>
+      )}
 
-        {drawer.type === "create" && (
-          <ProductForm mode="create" onSubmit={handleCreate} />
-        )}
+      {drawer.type === "create" && (
+        <ProductForm
+          open={drawer.open}
+          mode="create"
+          onSubmit={handleCreate}
+          onClose={closeDrawer}
+        />
+      )}
 
-        {drawer.type === "edit" && selected && (
-          <ProductForm
-            mode="edit"
-            initialData={selected}
-            onSubmit={handleUpdate}
-          />
-        )}
-      </SideDrawer>
+      {drawer.type === "edit" && selected && (
+        <ProductForm
+          open={drawer.open}
+          mode="edit"
+          initialData={selected}
+          onSubmit={handleUpdate}
+          onClose={closeDrawer}
+        />
+      )}
     </Wrapper>
   );
 }
