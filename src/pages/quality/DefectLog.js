@@ -4,6 +4,7 @@ import axios from "axios";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import DefectLogDetail from "./DefectLogDetail";
+import SelectBar from "../../components/SelectBar";
 
 export default function QualityDefectLog() {
   const [selectedIds, setSelectedIds] = useState([]);
@@ -14,7 +15,25 @@ export default function QualityDefectLog() {
     key: null,
     direction: "asc",
   });
+  const [machineFilter, setMachineFilter] = useState("ALL");
 
+  const machineOptions = useMemo(() => {
+    const map = new Map();
+
+    rows.forEach((r) => {
+      if (!r.machineCode || !r.machineName) return;
+
+      // code 기준으로 중복 제거
+      map.set(r.machineCode, {
+        value: r.machineCode,
+        label: r.machineName,
+      });
+    });
+
+    return [{ value: "ALL", label: "전체 설비" }, ...Array.from(map.values())];
+  }, [rows]);
+
+  // ✅ [수정] useMemo보다 위에 둬야 함 (Cannot access before initialization 방지)
   const formatDateTime = (value) => {
     if (!value) return "-";
 
@@ -29,32 +48,43 @@ export default function QualityDefectLog() {
     return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
   };
 
-  /* =========================
-     LOT 기준 그룹핑
-  ========================= */
-  const lotGroupedRows = useMemo(() => {
+  // ✅ [수정] 공정명/설비명 못 받을 때 fallback
+  const pickProcessName = (r) => r.processName ?? r.processCode ?? "-";
+  const pickMachineName = (r) => r.machineName ?? r.machineCode ?? "-";
+
+  // ✅ LOT × 공정 단위 로그 (메인 테이블)
+  const processRows = useMemo(() => {
     const map = {};
 
     rows.forEach((r) => {
-      const key = r.lotNo;
+      // 🔥 설비 필터
+      if (machineFilter !== "ALL" && r.machineCode !== machineFilter) {
+        return;
+      }
+
+      const processKey = r.processCode ?? r.processName ?? "-";
+      const key = `${r.lotNo}_${processKey}_${r.machineCode}`;
       const rawTime = r.occurredAt ?? r.createdAt;
 
       if (!map[key]) {
         map[key] = {
           lotNo: r.lotNo,
-          totalDefectQty: 0,
+          processCode: r.processCode,
+          processName: r.processName ?? r.processCode ?? "-",
+          machineCode: r.machineCode,
+          machineName: r.machineName,
+          defectQty: 0,
           occurredAtRaw: rawTime,
           occurredAtText: formatDateTime(rawTime),
           defects: [],
         };
       }
 
-      map[key].totalDefectQty += r.defectQty;
+      map[key].defectQty += Number(r.defectQty ?? 0);
 
       map[key].defects.push({
         defectType: r.defectType,
-        defectQty: r.defectQty,
-        processCode: r.processCode,
+        defectQty: Number(r.defectQty ?? 0),
         machineCode: r.machineCode,
         occurredAtRaw: rawTime,
         occurredAtText: formatDateTime(rawTime),
@@ -70,7 +100,7 @@ export default function QualityDefectLog() {
     });
 
     return Object.values(map);
-  }, [rows]);
+  }, [rows, machineFilter]);
 
   /* =========================
      서버 데이터 조회
@@ -93,11 +123,13 @@ export default function QualityDefectLog() {
   }, []);
 
   /* =========================
-     테이블 컬럼 (LOT 요약)
+     테이블 컬럼
   ========================= */
   const columns = [
-    { key: "lotNo", label: "LOT No", width: 160 },
-    { key: "totalDefectQty", label: "총 불량 수량", width: 120 },
+    { key: "lotNo", label: "LOT 번호", width: 180 },
+    { key: "processName", label: "공정명", width: 180 },
+    { key: "machineName", label: "설비명", width: 180 },
+    { key: "defectQty", label: "불량", width: 100 },
     {
       key: "occurredAtText",
       label: "최근 발생 시각",
@@ -133,10 +165,20 @@ export default function QualityDefectLog() {
       <Header>
         <h2>불량 / 품질 로그</h2>
       </Header>
+      <SelectBar
+        width="260px"
+        type="single"
+        value={machineFilter}
+        options={machineOptions}
+        onChange={(val) => {
+          const next = typeof val === "string" ? val : val?.target?.value;
+          setMachineFilter(next);
+        }}
+      />
 
       <Table
         columns={columns}
-        data={lotGroupedRows}
+        data={processRows}
         sortConfig={sortConfig}
         onSort={handleSort}
         selectedIds={selectedIds}
