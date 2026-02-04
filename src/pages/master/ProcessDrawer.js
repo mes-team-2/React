@@ -71,7 +71,7 @@ export default function ProcessDrawer({
           <Section>
             <SectionTitle>공정 가동 정보</SectionTitle>
             <DataGrid>
-              <Item>
+              <FullItem>
                 <label>공정 순서</label>
                 <Input
                   type="number"
@@ -91,8 +91,8 @@ export default function ProcessDrawer({
                   }}
                   placeholder="공정 순서를 입력하세요"
                 />
-              </Item>
-              <Item>
+              </FullItem>
+              <FullItem>
                 <label>사용 여부</label>
                 <SelectBar
                   width="100%"
@@ -104,7 +104,7 @@ export default function ProcessDrawer({
                     setForm((p) => ({ ...p, active: e.target.value }))
                   }
                 />
-              </Item>
+              </FullItem>
             </DataGrid>
           </Section>
         </Content>
@@ -209,26 +209,21 @@ const FullItem = styled(Item)`
 `;
 
 const Input = styled.input`
-  width: 100%;
-  padding: 10px;
+  padding: 10px 12px;
+  height: 38px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--background);
-  height: 38px;
-  font-size: var(--fontXs);
-  color: var(--font);
-  box-sizing: border-box;
+  font-size: 14px;
   outline: none;
   transition: all 0.2s;
 
   &:focus {
     border-color: var(--font2);
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
-  &:disabled {
-    background-color: var(--background2);
-    color: var(--font2);
-    cursor: not-allowed;
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 `;
 
