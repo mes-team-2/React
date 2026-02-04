@@ -32,7 +32,6 @@ export default function BOM() {
   const loadData = useCallback(async () => {
     if (!selectedProduct) return;
 
-    // 기존 데이터를 비워서 화면 잔상 제거
     setMergedData([]);
 
     try {
@@ -60,27 +59,21 @@ export default function BOM() {
 
       uniqueMaterialMap.forEach((mat, code) => {
         if (bomMap.has(code)) {
-          finalData.push({
-            ...bomMap.get(code),
-            isBom: true, // 정렬용 플래그
-            productCode: selectedProduct.productCode,
-          });
+          const bomItem = bomMap.get(code);
+          // [수정] BOM 목록에서는 소요량이 0보다 큰 것만 표시
+          if (bomItem.qty > 0) {
+            finalData.push({
+              ...bomItem,
+              isBom: true,
+              productCode: selectedProduct.productCode,
+            });
+          }
         } else {
-          finalData.push({
-            id: null, // 신규 등록용
-            materialCode: mat.materialCode,
-            materialName: mat.materialName,
-            qty: 0,
-            unit: mat.unit,
-            process: "",
-            isBom: false,
-            productCode: selectedProduct.productCode,
-          });
+          // BOM에 없는 자재(qty=0)는 리스트에 추가하지 않음 (숨김 처리)
+          // 만약 "수정" 모달에 넘겨주기 위해 전체 데이터가 필요하다면 별도로 관리하거나
+          // 수정 모달(BOMDetail)에서 전체 자재를 다시 불러오므로 여기서는 필터링해도 됨.
         }
       });
-
-      // BOM에 설정된 항목이 상단에 오도록 정렬
-      finalData.sort((a, b) => (b.isBom === a.isBom ? 0 : b.isBom ? 1 : -1));
 
       setMergedData(finalData);
     } catch (err) {
@@ -93,13 +86,11 @@ export default function BOM() {
     loadData();
   }, [loadData]);
 
-  // 저장 완료 후 호출될 핸들러
   const handleSaveComplete = () => {
     setEditingRow(null);
-    loadData(); // 데이터 새로고침
+    loadData();
   };
 
-  // 검색 필터 (제품명)
   const [keyword, setKeyword] = useState("");
   const filteredProducts = useMemo(() => {
     if (!keyword) return products;
@@ -147,6 +138,8 @@ export default function BOM() {
               size="m"
               onClick={() => {
                 if (selectedProduct) {
+                  // 수정 모달 열 때 현재 화면에 보이는 데이터(mergedData)를 넘겨줍니다.
+                  // (BOMDetail 내부에서 전체 자재 목록을 다시 불러와 매핑하므로 괜찮습니다.)
                   setEditingRow({
                     ...selectedProduct,
                     bomList: mergedData,
@@ -171,6 +164,7 @@ export default function BOM() {
   );
 }
 
+// 스타일 컴포넌트 생략 (기존 유지)
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -198,7 +192,6 @@ const ProductList = styled.div`
   flex-direction: column;
   gap: 6px;
 `;
-
 const Product = styled.div`
   padding: 7px 10px;
   border-radius: 12px;
@@ -208,12 +201,10 @@ const Product = styled.div`
   cursor: pointer;
   box-shadow: var(--shadow);
   transition: all 0.2s ease;
-
   background: ${(props) =>
     props.$active
       ? "linear-gradient(135deg, #fdfbfb 0%, var(--main2) 100%)"
       : "transparent"};
-
   &:hover {
     transform: translateY(-1px);
     background: ${(props) =>
@@ -222,18 +213,15 @@ const Product = styled.div`
         : "var(--background)"};
   }
 `;
-
 const ProductItem = styled.div`
   font-size: var(--fontXxs);
   font-weight: var(--medium);
 `;
-
 const ProductCode = styled.div`
   font-size: var(--fontMini);
   font-weight: var(--normal);
   color: var(--font2);
 `;
-
 const Right = styled.div`
   flex: 1;
   background: white;

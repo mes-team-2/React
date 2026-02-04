@@ -5,7 +5,7 @@ import Button from "../../components/Button";
 import SelectBar from "../../components/SelectBar";
 import TableStyle from "../../components/TableStyle";
 import { BomAPI, InventoryAPI } from "../../api/AxiosAPI";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 export default function BOMDetail({ data, onClose, onSave }) {
   const [bomList, setBomList] = useState([]);
@@ -22,7 +22,8 @@ export default function BOMDetail({ data, onClose, onSave }) {
   // 초기 데이터 세팅
   useEffect(() => {
     if (data && Array.isArray(data.bomList)) {
-      const existingBom = data.bomList.filter((item) => item.isBom);
+      // 이미 0인 것은 제외하고 로드
+      const existingBom = data.bomList.filter((item) => item.qty > 0);
       setBomList(existingBom);
       setDeletedIds([]);
     }
@@ -52,8 +53,8 @@ export default function BOMDetail({ data, onClose, onSave }) {
   const processOptions = [
     { value: "전극공정", label: "전극공정" },
     { value: "조립공정", label: "조립공정" },
+    { value: "활성화공정", label: "활성화공정" },
     { value: "팩공정", label: "팩공정" },
-    { value: "충전공정", label: "충전공정" },
     { value: "검사공정", label: "검사공정" },
   ];
 
@@ -66,9 +67,11 @@ export default function BOMDetail({ data, onClose, onSave }) {
 
   // [핸들러] 행 삭제
   const handleDeleteRow = (row) => {
+    // DB에 저장된 기존 항목이면 삭제 ID 목록에 추가
     if (row.id && !String(row.id).startsWith("temp-")) {
       setDeletedIds((prev) => [...prev, row.id]);
     }
+    // 화면 목록에서 제거
     setBomList((prev) => prev.filter((item) => item.id !== row.id));
   };
 
@@ -106,10 +109,12 @@ export default function BOMDetail({ data, onClose, onSave }) {
     try {
       const promises = [];
 
-      // 삭제
-      deletedIds.forEach((id) => promises.push(BomAPI.delete(id)));
+      // [수정] 삭제 대상: delete API 대신 update API로 qty를 0으로 설정
+      deletedIds.forEach((id) => {
+        promises.push(BomAPI.update(id, { qty: 0 }));
+      });
 
-      // 신규 및 수정
+      // 신규 및 수정 대상
       bomList.forEach((item) => {
         const payload = {
           productCode: data.productCode,
@@ -134,7 +139,6 @@ export default function BOMDetail({ data, onClose, onSave }) {
     }
   };
 
-  // [TableStyle 컬럼 정의]
   const columns = [
     { key: "materialCode", label: "자재코드", width: 140 },
     { key: "materialName", label: "자재명", width: 80 },
@@ -275,6 +279,7 @@ export default function BOMDetail({ data, onClose, onSave }) {
   );
 }
 
+// 스타일 컴포넌트 생략 (기존 유지)
 const Container = styled.div`
   padding: 20px;
   display: flex;
@@ -282,7 +287,6 @@ const Container = styled.div`
   gap: 18px;
   height: 100%;
 `;
-
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
@@ -293,14 +297,12 @@ const Header = styled.div`
     margin-bottom: 20px;
   }
 `;
-
 const Content = styled.div`
   display: flex;
   flex-direction: column;
   gap: 30px;
   overflow-y: auto;
   padding-right: 10px;
-
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -309,13 +311,11 @@ const Content = styled.div`
     border-radius: 3px;
   }
 `;
-
 const Section = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
 `;
-
 const SectionTitle = styled.h4`
   font-size: var(--fontMd);
   font-weight: var(--bold);
@@ -324,7 +324,6 @@ const SectionTitle = styled.h4`
   align-items: center;
   position: relative;
   padding-left: 12px;
-
   &::before {
     content: "";
     position: absolute;
@@ -337,13 +336,11 @@ const SectionTitle = styled.h4`
     border-radius: 2px;
   }
 `;
-
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 `;
-
 const Item = styled.div`
   display: flex;
   flex-direction: column;
@@ -355,11 +352,9 @@ const Item = styled.div`
     padding: 2px;
   }
 `;
-
 const FullItem = styled(Item)`
   grid-column: 1 / -1;
 `;
-
 const Value = styled.div`
   display: flex;
   align-items: center;
@@ -371,7 +366,6 @@ const Value = styled.div`
   font-size: var(--fontSm);
   color: var(--font);
 `;
-
 const Input = styled.input`
   padding: 10px 12px;
   height: 38px;
@@ -382,7 +376,6 @@ const Input = styled.input`
   width: 150px;
   transition: all 0.2s;
   box-sizing: border-box;
-
   &:focus {
     border-color: var(--font2);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -392,19 +385,16 @@ const Input = styled.input`
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 `;
-
 const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
   width: 100%;
-
   & > :first-child {
     flex-grow: 1;
   }
 `;
-
 const TableInput = styled.input`
   width: 100%;
   padding: 6px;
@@ -422,7 +412,6 @@ const TableInput = styled.input`
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 `;
-
 const TableSelect = styled.select`
   width: 100%;
   padding: 6px;
@@ -438,11 +427,9 @@ const TableSelect = styled.select`
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 `;
-
 const TableWrap = styled.div`
   margin-bottom: 50px;
 `;
-
 const DeleteBtn = styled.button`
   background: var(--bgError);
   color: var(--error);
@@ -458,7 +445,6 @@ const DeleteBtn = styled.button`
     background: #ffdbdb;
   }
 `;
-
 const Footer = styled.div`
   margin-top: auto;
   background: white;
