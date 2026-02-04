@@ -8,9 +8,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Legend
+  Legend,
 } from "recharts";
-import { FiLayers, FiCheckCircle, FiActivity, FiAlertTriangle } from "react-icons/fi";
+import {
+  FiLayers,
+  FiCheckCircle,
+  FiActivity,
+  FiAlertTriangle,
+} from "react-icons/fi";
 import TableStyle from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
 import SearchDate from "../../components/SearchDate";
@@ -22,14 +27,16 @@ import LotDetail from "./LotDetail";
 import SelectBar from "../../components/SelectBar";
 import Progress from "../../components/Progress";
 
-
 export default function ProductLot() {
   // 상태 관리
   const [data, setData] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [sortConfig, setSortConfig] = useState({ key: "createdAt", direction: "desc" });
+  const [sortConfig, setSortConfig] = useState({
+    key: "createdAt",
+    direction: "desc",
+  });
 
   // 페이지네이션 상태
   const [page, setPage] = useState(1);
@@ -53,8 +60,10 @@ export default function ProductLot() {
       const rand = Math.random();
       let status = "LOT_RUN"; // 기본: 생산중
 
-      if (rand > 0.8) status = "LOT_OK";      // 생산완료
-      else if (rand > 0.7) status = "LOT_ERR"; // 불량
+      if (rand > 0.8)
+        status = "LOT_OK"; // 생산완료
+      else if (rand > 0.7)
+        status = "LOT_ERR"; // 불량
       else if (rand > 0.6) status = "LOT_WAIT"; // 소진완료(대기/종료)
 
       const dateObj = new Date();
@@ -83,8 +92,11 @@ export default function ProductLot() {
         id: i + 1,
         lotNo: `LOT-2601-${String(i + 1).padStart(4, "0")}`,
         productCode: i % 2 === 0 ? "BAT-12V-100A" : "BAT-12V-200A",
-        productName: i % 2 === 0 ? "차량용 배터리 100Ah" : "산업용 배터리 200Ah",
-        process: ["조립", "화성", "검사", "포장"][Math.floor(Math.random() * 4)],
+        productName:
+          i % 2 === 0 ? "차량용 배터리 100Ah" : "산업용 배터리 200Ah",
+        process: ["조립", "화성", "검사", "포장"][
+          Math.floor(Math.random() * 4)
+        ],
         line: ["Line-A", "Line-B"][Math.floor(Math.random() * 2)],
         initialQty,
         currentQty,
@@ -122,7 +134,8 @@ export default function ProductLot() {
       }
 
       // 상태 필터
-      const matchStatus = statusFilter === "ALL" || item.status === statusFilter;
+      const matchStatus =
+        statusFilter === "ALL" || item.status === statusFilter;
 
       return matchKeyword && matchDate && matchStatus;
     });
@@ -154,10 +167,10 @@ export default function ProductLot() {
 
   // 통계 데이터 (차트용)
   const stats = useMemo(() => {
-    const running = filteredData.filter(d => d.status === "LOT_RUN").length;
-    const completed = filteredData.filter(d => d.status === "LOT_OK").length;
-    const defective = filteredData.filter(d => d.status === "LOT_ERR").length;
-    const exhausted = filteredData.filter(d => d.status === "LOT_END").length;
+    const running = filteredData.filter((d) => d.status === "LOT_RUN").length;
+    const completed = filteredData.filter((d) => d.status === "LOT_OK").length;
+    const defective = filteredData.filter((d) => d.status === "LOT_ERR").length;
+    const exhausted = filteredData.filter((d) => d.status === "LOT_END").length;
 
     // 파이 차트 데이터 키값도 맞춰줌 (COLORS 객체와 매칭)
     const pieData = [
@@ -169,21 +182,23 @@ export default function ProductLot() {
 
     // 라인 차트 데이터 (일자별 생산 실적)
     const lineMap = {};
-    filteredData.forEach(d => {
+    filteredData.forEach((d) => {
       const date = d.createdAt.split(" ")[0].slice(5); // MM-DD
       if (!lineMap[date]) lineMap[date] = { date, target: 0, actual: 0 };
       lineMap[date].target += d.initialQty;
       lineMap[date].actual += d.currentQty;
     });
-    const lineData = Object.values(lineMap).sort((a, b) => a.date.localeCompare(b.date));
+    const lineData = Object.values(lineMap).sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
 
     return { running, completed, defective, exhausted, pieData, lineData };
   }, [filteredData]);
 
-
   const handleSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "asc")
+      direction = "desc";
     setSortConfig({ key, direction });
   };
 
@@ -208,7 +223,7 @@ export default function ProductLot() {
       key: "status",
       label: "상태",
       width: 150,
-      render: (val) => <Status status={val} type="basic" />
+      render: (val) => <Status status={val} type="basic" />,
     },
     { key: "lotNo", label: "LOT 번호", width: 130 },
     { key: "productCode", label: "제품코드", width: 140 },
@@ -225,22 +240,25 @@ export default function ProductLot() {
           <span className="divider">/</span>
           <span className="initial">{row.initialQty.toLocaleString()}</span>
         </QtyDisplay>
-      )
+      ),
     },
     {
       key: "progress",
       label: "진행률",
       width: 150,
       render: (_, row) => {
-        const rate = row.initialQty > 0 ? (row.currentQty / row.initialQty) * 100 : 0;
+        const rate =
+          row.initialQty > 0 ? (row.currentQty / row.initialQty) * 100 : 0;
         return <Progress value={rate} width="100%" />;
-      }
+      },
     },
     {
       key: "badQty",
       label: "불량",
       width: 80,
-      render: (val) => <BadText $isBad={val > 0}>{val > 0 ? val : '-'}</BadText>
+      render: (val) => (
+        <BadText $isBad={val > 0}>{val > 0 ? val : "-"}</BadText>
+      ),
     },
     { key: "workOrderNo", label: "작업 지시", width: 140 },
     { key: "createdAt", label: "상태 변경 일시", width: 150 },
@@ -265,24 +283,55 @@ export default function ProductLot() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="target" name="목표수량" stroke="var(--main)" strokeWidth={1} dot={false} />
-                <Line type="monotone" dataKey="actual" name="생산수량" stroke="var(--run)" strokeWidth={2} dot={false} />
+                <Line
+                  type="monotone"
+                  dataKey="target"
+                  name="목표수량"
+                  stroke="var(--main)"
+                  strokeWidth={1}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="actual"
+                  name="생산수량"
+                  stroke="var(--run)"
+                  strokeWidth={2}
+                  dot={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </ChartBox>
         </Card>
         <SummaryGrid>
-          <SummaryCard icon={<FiLayers />} label="전체 LOT" value={filteredData.length} color="var(--font)" />
-          <SummaryCard icon={<FiActivity />} label="생산중" value={stats.running} color="var(--run)" />
-          <SummaryCard icon={<FiCheckCircle />} label="생산완료" value={stats.completed} color="var(--main)" />
-          <SummaryCard icon={<FiAlertTriangle />} label="불량" value={stats.defective} color="var(--error)" />
+          <SummaryCard
+            icon={<FiLayers />}
+            label="전체 LOT"
+            value={filteredData.length}
+            color="var(--font)"
+          />
+          <SummaryCard
+            icon={<FiActivity />}
+            label="생산중"
+            value={stats.running}
+            color="var(--run)"
+          />
+          <SummaryCard
+            icon={<FiCheckCircle />}
+            label="생산완료"
+            value={stats.completed}
+            color="var(--main)"
+          />
+          <SummaryCard
+            icon={<FiAlertTriangle />}
+            label="불량"
+            value={stats.defective}
+            color="var(--error)"
+          />
         </SummaryGrid>
-
       </ChartGrid>
 
       <FilterBar>
-
-
         <SearchDate
           width="m"
           onChange={handleDateChange}
@@ -328,7 +377,6 @@ export default function ProductLot() {
   );
 }
 
-
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -358,7 +406,6 @@ const Card = styled.div`
   border-radius: 16px;
   padding-right: 20px;
 
-
   box-shadow: var(--shadow);
 
   h4 {
@@ -382,9 +429,10 @@ const SummaryGrid = styled.div`
 `;
 
 const FilterBar = styled.div`
- display: flex;
+  display: flex;
   align-items: center;
   gap: 20px;
+  margin-top: 20px;
 `;
 
 const TableWrapper = styled.div`
@@ -394,8 +442,8 @@ const TableWrapper = styled.div`
 `;
 
 const BadText = styled.span`
-  color: ${props => props.$isBad ? "var(--error)" : "inherit"};
-  font-weight: ${props => props.$isBad ? "bold" : "var(--medium)"};
+  color: ${(props) => (props.$isBad ? "var(--error)" : "inherit")};
+  font-weight: ${(props) => (props.$isBad ? "bold" : "var(--medium)")};
 `;
 
 const QtyDisplay = styled.div`
@@ -403,7 +451,7 @@ const QtyDisplay = styled.div`
   align-items: center;
   justify-content: center;
   gap: 4px;
-  
+
   .current {
     font-weight: bold;
     color: var(--main);

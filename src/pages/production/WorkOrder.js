@@ -285,6 +285,7 @@ const FilterGroup = styled.div`
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
+  margin-top: 20px;
 `;
 
 const FilterBar = styled.div`

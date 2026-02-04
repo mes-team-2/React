@@ -296,6 +296,7 @@ const SummaryGrid = styled.div`
 `;
 
 const FilterBar = styled.div`
+  margin-top: 20px;
   display: flex;
   align-items: center;
   gap: 20px;

@@ -146,4 +146,5 @@ const Header = styled.div`
 const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
+  margin-top: 20px;
 `;

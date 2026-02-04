@@ -340,6 +340,7 @@ const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 20px;
 `;
 const FilterGroup = styled.div`
   display: flex;

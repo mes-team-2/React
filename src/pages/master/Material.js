@@ -261,7 +261,7 @@ export default function Material() {
             width="l"
             placeholder="자재명 / 자재코드 검색"
             onChange={setKeyword} // 키워드 상태 업데이트
-            onSearch={() => { }}
+            onSearch={() => {}}
           />
         </InputGroup>
         <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
@@ -342,6 +342,7 @@ const FilterBar = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+  margin-top: 20px;
 `;
 
 const InputGroup = styled.div`
