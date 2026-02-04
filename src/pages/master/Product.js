@@ -171,9 +171,6 @@ export default function Product() {
         selectable={false}
       />
 
-      {/* [상세 보기용 Drawer]
-        - ProductDetail은 SideDrawer를 내장하고 있지 않으므로 여기서 감싸줍니다.
-      */}
       {drawer.type === "detail" && (
         <SideDrawer
           open={drawer.open}
@@ -181,21 +178,11 @@ export default function Product() {
           onClose={closeDrawer}
         >
           {selected && (
-            <>
-              <ProductDetail product={selected} />
-              <DrawerFooter>
-                <Button
-                  variant="ok"
-                  size="m"
-                  onClick={() => openDrawer("edit", selected)}
-                >
-                  수정
-                </Button>
-                <Button variant="cancel" size="m" onClick={closeDrawer}>
-                  닫기
-                </Button>
-              </DrawerFooter>
-            </>
+            <ProductDetail
+              product={selected}
+              onClose={closeDrawer} // 닫기 핸들러 전달
+              onEdit={() => openDrawer("edit", selected)} // 수정 핸들러 전달
+            />
           )}
         </SideDrawer>
       )}
