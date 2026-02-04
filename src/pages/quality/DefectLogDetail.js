@@ -110,7 +110,7 @@ export default function QualityDefectLogDetail({ log }) {
     <Wrapper>
       <Header>
         <div>
-          <h3>불량 상세</h3>
+          <h3>불량 이력 상세</h3>
           <span>{log.lotNo}</span>
         </div>
       </Header>

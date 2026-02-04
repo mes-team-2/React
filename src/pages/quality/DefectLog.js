@@ -184,7 +184,7 @@ export default function QualityDefectLog() {
   return (
     <Wrapper>
       <Header>
-        <h2>불량 / 품질 로그</h2>
+        <h2>불량 이력</h2>
       </Header>
 
       <SelectBar
