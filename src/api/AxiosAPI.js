@@ -42,6 +42,13 @@ AxiosAPI.interceptors.response.use(
    API 호출 함수 모음
 ============================================== */
 
+// 대시보드
+export const DashboardAPI = {
+  getData: async () => {
+    return await AxiosAPI.get("/api/dashboard");
+  },
+};
+
 // 작업자 관리 API
 export const WorkerAPI = {
   // 목록 조회

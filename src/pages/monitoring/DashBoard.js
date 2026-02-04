@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   XAxis,
@@ -30,11 +30,12 @@ import {
 
 import { FiClipboard, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 import SummaryCard from "../../components/SummaryCard";
+import { DashboardAPI } from "../../api/AxiosAPI"; // API import
 
 const CHART_COLORS = {
-  actual: "var(--main)", // 양품 (파랑)
-  defect: "var(--error)", // 불량 (빨강)
-  rate: "var(--run)", // 불량률 (녹색)
+  actual: "var(--main)",
+  defect: "var(--error)",
+  rate: "var(--run)",
   grid: "var(--border)",
   text: "var(--font2)",
   bg: "var(--background2)",
@@ -51,111 +52,85 @@ const getNowTime = () =>
 
 export default function Dashboard() {
   const [time, setTime] = useState(getNowTime());
-  const [startIndex, setStartIndex] = useState(0);
 
-  const MACHINE_ENV = [
-    {
-      id: "M-01",
-      machine: "전극공정 #1",
-      temperature: 32.5,
-      humidity: 68,
-      voltage: 12.1,
-      status: "NORMAL",
-    },
-    {
-      id: "M-02",
-      machine: "조립공정 #2",
-      temperature: 41.2,
-      humidity: 75,
-      voltage: 11.4,
-      status: "WARNING",
-    },
-    {
-      id: "M-03",
-      machine: "활성화 #1",
-      temperature: 55.8,
-      humidity: 82,
-      voltage: 10.8,
-      status: "ERROR",
-    },
-    {
-      id: "M-04",
-      machine: "패키징 #1",
-      temperature: 28.4,
-      humidity: 60,
-      voltage: 12.0,
-      status: "NORMAL",
-    },
-    {
-      id: "M-05",
-      machine: "충방전기 #3",
-      temperature: 30.1,
-      humidity: 62,
-      voltage: 11.9,
-      status: "NORMAL",
-    },
-  ];
+  // [New] API 데이터 상태 관리
+  const [summary, setSummary] = useState({
+    achievementRate: 0,
+    totalActual: 0,
+    totalDefect: 0,
+    actualRate: 0,
+    defectRate: 0,
+  });
+  const [productionTrend, setProductionTrend] = useState([]);
+  const [defectAnalysis, setDefectAnalysis] = useState([]);
+  const [machineStatus, setMachineStatus] = useState([]);
+  const [workerInfo, setWorkerInfo] = useState({
+    total: 0,
+    working: 0,
+    standby: 0,
+  });
+  const [processEff, setProcessEff] = useState({
+    oee: 0,
+    availability: 0,
+    performance: 0,
+    defectRate: 0,
+    materialUsage: 0,
+  });
 
-  const WORKER_INFO = {
-    total: 18,
-    working: 14,
-    standby: 4,
-    teams: [
-      { name: "조립 1팀", total: 6, working: 5, standby: 1, note: "정상" },
-      { name: "조립 2팀", total: 5, working: 5, standby: 0, note: "풀가동" },
-      { name: "포장팀", total: 3, working: 1, standby: 2, note: "교대대기" },
-      { name: "검사팀", total: 4, working: 3, standby: 1, note: "정상" },
-    ],
+  // [New] 데이터 조회 함수
+  const fetchDashboardData = async () => {
+    try {
+      const res = await DashboardAPI.getData();
+      const data = res.data;
+
+      setSummary(data.summary);
+      setProductionTrend(data.productionTrend);
+      setDefectAnalysis(data.defectAnalysis);
+      setMachineStatus(data.machineStatus);
+      setWorkerInfo(data.workerInfo);
+      setProcessEff(data.processEff);
+    } catch (err) {
+      console.error("대시보드 데이터 로드 실패", err);
+    }
   };
 
-  // OEE 지표 + 기존 생산성 지표 통합
-  const PROCESS_EFF = {
-    oee: 87.5,
-    availability: 94.2,
-    performance: 96.8,
-    uph: 120, // 시간당 생산량
-    defectRate: 3.8, // 공정 불량률
-    materialUsage: 52, // 자재 소모율
-  };
-
-  const DEFECT_TYPE_DATA = [
-    { name: "전압 불량", value: 30 },
-    { name: "용량 미달", value: 25 },
-    { name: "외관 불량", value: 20 },
-    { name: "누액", value: 15 },
-    { name: "기타", value: 10 },
-  ];
-
-  const fullData = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => {
-      const hour = i.toString().padStart(2, "0") + ":00";
-      const actual = Math.floor(Math.random() * 200) + 200;
-      const defect = Math.floor(Math.random() * 20) + 5;
-      const total = actual + defect;
-      return {
-        time: hour,
-        _actual: actual,
-        _defect: defect,
-        _defectRate: (defect / total) * 100 > 15 ? 15 : (defect / total) * 100,
-      };
-    });
-  }, []);
-
+  // 초기 로드 및 타이머 설정
   useEffect(() => {
+    fetchDashboardData();
     const clock = setInterval(() => {
       setTime(getNowTime());
-      setStartIndex((prev) => (prev + 1) % 24);
-    }, 1000);
+      fetchDashboardData(); // 5초마다 데이터 갱신
+    }, 5000);
     return () => clearInterval(clock);
   }, []);
 
-  const visibleData = useMemo(() => {
-    const items = [];
-    for (let i = 0; i < 8; i++) {
-      items.push(fullData[(startIndex + i) % 24]);
-    }
-    return items;
-  }, [startIndex, fullData]);
+  // 작업자 팀 정보 (UI용 하드코딩 + 데이터 믹스)
+  // 총원은 백엔드 데이터를 쓰고, 팀별 분포는 예시로 보여줌
+  const teamData = [
+    {
+      name: "조립 1팀",
+      count: Math.ceil(workerInfo.working * 0.4),
+      status: "가동중",
+    },
+    {
+      name: "조립 2팀",
+      count: Math.ceil(workerInfo.working * 0.3),
+      status: "가동중",
+    },
+    {
+      name: "포장팀",
+      count: Math.floor(workerInfo.working * 0.2),
+      status: "교대",
+    },
+    {
+      name: "검사팀",
+      count: Math.max(
+        0,
+        workerInfo.working - Math.ceil(workerInfo.working * 0.9),
+      ),
+      status: "정상",
+    },
+  ];
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -165,8 +140,9 @@ export default function Dashboard() {
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }}>
               {entry.name}:{" "}
-              {entry.value.toFixed(entry.name === "불량률" ? 2 : 0)}
-              {entry.name === "불량률" ? "%" : " EA"}
+              {entry.name === "불량률"
+                ? entry.value + "%"
+                : entry.value + " EA"}
             </p>
           ))}
         </TooltipBox>
@@ -199,19 +175,19 @@ export default function Dashboard() {
       <TopSummaryGrid>
         <SummaryCard
           label="생산 계획 달성률"
-          value="92.5%"
+          value={`${summary.achievementRate}%`}
           icon={<FiClipboard />}
           color="var(--main)"
         />
         <SummaryCard
           label="양품"
-          value="2,450 EA / 96.2%"
+          value={`${summary.totalActual} EA / ${summary.actualRate}%`}
           icon={<FiCheckCircle />}
           color="var(--run)"
         />
         <SummaryCard
           label="불량"
-          value="98 EA / 3.8%"
+          value={`${summary.totalDefect} EA / ${summary.defectRate}%`}
           icon={<FiAlertTriangle />}
           color="var(--error)"
         />
@@ -219,6 +195,7 @@ export default function Dashboard() {
 
       {/* Main Dashboard Grid */}
       <MainDashboardGrid>
+        {/* 1. 시간별 생산 현황 */}
         <ChartCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
@@ -227,57 +204,51 @@ export default function Dashboard() {
             </CardHeaderTitle>
             <div className="legend">
               <span
-                className="dot rate"
-                style={{ backgroundColor: CHART_COLORS.rate }}
-              ></span>
-              불량률(%)
-              <span
                 className="dot actual"
                 style={{ backgroundColor: CHART_COLORS.actual }}
               ></span>
-              양품(EA)
+              양품
               <span
                 className="dot defect"
                 style={{ backgroundColor: CHART_COLORS.defect }}
               ></span>
-              불량(EA)
+              불량
+              <span
+                className="dot rate"
+                style={{ backgroundColor: CHART_COLORS.rate }}
+              ></span>
+              불량률
             </div>
           </CardHeader>
           <ChartWrapper>
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={visibleData}>
+              <ComposedChart data={productionTrend}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  horizontal={true}
                   stroke={CHART_COLORS.grid}
-                  strokeOpacity={0.8}
                 />
                 <XAxis
                   dataKey="time"
                   tick={{ fill: CHART_COLORS.text, fontSize: 12 }}
-                  axisLine={{ stroke: CHART_COLORS.grid }}
+                  axisLine={false}
                   tickLine={false}
-                  dy={10}
                 />
                 <YAxis
                   yAxisId="left"
-                  width={60}
                   tick={{ fill: CHART_COLORS.text, fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
                   unit=" EA"
-                  domain={[0, 500]}
                 />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
-                  width={60}
                   tick={{ fill: CHART_COLORS.rate, fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
                   unit="%"
-                  domain={[0, 15]}
+                  domain={[0, 20]}
                 />
                 <Tooltip
                   content={<CustomTooltip />}
@@ -285,39 +256,36 @@ export default function Dashboard() {
                 />
                 <Bar
                   yAxisId="left"
-                  dataKey="_actual"
+                  dataKey="actual"
                   name="양품"
                   stackId="a"
                   fill={CHART_COLORS.actual}
-                  radius={[0, 0, 4, 4]}
                   barSize={28}
-                  isAnimationActive={false}
                 />
                 <Bar
                   yAxisId="left"
-                  dataKey="_defect"
+                  dataKey="defect"
                   name="불량"
                   stackId="a"
                   fill={CHART_COLORS.defect}
-                  radius={[4, 4, 0, 0]}
                   barSize={28}
-                  isAnimationActive={false}
+                  radius={[4, 4, 0, 0]}
                 />
                 <Line
                   yAxisId="right"
                   type="monotone"
-                  dataKey="_defectRate"
+                  dataKey="defectRate"
                   name="불량률"
                   stroke={CHART_COLORS.rate}
                   strokeWidth={3}
-                  dot={{ r: 4, fill: CHART_COLORS.rate }}
-                  isAnimationActive={false}
+                  dot={{ r: 4 }}
                 />
               </ComposedChart>
             </ResponsiveContainer>
           </ChartWrapper>
         </ChartCard>
 
+        {/* 2. 불량 유형 분석 */}
         <ChartCard>
           <CardHeader>
             <CardHeaderTitle>
@@ -329,18 +297,16 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={DEFECT_TYPE_DATA}
+                  data={defectAnalysis}
                   dataKey="value"
-                  cx="40%"
+                  nameKey="name"
+                  cx="50%"
                   cy="50%"
                   innerRadius={40}
                   outerRadius={70}
                   paddingAngle={2}
-                  isAnimationActive={true}
-                  animationDuration={350}
-                  animationEasing="ease-out"
                 >
-                  {DEFECT_TYPE_DATA.map((_, i) => (
+                  {defectAnalysis.map((_, i) => (
                     <Cell
                       key={i}
                       fill={PIE_COLORS[i % PIE_COLORS.length]}
@@ -354,20 +320,21 @@ export default function Dashboard() {
                   layout="vertical"
                   verticalAlign="middle"
                   align="right"
-                  wrapperStyle={{ fontSize: "10px", lineHeight: "20px" }}
+                  wrapperStyle={{ fontSize: "11px" }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </ChartWrapper>
         </ChartCard>
 
+        {/* 3. 설비 가동 현황 */}
         <ListCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
               <FaTools style={{ color: "var(--main)" }} />
-              <span>설비 가동 현황</span>
+              <span>설비 가동 현황 (실시간)</span>
             </CardHeaderTitle>
-            <HeaderSubText>실시간 모니터링</HeaderSubText>
+            <HeaderSubText>센서 데이터 수신중</HeaderSubText>
           </CardHeader>
           <TableWrapper>
             <ListTable>
@@ -381,16 +348,16 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {MACHINE_ENV.map((m) => (
-                  <tr key={m.id}>
+                {machineStatus.map((m) => (
+                  <tr key={m.machineCode}>
                     <td>
                       <div className="machine-info">
                         <div className="icon-box">
                           <FaWifi />
                         </div>
                         <div>
-                          <div className="name">{m.machine}</div>
-                          <div className="sub">{m.id}</div>
+                          <div className="name">{m.machineName}</div>
+                          <div className="sub">{m.machineCode}</div>
                         </div>
                       </div>
                     </td>
@@ -407,68 +374,65 @@ export default function Dashboard() {
           </TableWrapper>
         </ListCard>
 
+        {/* 4. 공정 효율 (OEE) */}
         <WidgetCard>
           <CardHeader>
             <CardHeaderTitle>
               <FaTachometerAlt style={{ color: "var(--main)" }} />
-              <span>공정 효율 (OEE & KPI)</span>
+              <span>공정 효율 (KPI)</span>
             </CardHeaderTitle>
           </CardHeader>
 
           <EfficiencyItem>
             <div className="top">
               <span>종합 설비 효율 (OEE)</span>
-              <strong>{PROCESS_EFF.oee}%</strong>
+              <strong>{processEff.oee}%</strong>
             </div>
-            <ProgressBar $percent={PROCESS_EFF.oee} $color="var(--main)" />
+            <ProgressBar $percent={processEff.oee} $color="var(--main)" />
           </EfficiencyItem>
-
           <EfficiencyItem>
             <div className="top">
-              <span>설비 가동률 (Availability)</span>
-              <strong>{PROCESS_EFF.availability}%</strong>
+              <span>설비 가동률</span>
+              <strong>{processEff.availability}%</strong>
             </div>
             <ProgressBar
-              $percent={PROCESS_EFF.availability}
+              $percent={processEff.availability}
               $color="var(--main)"
             />
           </EfficiencyItem>
-
           <EfficiencyItem>
             <div className="top">
-              <span>성능 효율 (Performance)</span>
-              <strong>{PROCESS_EFF.performance}%</strong>
+              <span>성능 효율</span>
+              <strong>{processEff.performance}%</strong>
             </div>
             <ProgressBar
-              $percent={PROCESS_EFF.performance}
+              $percent={processEff.performance}
               $color="var(--main)"
             />
           </EfficiencyItem>
-
           <EfficiencyItem>
             <div className="top">
               <span>공정 불량률</span>
-              <strong>{PROCESS_EFF.defectRate}%</strong>
+              <strong>{processEff.defectRate}%</strong>
             </div>
-            {/* 불량률은 낮을수록 좋으므로 Warning 색상 사용 */}
             <ProgressBar
-              $percent={PROCESS_EFF.defectRate * 5}
-              $color="var(--main)"
+              $percent={processEff.defectRate * 5}
+              $color="var(--error)"
             />
           </EfficiencyItem>
-
           <EfficiencyItem>
             <div className="top">
               <span>자재 소모율</span>
-              <strong>{PROCESS_EFF.materialUsage}%</strong>
+              <strong>{processEff.materialUsage}%</strong>
             </div>
             <ProgressBar
-              $percent={PROCESS_EFF.materialUsage}
+              $percent={processEff.materialUsage}
               $color="var(--main)"
             />
           </EfficiencyItem>
         </WidgetCard>
 
+        {/* 5. 작업자 현황 */}
         <ListCard $colSpan={2}>
           <CardHeader>
             <CardHeaderTitle>
@@ -477,13 +441,13 @@ export default function Dashboard() {
             </CardHeaderTitle>
             <WorkerSummary>
               <SummaryItem>
-                총원: <b>{WORKER_INFO.total}</b>
+                총원: <b>{workerInfo.total}</b>
               </SummaryItem>
               <SummaryItem>
-                작업중: <b className="run">{WORKER_INFO.working}</b>
+                근무: <b className="run">{workerInfo.working}</b>
               </SummaryItem>
               <SummaryItem>
-                대기: <b className="wait">{WORKER_INFO.standby}</b>
+                대기: <b className="wait">{workerInfo.standby}</b>
               </SummaryItem>
             </WorkerSummary>
           </CardHeader>
@@ -491,28 +455,20 @@ export default function Dashboard() {
             <ListTable>
               <thead>
                 <tr>
-                  <th width="25%">팀명</th>
-                  <th>총 인원</th>
-                  <th>작업중</th>
-                  <th>대기중</th>
-                  <th width="25%">비고</th>
+                  <th width="30%">팀명</th>
+                  <th>배정 인원</th>
+                  <th>상태</th>
                 </tr>
               </thead>
               <tbody>
-                {WORKER_INFO.teams.map((team, idx) => (
+                {teamData.map((team, idx) => (
                   <tr key={idx}>
                     <td>
                       <TableBoldText>{team.name}</TableBoldText>
                     </td>
-                    <td>{team.total}명</td>
+                    <td>{team.count}명</td>
                     <td>
-                      <b className="run">{team.working}명</b>
-                    </td>
-                    <td>
-                      <b className="wait">{team.standby}명</b>
-                    </td>
-                    <td>
-                      <TableSubText>{team.note}</TableSubText>
+                      <TableSubText>{team.status}</TableSubText>
                     </td>
                   </tr>
                 ))}
@@ -525,16 +481,17 @@ export default function Dashboard() {
           <CardHeader>
             <CardHeaderTitle>
               <FaCheckCircle style={{ color: "var(--main)" }} />
-              <span>공지사항 / 메모</span>
+              <span>공지사항</span>
             </CardHeaderTitle>
           </CardHeader>
-          <EmptyState>표시할 데이터가 없습니다.</EmptyState>
+          <EmptyState>등록된 공지사항이 없습니다.</EmptyState>
         </WidgetCard>
       </MainDashboardGrid>
     </Wrapper>
   );
 }
 
+// 스타일 컴포넌트들은 기존과 동일하게 유지 (생략 없이 사용하세요)
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -559,7 +516,6 @@ const TitleArea = styled.div`
     color: var(--font2);
   }
 `;
-
 const TimeCard = styled.div`
   background: var(--background);
   padding: 8px 24px;
@@ -600,7 +556,6 @@ const TimeCard = styled.div`
     }
   }
 `;
-
 const TopSummaryGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -609,7 +564,6 @@ const TopSummaryGrid = styled.div`
     grid-template-columns: repeat(2, 1fr);
   }
 `;
-
 const Card = styled.div`
   background: var(--background);
   border-radius: 16px;
@@ -628,10 +582,8 @@ const ChartCard = styled(Card)`
 const MainDashboardGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-
   grid-template-rows: 300px auto auto;
   gap: 20px;
-
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
@@ -640,7 +592,6 @@ const MainDashboardGrid = styled.div`
     }
   }
 `;
-
 const ListCard = styled(Card)`
   grid-column: span ${(props) => props.$colSpan || 1};
   padding: 0;
@@ -718,8 +669,7 @@ const TableWrapper = styled.div`
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--background);
-  margin: 0 20px 20px 20px; /* 카드 안쪽 여백 조절 */
-
+  margin: 0 20px 20px 20px;
   &::-webkit-scrollbar {
     width: 4px;
   }
@@ -802,15 +752,19 @@ const StatusBadge = styled.span`
   background-color: ${(props) =>
     props.$status === "ERROR"
       ? "var(--bgError)"
-      : props.$status === "WARNING"
+      : props.$status === "WAIT"
         ? "var(--bgWaiting)"
-        : "var(--bgRun)"};
+        : props.$status === "STOP"
+          ? "var(--bgStop)"
+          : "var(--bgRun)"};
   color: ${(props) =>
     props.$status === "ERROR"
       ? "var(--error)"
-      : props.$status === "WARNING"
+      : props.$status === "WAIT"
         ? "var(--waiting)"
-        : "var(--run)"};
+        : props.$status === "STOP"
+          ? "var(--stop)"
+          : "var(--run)"};
 `;
 const EfficiencyItem = styled.div`
   display: flex;
