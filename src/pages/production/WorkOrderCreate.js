@@ -157,11 +157,11 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
                 name="plannedQty"
                 value={form.plannedQty}
                 onChange={handleChange}
-                placeholder="예: 1000"
+                placeholder="작업 지시 수량을 입력하세요"
               />
             </FullItem>
 
-            <Item>
+            <FullItem>
               <label>작업기한 (Due Date)</label>
               <SearchDate
                 width="100%"
@@ -169,7 +169,7 @@ export default function WorkOrderCreate({ onSubmit, onClose }) {
                 onChange={handleDueDateChange}
                 placeholder="작업기한 선택"
               />
-            </Item>
+            </FullItem>
           </Grid>
         </Section>
       </Content>
