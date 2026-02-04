@@ -23,7 +23,6 @@ export default function QualityDefectLog() {
     rows.forEach((r) => {
       if (!r.machineCode || !r.machineName) return;
 
-      // code 기준으로 중복 제거
       map.set(r.machineCode, {
         value: r.machineCode,
         label: r.machineName,
@@ -33,7 +32,6 @@ export default function QualityDefectLog() {
     return [{ value: "ALL", label: "전체 설비" }, ...Array.from(map.values())];
   }, [rows]);
 
-  // ✅ [수정] useMemo보다 위에 둬야 함 (Cannot access before initialization 방지)
   const formatDateTime = (value) => {
     if (!value) return "-";
 
@@ -48,19 +46,14 @@ export default function QualityDefectLog() {
     return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
   };
 
-  // ✅ [수정] 공정명/설비명 못 받을 때 fallback
-  const pickProcessName = (r) => r.processName ?? r.processCode ?? "-";
-  const pickMachineName = (r) => r.machineName ?? r.machineCode ?? "-";
-
-  // ✅ LOT × 공정 단위 로그 (메인 테이블)
+  /* =========================
+     LOT × 공정 × 설비 집계
+  ========================= */
   const processRows = useMemo(() => {
     const map = {};
 
     rows.forEach((r) => {
-      // 🔥 설비 필터
-      if (machineFilter !== "ALL" && r.machineCode !== machineFilter) {
-        return;
-      }
+      if (machineFilter !== "ALL" && r.machineCode !== machineFilter) return;
 
       const processKey = r.processCode ?? r.processName ?? "-";
       const key = `${r.lotNo}_${processKey}_${r.machineCode}`;
@@ -72,7 +65,7 @@ export default function QualityDefectLog() {
           processCode: r.processCode,
           processName: r.processName ?? r.processCode ?? "-",
           machineCode: r.machineCode,
-          machineName: r.machineName,
+          machineName: r.machineName ?? r.machineCode ?? "-",
           defectQty: 0,
           occurredAtRaw: rawTime,
           occurredAtText: formatDateTime(rawTime),
@@ -103,6 +96,41 @@ export default function QualityDefectLog() {
   }, [rows, machineFilter]);
 
   /* =========================
+     ✅ 정렬된 데이터 (추가)
+  ========================= */
+  const sortedRows = useMemo(() => {
+    if (!sortConfig.key) return processRows;
+
+    const sorted = [...processRows].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      // 숫자 정렬
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      // 날짜 정렬 (Raw 기준)
+      if (sortConfig.key === "occurredAtText") {
+        const aTime = new Date(a.occurredAtRaw).getTime();
+        const bTime = new Date(b.occurredAtRaw).getTime();
+        return sortConfig.direction === "asc" ? aTime - bTime : bTime - aTime;
+      }
+
+      // 문자열 정렬
+      return sortConfig.direction === "asc"
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+
+    return sorted;
+  }, [processRows, sortConfig]);
+
+  /* =========================
      서버 데이터 조회
   ========================= */
   useEffect(() => {
@@ -130,15 +158,11 @@ export default function QualityDefectLog() {
     { key: "processName", label: "공정명", width: 180 },
     { key: "machineName", label: "설비명", width: 180 },
     { key: "defectQty", label: "불량", width: 100 },
-    {
-      key: "occurredAtText",
-      label: "최근 발생 시각",
-      width: 180,
-    },
+    { key: "occurredAtText", label: "최근 발생 시각", width: 180 },
   ];
 
   /* =========================
-     정렬
+     정렬 핸들러
   ========================= */
   const handleSort = (key) => {
     setSortConfig((prev) => {
@@ -152,9 +176,6 @@ export default function QualityDefectLog() {
     });
   };
 
-  /* =========================
-     Row 클릭 → 상세 Drawer
-  ========================= */
   const handleRowClick = (row) => {
     setSelectedLog(row);
     setOpen(true);
@@ -165,6 +186,7 @@ export default function QualityDefectLog() {
       <Header>
         <h2>불량 / 품질 로그</h2>
       </Header>
+
       <SelectBar
         width="260px"
         type="single"
@@ -178,7 +200,7 @@ export default function QualityDefectLog() {
 
       <Table
         columns={columns}
-        data={processRows}
+        data={sortedRows}
         sortConfig={sortConfig}
         onSort={handleSort}
         selectedIds={selectedIds}

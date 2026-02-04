@@ -56,6 +56,42 @@ export default function QualityDefectLogDetail({ log }) {
 
     return Object.values(map);
   }, [log]);
+
+  /* =========================
+     ✅ 정렬된 데이터 (추가)
+  ========================= */
+  const sortedDefectSummary = useMemo(() => {
+    if (!sortConfig.key) return defectSummary;
+
+    const sorted = [...defectSummary].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      // 숫자 정렬
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      // 날짜 정렬 (Raw 기준)
+      if (sortConfig.key === "occurredAtText") {
+        const aTime = new Date(a.occurredAtRaw).getTime();
+        const bTime = new Date(b.occurredAtRaw).getTime();
+        return sortConfig.direction === "asc" ? aTime - bTime : bTime - aTime;
+      }
+
+      // 문자열 정렬
+      return sortConfig.direction === "asc"
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+
+    return sorted;
+  }, [defectSummary, sortConfig]);
+
   if (!log) {
     return <Empty>불량 항목을 선택하세요.</Empty>;
   }
@@ -102,7 +138,7 @@ export default function QualityDefectLogDetail({ log }) {
         <SectionTitle>불량 유형별 이력</SectionTitle>
         <Table
           columns={columns}
-          data={defectSummary}
+          data={sortedDefectSummary}
           sortConfig={sortConfig}
           onSort={(key) =>
             setSortConfig((prev) => ({
