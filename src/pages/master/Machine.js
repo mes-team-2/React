@@ -201,7 +201,6 @@ export default function Machine() {
       machineCode: row.machineCode,
       machineName: row.machineName,
       processCode: row.processCode,
-      // "YES"/"NO" → boolean 변환
       active: row.active === true || row.active === "YES",
     });
     setFormMode("edit");
