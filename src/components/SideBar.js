@@ -101,7 +101,7 @@ const PAGE_LABEL = {
 
   // 품질
   "/mes/quality/test-log": "검사 이력",
-  "/mes/quality/defect": "불량 관리",
+  "/mes/quality/defect": "불량 이력",
 
   // 자재
   "/mes/inventory/material-list": "자재 재고 조회",
@@ -159,7 +159,7 @@ const MENU = [
     title: "품질 관리",
     items: [
       { to: "/mes/quality/test-log", label: "검사 이력" },
-      { to: "/mes/quality/defect", label: "불량 관리" },
+      { to: "/mes/quality/defect", label: "불량 이력" },
     ],
   },
   {
