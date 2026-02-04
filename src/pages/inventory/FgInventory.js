@@ -370,6 +370,7 @@ const FilterBar = styled.div`
   justify-content: flex-start;
   align-items: center;
   gap: 20px;
+  margin-top: 20px;
 `;
 
 const Summary = styled.footer`

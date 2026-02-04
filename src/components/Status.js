@@ -257,6 +257,35 @@ const STATUS_CONFIG = {
     bg: "var(--bgStop)",
     icon: <FiPauseCircle />,
   },
+  // ---  작업 지시 (WorkOrder) 상태 매핑 ---
+  PENDING: {
+    label: "대기중",
+    iconColor: "var(--waiting)",
+    textColor: "var(--font)",
+    bg: "var(--bgWaiting)",
+    icon: <LuHourglass />,
+  },
+  IN_PROGRESS: {
+    label: "실행중",
+    iconColor: "var(--run)",
+    textColor: "var(--font)",
+    bg: "var(--bgRun)",
+    icon: <FiRefreshCw />,
+  },
+  DONE: {
+    label: "완료",
+    iconColor: "var(--complete)",
+    textColor: "var(--font)",
+    bg: "var(--bgComplete)",
+    icon: <FiCheckCircle />,
+  },
+  CANCELED: {
+    label: "취소됨",
+    iconColor: "var(--stop)",
+    textColor: "var(--font)",
+    bg: "var(--bgStop)",
+    icon: <FiXCircle />,
+  },
   // 예외 처리 (Default)
   DEFAULT: {
     label: "-",

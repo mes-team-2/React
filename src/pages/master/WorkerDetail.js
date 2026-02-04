@@ -1,10 +1,11 @@
 import styled from "styled-components";
-import Table from "../../components/TableStyle";
+import TableStyle from "../../components/TableStyle";
+import Button from "../../components/Button";
 import { useEffect, useState } from "react";
 import { WorkerAPI } from "../../api/AxiosAPI";
 import Status from "../../components/Status";
 
-export default function WorkerDetail({ worker, onClose }) {
+export default function WorkerDetail({ worker, onClose, onEdit }) {
   const [detail, setDetail] = useState(null);
 
   useEffect(() => {
@@ -28,12 +29,11 @@ export default function WorkerDetail({ worker, onClose }) {
     name: worker.name,
     position: worker.position,
     joinedAt: worker.joinedAt,
-    active: worker.active, // [핵심] 목록에서 받은 active 값 사용
+    active: worker.active,
   };
 
   const history = detail?.history || [];
 
-  // [수정] Worker.js와 동일한 로직 적용 (active가 true면 ON, false면 OFF)
   const isWorking = info.active;
 
   const workHistoryColumns = [
@@ -58,53 +58,59 @@ export default function WorkerDetail({ worker, onClose }) {
   ];
 
   return (
-    <Wrapper>
+    <Container>
       <Header>
-        <h3>작업자 상세</h3>
+        <h3>작업자 상세 조회</h3>
       </Header>
 
-      <InfoGrid>
-        <InfoItem>
-          <label>작업자 번호</label>
-          <strong>{info.workerNo}</strong>
-        </InfoItem>
-        <InfoItem>
-          <label>이름</label>
-          <strong>{info.name}</strong>
-        </InfoItem>
-
-        <InfoItem>
-          <label>직급</label>
-          <strong>{info.position}</strong>
-        </InfoItem>
-
-        {/* [수정] Worker.js와 100% 동일하게 근무 상태(출근/퇴근) 표시 */}
-        <InfoItem>
-          <label>근무 상태</label>
-          <div style={{ marginTop: "6px" }}>
-            <Status status={isWorking ? "ON" : "OFF"} />
-          </div>
-        </InfoItem>
-
-        <InfoItem>
-          <label>입사일</label>
-          <strong>{info.joinedAt}</strong>
-        </InfoItem>
-      </InfoGrid>
-
-      <Section>
-        <SectionTitle>최근 작업 이력</SectionTitle>
-        <Table columns={workHistoryColumns} data={history} selectable={false} />
-      </Section>
-
-      <ButtonArea>
-        <CloseButton onClick={onClose}>닫기</CloseButton>
-      </ButtonArea>
-    </Wrapper>
+      <Content>
+        <Section>
+          <SectionTitle>작업지시 정보</SectionTitle>
+          <Grid>
+            <FullItem>
+              <label>작업자 번호</label>
+              <Value>{info.workerNo}</Value>
+            </FullItem>
+            <FullItem>
+              <label>이름</label>
+              <Value>{info.name}</Value>
+            </FullItem>
+            <Item>
+              <label>직급</label>
+              <Value>{info.position}</Value>
+            </Item>
+            <Item>
+              <label>근무 상태</label>
+              <Status status={isWorking ? "ON" : "OFF"} type="wide" />
+            </Item>
+            <FullItem>
+              <label>입사일</label>
+              <Value>{info.joinedAt}</Value>
+            </FullItem>
+          </Grid>
+        </Section>
+        <Section>
+          <SectionTitle>최근 작업 이력</SectionTitle>
+          <TableStyle
+            columns={workHistoryColumns}
+            data={history}
+            selectable={false}
+          />
+        </Section>
+      </Content>
+      <Footer>
+        <Button variant="cancel" size="m" onClick={onClose}>
+          닫기
+        </Button>
+        <Button variant="ok" size="m" onClick={onEdit}>
+          수정
+        </Button>
+      </Footer>
+    </Container>
   );
 }
 
-const Wrapper = styled.div`
+const Container = styled.div`
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -112,48 +118,88 @@ const Wrapper = styled.div`
   height: 100%;
 `;
 const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
   h3 {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
 `;
-const InfoGrid = styled.div`
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+  padding-right: 10px;
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
+`;
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+const SectionTitle = styled.h4`
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
+  }
+`;
+const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 `;
-const InfoItem = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 14px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+const Item = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   label {
-    font-size: 11px;
-    opacity: 0.6;
-  }
-  strong {
-    display: block;
-    margin-top: 6px;
-    font-size: 14px;
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
   }
 `;
-const Section = styled.div``;
-const SectionTitle = styled.h4`
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 8px;
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
 `;
-const ButtonArea = styled.div`
+const Value = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  min-height: 38px;
+  font-size: var(--fontSm);
+  color: var(--font);
+`;
+
+const Footer = styled.div`
   margin-top: auto;
-`;
-const CloseButton = styled.button`
-  width: 100%;
-  padding: 12px;
-  border-radius: 20px;
-  background: #f1f1f1;
-  font-size: 14px;
-  cursor: pointer;
-  &:hover {
-    background: #e5e5e5;
-  }
+  display: flex;
+  justify-content: center;
+  gap: 50px;
 `;

@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Table from "../../components/TableStyle";
 import BOMDetail from "./BOMDetail";
 import { WorkOrderAPI, BomAPI, InventoryAPI } from "../../api/AxiosAPI";
+import Button from "../../components/Button";
 
 export default function BOM() {
   const [products, setProducts] = useState([]);
@@ -11,7 +12,7 @@ export default function BOM() {
   const [mergedData, setMergedData] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
 
-  // 1. 제품 목록 조회
+  // 제품 목록 조회
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -27,11 +28,10 @@ export default function BOM() {
     fetchProducts();
   }, []);
 
-  // 2. 데이터 로드 및 병합 (중복 제거 핵심 로직)
+  // 데이터 로드 및 병합
   const loadData = useCallback(async () => {
     if (!selectedProduct) return;
 
-    // [중요] 기존 데이터를 비워서 화면 잔상 제거
     setMergedData([]);
 
     try {
@@ -43,56 +43,37 @@ export default function BOM() {
       const bomList = bomRes.data;
       const allMaterials = matRes.data;
 
-      // ---------------------------------------------------------
-      // Step 1. 자재 마스터 중복 제거 (Map 사용)
-      // DB에 중복된 자재가 있어도 materialCode가 같으면 하나만 남깁니다.
-      // ---------------------------------------------------------
       const uniqueMaterialMap = new Map();
       allMaterials.forEach((m) => {
-        // 이미 맵에 있으면 건너뜀 (첫 번째 발견된 것만 사용)
         if (!uniqueMaterialMap.has(m.materialCode)) {
           uniqueMaterialMap.set(m.materialCode, m);
         }
       });
 
-      // ---------------------------------------------------------
-      // Step 2. BOM 데이터 매핑 (빠른 조회를 위해 Map 변환)
-      // ---------------------------------------------------------
       const bomMap = new Map();
       bomList.forEach((b) => {
         bomMap.set(b.materialCode, b);
       });
 
-      // ---------------------------------------------------------
-      // Step 3. 병합 (Unique 자재 목록 기준)
-      // ---------------------------------------------------------
       const finalData = [];
 
       uniqueMaterialMap.forEach((mat, code) => {
         if (bomMap.has(code)) {
-          // Case A: BOM에 설정된 자재 -> BOM 정보 사용
-          finalData.push({
-            ...bomMap.get(code),
-            isBom: true, // 정렬용 플래그
-            productCode: selectedProduct.productCode,
-          });
+          const bomItem = bomMap.get(code);
+          // [수정] BOM 목록에서는 소요량이 0보다 큰 것만 표시
+          if (bomItem.qty > 0) {
+            finalData.push({
+              ...bomItem,
+              isBom: true,
+              productCode: selectedProduct.productCode,
+            });
+          }
         } else {
-          // Case B: BOM에 없는 자재 -> 0으로 초기화해서 표시
-          finalData.push({
-            id: null, // 신규 등록용
-            materialCode: mat.materialCode,
-            materialName: mat.materialName,
-            qty: 0,
-            unit: mat.unit,
-            process: "",
-            isBom: false,
-            productCode: selectedProduct.productCode,
-          });
+          // BOM에 없는 자재(qty=0)는 리스트에 추가하지 않음 (숨김 처리)
+          // 만약 "수정" 모달에 넘겨주기 위해 전체 데이터가 필요하다면 별도로 관리하거나
+          // 수정 모달(BOMDetail)에서 전체 자재를 다시 불러오므로 여기서는 필터링해도 됨.
         }
       });
-
-      // BOM에 설정된 항목이 상단에 오도록 정렬
-      finalData.sort((a, b) => (b.isBom === a.isBom ? 0 : b.isBom ? 1 : -1));
 
       setMergedData(finalData);
     } catch (err) {
@@ -105,13 +86,11 @@ export default function BOM() {
     loadData();
   }, [loadData]);
 
-  // 저장 완료 후 호출될 핸들러
   const handleSaveComplete = () => {
     setEditingRow(null);
-    loadData(); // 데이터 새로고침
+    loadData();
   };
 
-  // 검색 필터 (제품명)
   const [keyword, setKeyword] = useState("");
   const filteredProducts = useMemo(() => {
     if (!keyword) return products;
@@ -136,31 +115,43 @@ export default function BOM() {
 
       <Body>
         <Left>
+          <Selected>완제품 목록 </Selected>
           <ProductList>
             {filteredProducts.map((p) => (
-              <ProductItem
+              <Product
                 key={p.productCode}
                 $active={selectedProduct?.productCode === p.productCode}
                 onClick={() => setSelectedProduct(p)}
               >
-                {p.productName}
-              </ProductItem>
+                <ProductItem>{p.productName}</ProductItem>
+                <ProductCode>{p.productCode}</ProductCode>
+              </Product>
             ))}
           </ProductList>
         </Left>
 
         <Right>
           <Selected>
-            <span>선택된 품목</span>
-            <strong>{selectedProduct?.productName || "-"}</strong>
+            선택된 품목 : {selectedProduct?.productName || "-"}
+            <Button
+              variant="ok"
+              size="m"
+              onClick={() => {
+                if (selectedProduct) {
+                  // 수정 모달 열 때 현재 화면에 보이는 데이터(mergedData)를 넘겨줍니다.
+                  // (BOMDetail 내부에서 전체 자재 목록을 다시 불러와 매핑하므로 괜찮습니다.)
+                  setEditingRow({
+                    ...selectedProduct,
+                    bomList: mergedData,
+                  });
+                }
+              }}
+            >
+              수정{" "}
+            </Button>
           </Selected>
 
-          <Table
-            columns={columns}
-            data={mergedData}
-            selectable={false}
-            onRowClick={(row) => setEditingRow(row)}
-          />
+          <Table columns={columns} data={mergedData} selectable={false} />
         </Right>
       </Body>
 
@@ -173,25 +164,27 @@ export default function BOM() {
   );
 }
 
+// 스타일 컴포넌트 생략 (기존 유지)
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 `;
 const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  h2 {
+    font-size: var(--fontXl);
+    font-weight: var(--bold);
+    color: var(--font);
+  }
 `;
 const Body = styled.div`
   display: flex;
   gap: 20px;
 `;
 const Left = styled.div`
-  width: 260px;
+  width: 180px;
   background: white;
-  border-radius: 16px;
-  padding: 14px;
+  padding: 20px 0;
 `;
 const ProductList = styled.div`
   margin-top: 10px;
@@ -199,30 +192,48 @@ const ProductList = styled.div`
   flex-direction: column;
   gap: 6px;
 `;
-const ProductItem = styled.div`
-  padding: 10px;
-  border-radius: 10px;
+const Product = styled.div`
+  padding: 7px 10px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   cursor: pointer;
-  background: ${(p) => (p.$active ? "#eef2ff" : "transparent")};
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+  background: ${(props) =>
+    props.$active
+      ? "linear-gradient(135deg, #fdfbfb 0%, var(--main2) 100%)"
+      : "transparent"};
   &:hover {
-    background: #f4f6fb;
+    transform: translateY(-1px);
+    background: ${(props) =>
+      props.$active
+        ? "linear-gradient(135deg, #fdfbfb 0%, var(--main2) 100%)"
+        : "var(--background)"};
   }
+`;
+const ProductItem = styled.div`
+  font-size: var(--fontXxs);
+  font-weight: var(--medium);
+`;
+const ProductCode = styled.div`
+  font-size: var(--fontMini);
+  font-weight: var(--normal);
+  color: var(--font2);
 `;
 const Right = styled.div`
   flex: 1;
   background: white;
   border-radius: 16px;
-  padding: 16px;
+  padding: 20px 0;
 `;
 const Selected = styled.div`
-  margin-bottom: 12px;
-  span {
-    font-size: 12px;
-    opacity: 0.6;
-  }
-  strong {
-    display: block;
-    margin-top: 4px;
-    font-size: 15px;
-  }
+  margin-bottom: 15px;
+  height: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fontMd);
+  font-weight: var(--medium);
 `;

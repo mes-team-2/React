@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import Table from "../../components/TableStyle";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
 import Button from "../../components/Button";
+import Status from "../../components/Status";
 
 export default function WorkOrderDetail({ workOrder, onStatusChange }) {
   const [detailData, setDetailData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // [New] 상세 내부에서 상태가 바뀌면 UI 갱신을 위해 로컬 상태 사용
+  // 상세 내부에서 상태가 바뀌면 UI 갱신을 위해 로컬 상태 사용
   const [currentStatus, setCurrentStatus] = useState(workOrder?.status || "-");
 
   // workOrder가 변경되면 상세 조회
@@ -34,7 +35,7 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
     fetchDetail();
   }, [workOrder]);
 
-  // [New] 작업 시작 핸들러
+  // 작업 시작 핸들러
   const handleStartWork = async () => {
     if (!workOrder?.id) return;
     try {
@@ -50,7 +51,7 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
       setDetailData(res.data);
       setCurrentStatus(res.data.status); // "IN_PROGRESS"로 변경됨
 
-      // 2. [New] 부모(목록) 화면 새로고침 요청
+      // 부모(목록) 화면 새로고침 요청
       if (onStatusChange) {
         onStatusChange();
       }
@@ -93,7 +94,6 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
       <Header>
         <h3>작업지시 상세</h3>
 
-        {/* [New] 대기(WAIT) 상태일 때만 시작 버튼 표시 */}
         {currentStatus === "WAIT" && (
           <Button variant="ok" size="s" onClick={handleStartWork}>
             작업 시작
@@ -123,8 +123,7 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
             </FullItem>
             <Item>
               <label>작업 상태</label>
-              {/* 상세 조회된 최신 상태 표시 */}
-              <Value>{currentStatus}</Value>
+              <Status status={currentStatus} type="wide" />
             </Item>
             <Item>
               <label>지시 수량</label>
@@ -141,7 +140,7 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
             </Item>
           </Grid>
         </Section>
-        {/* ... (이하 LOT 정보, 공정 이력, 자재 이력 등 기존 코드 유지) ... */}
+
         <Section>
           <SectionTitle>생산 LOT 정보</SectionTitle>
           {detailData ? (
@@ -190,7 +189,6 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
   );
 }
 
-// ... (스타일 컴포넌트 기존 유지) ...
 const Container = styled.div`
   padding: 20px;
   display: flex;

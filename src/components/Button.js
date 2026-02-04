@@ -50,6 +50,15 @@ const StyledButton = styled.button`
   width: ${(props) => props.$width || "auto"};
 
   ${(props) =>
+    props.$size === "form" &&
+    css`
+      width: 60px;
+      height: 30px;
+      padding: 0 10px;
+      font-size: var(--fontXs);
+    `}
+
+  ${(props) =>
     props.$size === "xs" &&
     css`
       width: 80px;

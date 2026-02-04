@@ -1,133 +1,455 @@
 import styled from "styled-components";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import SideDrawer from "../../components/SideDrawer";
 import Button from "../../components/Button";
-import { BomAPI } from "../../api/AxiosAPI";
+import SelectBar from "../../components/SelectBar";
+import TableStyle from "../../components/TableStyle";
+import { BomAPI, InventoryAPI } from "../../api/AxiosAPI";
+import { Trash2 } from "lucide-react";
 
 export default function BOMDetail({ data, onClose, onSave }) {
-  const [form, setForm] = useState(null);
+  const [bomList, setBomList] = useState([]);
+  const [deletedIds, setDeletedIds] = useState([]);
+  const [materials, setMaterials] = useState([]);
 
+  // 신규 추가 입력 State
+  const [newRow, setNewRow] = useState({
+    materialCode: "",
+    qty: "",
+    process: "",
+  });
+
+  // 초기 데이터 세팅
   useEffect(() => {
-    if (data) {
-      setForm({
-        ...data,
-        process: data.process || "전극공정",
-      });
+    if (data && Array.isArray(data.bomList)) {
+      // 이미 0인 것은 제외하고 로드
+      const existingBom = data.bomList.filter((item) => item.qty > 0);
+      setBomList(existingBom);
+      setDeletedIds([]);
     }
   }, [data]);
 
-  const handleSave = async () => {
-    if (!form) return;
-    try {
-      // [핵심] ID가 있으면 수정(PUT), 없으면 신규 등록(POST)
-      if (form.id) {
-        console.log("Updating BOM...", form.id);
-        await BomAPI.update(form.id, {
-          qty: form.qty,
-          process: form.process,
-        });
-      } else {
-        console.log("Creating New BOM...", form.materialCode);
-        // ID가 없다는 것은 DB에 데이터가 없다는 뜻 -> POST 호출
-        // URL: /api/bom (404가 뜨면 백엔드 Controller 확인 필수)
-        await BomAPI.create({
-          productCode: form.productCode,
-          materialCode: form.materialCode,
-          qty: form.qty,
-          process: form.process,
-        });
+  // 전체 자재 목록 로드
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      try {
+        const res = await InventoryAPI.getMaterialList();
+        setMaterials(res.data);
+      } catch (err) {
+        console.error("자재 목록 로드 실패", err);
       }
+    };
+    if (data) fetchMaterials();
+  }, [data]);
 
+  // [SelectBar용 옵션 변환]
+  const materialOptions = useMemo(() => {
+    return materials.map((m) => ({
+      value: m.materialCode,
+      label: `${m.materialName} (${m.materialCode})`,
+    }));
+  }, [materials]);
+
+  const processOptions = [
+    { value: "전극공정", label: "전극공정" },
+    { value: "조립공정", label: "조립공정" },
+    { value: "활성화공정", label: "활성화공정" },
+    { value: "팩공정", label: "팩공정" },
+    { value: "검사공정", label: "검사공정" },
+  ];
+
+  // [핸들러] 행 데이터 변경
+  const handleRowChange = (id, field, value) => {
+    setBomList((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  // [핸들러] 행 삭제
+  const handleDeleteRow = (row) => {
+    // DB에 저장된 기존 항목이면 삭제 ID 목록에 추가
+    if (row.id && !String(row.id).startsWith("temp-")) {
+      setDeletedIds((prev) => [...prev, row.id]);
+    }
+    // 화면 목록에서 제거
+    setBomList((prev) => prev.filter((item) => item.id !== row.id));
+  };
+
+  // [핸들러] 신규 추가
+  const handleAddRow = () => {
+    if (!newRow.materialCode || !newRow.qty) {
+      alert("자재와 소요량을 입력해주세요.");
+      return;
+    }
+    if (bomList.some((b) => b.materialCode === newRow.materialCode)) {
+      alert("이미 추가된 자재입니다.");
+      return;
+    }
+
+    const selectedMaterial = materials.find(
+      (m) => m.materialCode === newRow.materialCode,
+    );
+
+    const newItem = {
+      id: `temp-${Date.now()}`,
+      materialCode: newRow.materialCode,
+      materialName: selectedMaterial?.materialName || "",
+      unit: selectedMaterial?.unit || "",
+      qty: newRow.qty,
+      process: newRow.process || "전극공정",
+      isNew: true,
+    };
+
+    setBomList([...bomList, newItem]);
+    setNewRow({ materialCode: "", qty: "", process: "" });
+  };
+
+  // [핸들러] 최종 저장
+  const handleSaveAll = async () => {
+    try {
+      const promises = [];
+
+      // [수정] 삭제 대상: delete API 대신 update API로 qty를 0으로 설정
+      deletedIds.forEach((id) => {
+        promises.push(BomAPI.update(id, { qty: 0 }));
+      });
+
+      // 신규 및 수정 대상
+      bomList.forEach((item) => {
+        const payload = {
+          productCode: data.productCode,
+          materialCode: item.materialCode,
+          qty: Number(item.qty),
+          process: item.process,
+        };
+
+        if (!item.id || String(item.id).startsWith("temp-")) {
+          promises.push(BomAPI.create(payload));
+        } else {
+          promises.push(BomAPI.update(item.id, payload));
+        }
+      });
+
+      await Promise.all(promises);
       alert("저장되었습니다.");
-      onSave?.(); // 부모(BOM.js)의 loadData 호출
+      onSave();
     } catch (err) {
       console.error(err);
-      alert("저장 실패: " + (err.response?.status || "Unknown Error"));
+      alert("저장 중 오류 발생");
     }
   };
 
-  if (!form) return null;
+  const columns = [
+    { key: "materialCode", label: "자재코드", width: 140 },
+    { key: "materialName", label: "자재명", width: 80 },
+    {
+      key: "qty",
+      label: "소요량",
+      width: 80,
+      render: (val, row) => (
+        <TableInput
+          type="number"
+          value={val}
+          onChange={(e) => handleRowChange(row.id, "qty", e.target.value)}
+        />
+      ),
+    },
+    { key: "unit", label: "단위", width: 50 },
+    {
+      key: "process",
+      label: "투입공정",
+      width: 100,
+      render: (val, row) => (
+        <TableSelect
+          value={val}
+          onChange={(e) => handleRowChange(row.id, "process", e.target.value)}
+        >
+          {processOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </TableSelect>
+      ),
+    },
+    {
+      key: "manage",
+      label: "관리",
+      width: 60,
+      render: (_, row) => (
+        <DeleteBtn onClick={() => handleDeleteRow(row)}>
+          <Trash2 size={16} />
+        </DeleteBtn>
+      ),
+    },
+  ];
+
+  if (!data) return null;
 
   return (
-    <SideDrawer open={!!data} onClose={onClose}>
-      <Wrapper>
-        <h3>{form.id ? "BOM 수정" : "BOM 자재 등록"}</h3>
+    <SideDrawer open={!!data} onClose={onClose} title="BOM 수정">
+      <Container>
+        <Header>
+          <h3>BOM 수정</h3>
+        </Header>
 
-        <Field>
-          <label>자재코드</label>
-          <input value={form.materialCode} disabled />
-        </Field>
+        <Content>
+          <Section>
+            <SectionTitle>제품 정보</SectionTitle>
+            <Grid>
+              <FullItem>
+                <label>제품코드</label>
+                <Value>{data.productCode}</Value>
+              </FullItem>
+              <FullItem>
+                <label>제품명</label>
+                <Value>{data.productName}</Value>
+              </FullItem>
+              <Item>
+                <label>전압(V)</label>
+                <Value>{data.voltage}V</Value>
+              </Item>
+              <Item>
+                <label>용량(Ah)</label>
+                <Value>{data.capacityAh}Ah</Value>
+              </Item>
+            </Grid>
+          </Section>
 
-        <Field>
-          <label>자재명</label>
-          <input value={form.materialName} disabled />
-        </Field>
+          <Section>
+            <SectionTitle>BOM 자재 추가</SectionTitle>
+            <FilterBar>
+              <SelectBar
+                type="single"
+                width="250px"
+                placeholder="자재 선택"
+                options={materialOptions}
+                value={newRow.materialCode}
+                onChange={(e) =>
+                  setNewRow((p) => ({ ...p, materialCode: e.target.value }))
+                }
+              />
+              <SelectBar
+                type="single"
+                width="150px"
+                placeholder="공정 선택"
+                options={processOptions}
+                value={newRow.process}
+                onChange={(e) =>
+                  setNewRow((p) => ({ ...p, process: e.target.value }))
+                }
+              />
+              <Input
+                type="number"
+                placeholder="소요량"
+                value={newRow.qty}
+                onChange={(e) =>
+                  setNewRow((p) => ({ ...p, qty: e.target.value }))
+                }
+              />
+              <Button variant="ok" size="form" onClick={handleAddRow}>
+                + 추가
+              </Button>
+            </FilterBar>
+          </Section>
 
-        <Field>
-          <label>소요량</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.qty}
-            onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
-          />
-        </Field>
+          <Section>
+            <SectionTitle>BOM 리스트 ({bomList.length})</SectionTitle>
+            <TableWrap>
+              <TableStyle
+                columns={columns}
+                data={bomList}
+                selectable={false}
+                hover={false}
+              />
+            </TableWrap>
+          </Section>
+        </Content>
 
-        <Field>
-          <label>단위</label>
-          <input value={form.unit} disabled />
-        </Field>
-
-        <Field>
-          <label>투입 공정</label>
-          <select
-            value={form.process}
-            onChange={(e) => setForm({ ...form, process: e.target.value })}
-          >
-            <option value="전극공정">전극공정</option>
-            <option value="조립공정">조립공정</option>
-            <option value="팩공정">팩공정</option>
-            <option value="충전공정">충전공정</option>
-            <option value="검사공정">검사공정</option>
-          </select>
-        </Field>
-
-        <BtnRow>
-          <Button variant="cancel" onClick={onClose}>
+        <Footer>
+          <Button variant="cancel" size="l" onClick={onClose}>
             취소
           </Button>
-          <Button variant="primary" onClick={handleSave}>
-            저장
+          <Button variant="ok" size="l" onClick={handleSaveAll}>
+            수정 완료
           </Button>
-        </BtnRow>
-      </Wrapper>
+        </Footer>
+      </Container>
     </SideDrawer>
   );
 }
 
-const Wrapper = styled.div`
+// 스타일 컴포넌트 생략 (기존 유지)
+const Container = styled.div`
   padding: 20px;
-`;
-const Field = styled.div`
-  margin-bottom: 14px;
-  label {
-    display: block;
-    font-size: 12px;
-    margin-bottom: 6px;
-    opacity: 0.7;
-  }
-  input,
-  select {
-    width: 100%;
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid #ddd;
-  }
-`;
-const BtnRow = styled.div`
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 18px;
+  height: 100%;
+`;
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  h3 {
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
+    margin-bottom: 20px;
+  }
+`;
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+  padding-right: 10px;
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
+`;
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+const SectionTitle = styled.h4`
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
+  }
+`;
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+`;
+const Item = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  label {
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
+  }
+`;
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
+`;
+const Value = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  height: 38px;
+  font-size: var(--fontSm);
+  color: var(--font);
+`;
+const Input = styled.input`
+  padding: 10px 12px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  outline: none;
+  width: 150px;
+  transition: all 0.2s;
+  box-sizing: border-box;
+  &:focus {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+`;
+const FilterBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
-  margin-top: 20px;
+  width: 100%;
+  & > :first-child {
+    flex-grow: 1;
+  }
+`;
+const TableInput = styled.input`
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  box-sizing: border-box;
+  transition: all 0.2s;
+  &:focus {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+`;
+const TableSelect = styled.select`
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-sizing: border-box;
+  &:focus {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+`;
+const TableWrap = styled.div`
+  margin-bottom: 50px;
+`;
+const DeleteBtn = styled.button`
+  background: var(--bgError);
+  color: var(--error);
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  &:hover {
+    background: #ffdbdb;
+  }
+`;
+const Footer = styled.div`
+  margin-top: auto;
+  background: white;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
 `;

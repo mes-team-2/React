@@ -1,14 +1,20 @@
 import styled from "styled-components";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import ProductDetail from "./ProductDetail";
 import ProductForm from "./ProductForm";
 import Button from "../../components/Button";
+import SearchBar from "../../components/SearchBar";
+import SearchDate from "../../components/SearchDate";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
 
 export default function Product() {
   const [products, setProducts] = useState([]);
+
+  // 검색 및 필터링을 위한 State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
 
   const [drawer, setDrawer] = useState({
     open: false,
@@ -17,7 +23,7 @@ export default function Product() {
 
   const [selected, setSelected] = useState(null);
 
-  // 1. 목록 조회
+  // 목록 조회
   const fetchProducts = async () => {
     try {
       const res = await WorkOrderAPI.getProductList();
@@ -31,6 +37,33 @@ export default function Product() {
     fetchProducts();
   }, []);
 
+  // 데이터 필터링 로직 (검색어 + 날짜)
+  const filteredData = useMemo(() => {
+    return products.filter((item) => {
+      // 검색어 필터 (제품코드, 제품명)
+      const lowerTerm = searchTerm.toLowerCase();
+      const matchText =
+        (item.productCode || "").toLowerCase().includes(lowerTerm) ||
+        (item.productName || "").toLowerCase().includes(lowerTerm);
+
+      if (!matchText) return false;
+
+      // 날짜 필터 (제품 등록일 기준)
+      if (dateRange.start && dateRange.end) {
+        const itemDate = new Date(item.createdAt);
+        const startDate = new Date(dateRange.start);
+        const endDate = new Date(dateRange.end);
+        itemDate.setHours(0, 0, 0, 0);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        return itemDate >= startDate && itemDate <= endDate;
+      }
+
+      return true;
+    });
+  }, [products, searchTerm, dateRange]);
+
   const openDrawer = (type, row = null) => {
     setSelected(row);
     setDrawer({ open: true, type });
@@ -41,7 +74,6 @@ export default function Product() {
     setSelected(null);
   };
 
-  /* ===== CRUD ===== */
   const handleCreate = async (payload) => {
     try {
       await WorkOrderAPI.createProduct(payload);
@@ -67,26 +99,74 @@ export default function Product() {
     }
   };
 
+  // 날짜 포맷팅 함수 (yyyy-MM-dd HH:mm)
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+
+    // 유효하지 않은 날짜인 경우 원본 반환
+    if (isNaN(date.getTime())) return dateString;
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day} ${hour}:${minute}`;
+  };
+
   const columns = [
     { key: "productCode", label: "제품 코드", width: 160 },
     { key: "productName", label: "제품명", width: 220 },
-    { key: "voltage", label: "전압", width: 80 },
-    { key: "capacityAh", label: "용량(Ah)", width: 100 },
-    // [수정] 상태 -> 단위로 변경
+    { key: "voltage", label: "전압", width: 80, render: (val) => `${val}V` },
+
+    {
+      key: "capacityAh",
+      label: "용량",
+      width: 100,
+      render: (val) => `${val}Ah`,
+    },
     { key: "unit", label: "단위", width: 80 },
-    { key: "updatedAt", label: "수정일", width: 120 },
+    {
+      key: "createdAt",
+      label: "등록일",
+      width: 160,
+      render: (val) => formatDate(val),
+    },
+    {
+      key: "updatedAt",
+      label: "수정일",
+      width: 160,
+      render: (val) => formatDate(val),
+    },
   ];
 
   return (
     <Wrapper>
       <Header>
         <h2>제품 기준 관리</h2>
-        <AddBtn onClick={() => openDrawer("create")}>+ 제품 등록</AddBtn>
       </Header>
+
+      <FilterBar>
+        <FilterGroup>
+          <SearchDate onChange={(start, end) => setDateRange({ start, end })} />
+          <SearchBar
+            width="l"
+            placeholder="제품코드 / 제품명 검색"
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
+        </FilterGroup>
+
+        <Button variant="ok" size="m" onClick={() => openDrawer("create")}>
+          + 제품 등록
+        </Button>
+      </FilterBar>
 
       <Table
         columns={columns}
-        data={products}
+        data={filteredData}
         onRowClick={(row) => openDrawer("detail", row)}
         selectable={false}
       />
@@ -139,20 +219,29 @@ export default function Product() {
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 `;
 const Header = styled.div`
+  h2 {
+    font-size: var(--fontXl);
+    font-weight: var(--bold);
+    color: var(--font);
+  }
+`;
+
+const FilterBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 20px;
 `;
-const AddBtn = styled.button`
-  padding: 8px 14px;
-  background: var(--main);
-  color: white;
-  border-radius: 8px;
-  font-weight: 600;
+
+const FilterGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
 `;
+
 const DrawerFooter = styled.div`
   display: flex;
   justify-content: flex-end;

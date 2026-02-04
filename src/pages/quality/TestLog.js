@@ -495,6 +495,7 @@ const FilterBar = styled.div`
   display: flex;
   gap: 12px;
   align-items: center;
+  margin-top: 20px;
 `;
 
 const SearchWrap = styled.div`

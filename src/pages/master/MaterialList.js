@@ -126,7 +126,7 @@ export default function MaterialList() {
     { date: "01-05", inbound: 520, outbound: 430 },
   ];
 
-  // 필터 및 정렬 로직 
+  // 필터 및 정렬 로직
   const filteredData = useMemo(() => {
     return data.filter((item) => {
       // 검색어 필터
@@ -157,7 +157,7 @@ export default function MaterialList() {
         if (dateRange.start || dateRange.end) matchesDate = false;
       }
 
-      // 상태 필터 
+      // 상태 필터
       let matchesStatus = true;
       if (statusFilter !== "ALL") {
         const currentStock = Number(item.stockQty || 0);
@@ -242,13 +242,13 @@ export default function MaterialList() {
       key: "inboundAt",
       label: "입고일자",
       width: 180,
-      render: (val) => formatDate(val)
+      render: (val) => formatDate(val),
     },
     {
       key: "createdAt",
       label: "자재등록일자",
       width: 180,
-      render: (val) => formatDate(val)
+      render: (val) => formatDate(val),
     },
   ];
 
@@ -342,7 +342,7 @@ export default function MaterialList() {
             width="l"
             placeholder="자재명 / 자재코드 검색"
             onChange={setKeyword} // 키워드 상태 업데이트
-            onSearch={() => { }}
+            onSearch={() => {}}
           />
         </InputGroup>
         <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
@@ -425,6 +425,7 @@ const ChartBox = styled.div`
   }
 `;
 const FilterBar = styled.div`
+  margin-top: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;

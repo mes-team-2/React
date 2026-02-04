@@ -1,69 +1,141 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import DefectLogDetail from "./DefectLogDetail";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import SelectBar from "../../components/SelectBar";
 
 export default function QualityDefectLog() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
   const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState([]);
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
+  const [machineFilter, setMachineFilter] = useState("ALL");
+
+  const machineOptions = useMemo(() => {
+    const map = new Map();
+
+    rows.forEach((r) => {
+      if (!r.machineCode || !r.machineName) return;
+
+      // code 기준으로 중복 제거
+      map.set(r.machineCode, {
+        value: r.machineCode,
+        label: r.machineName,
+      });
+    });
+
+    return [{ value: "ALL", label: "전체 설비" }, ...Array.from(map.values())];
+  }, [rows]);
+
+  // ✅ [수정] useMemo보다 위에 둬야 함 (Cannot access before initialization 방지)
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+
+    const d = new Date(value);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  };
+
+  // ✅ [수정] 공정명/설비명 못 받을 때 fallback
+  const pickProcessName = (r) => r.processName ?? r.processCode ?? "-";
+  const pickMachineName = (r) => r.machineName ?? r.machineCode ?? "-";
+
+  // ✅ LOT × 공정 단위 로그 (메인 테이블)
+  const processRows = useMemo(() => {
+    const map = {};
+
+    rows.forEach((r) => {
+      // 🔥 설비 필터
+      if (machineFilter !== "ALL" && r.machineCode !== machineFilter) {
+        return;
+      }
+
+      const processKey = r.processCode ?? r.processName ?? "-";
+      const key = `${r.lotNo}_${processKey}_${r.machineCode}`;
+      const rawTime = r.occurredAt ?? r.createdAt;
+
+      if (!map[key]) {
+        map[key] = {
+          lotNo: r.lotNo,
+          processCode: r.processCode,
+          processName: r.processName ?? r.processCode ?? "-",
+          machineCode: r.machineCode,
+          machineName: r.machineName,
+          defectQty: 0,
+          occurredAtRaw: rawTime,
+          occurredAtText: formatDateTime(rawTime),
+          defects: [],
+        };
+      }
+
+      map[key].defectQty += Number(r.defectQty ?? 0);
+
+      map[key].defects.push({
+        defectType: r.defectType,
+        defectQty: Number(r.defectQty ?? 0),
+        machineCode: r.machineCode,
+        occurredAtRaw: rawTime,
+        occurredAtText: formatDateTime(rawTime),
+      });
+
+      if (
+        rawTime &&
+        (!map[key].occurredAtRaw || rawTime > map[key].occurredAtRaw)
+      ) {
+        map[key].occurredAtRaw = rawTime;
+        map[key].occurredAtText = formatDateTime(rawTime);
+      }
+    });
+
+    return Object.values(map);
+  }, [rows, machineFilter]);
 
   /* =========================
-     불량 유형별 차트 데이터
+     서버 데이터 조회
   ========================= */
-  const defectChartData = [
-    { type: "전압 불량", qty: 45 },
-    { type: "외관 불량", qty: 30 },
-    { type: "누액", qty: 15 },
-    { type: "단락", qty: 8 },
-  ];
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const res = await axios.get("http://localhost:8088/api/defect-logs", {
+          params: { date: today },
+          withCredentials: true,
+        });
+        setRows(res.data);
+      } catch (e) {
+        console.error("불량 로그 조회 실패", e);
+      }
+    };
+
+    fetchLogs();
+  }, []);
 
   /* =========================
      테이블 컬럼
   ========================= */
   const columns = [
-    { key: "lotNo", label: "LOT No", width: 160 },
-    { key: "process", label: "공정", width: 140 },
-    { key: "machine", label: "설비", width: 160 },
-    { key: "defectType", label: "불량 유형", width: 160 },
-    { key: "defectQty", label: "불량 수량", width: 120 },
-    { key: "occurredAt", label: "발생 시각", width: 180 },
-    { key: "worker", label: "작업자", width: 130 },
+    { key: "lotNo", label: "LOT 번호", width: 180 },
+    { key: "processName", label: "공정명", width: 180 },
+    { key: "machineName", label: "설비명", width: 180 },
+    { key: "defectQty", label: "불량", width: 100 },
+    {
+      key: "occurredAtText",
+      label: "최근 발생 시각",
+      width: 180,
+    },
   ];
-
-  /* =========================
-     더미 데이터
-  ========================= */
-  const tableData = useMemo(
-    () =>
-      Array.from({ length: 18 }).map((_, i) => ({
-        id: i + 1,
-        lotNo: `LOT-202601-${String(i + 1).padStart(3, "0")}`,
-        workOrderNo: `WO-202601-${String(Math.floor(i / 2) + 1).padStart(
-          3,
-          "0",
-        )}`,
-        process: i % 3 === 0 ? "조립" : i % 3 === 1 ? "활성화" : "검사",
-        machine: `설비-${(i % 4) + 1}`,
-        defectType: i % 2 === 0 ? "전압 불량" : "외관 불량",
-        defectQty: 1 + (i % 4),
-        occurredAt: "2026-01-06 14:30",
-      })),
-    [],
-  );
 
   /* =========================
      정렬
@@ -80,23 +152,6 @@ export default function QualityDefectLog() {
     });
   };
 
-  const sortedData = useMemo(() => {
-    if (!sortConfig.key) return tableData;
-
-    return [...tableData].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (typeof aVal === "string") {
-        return sortConfig.direction === "asc"
-          ? aVal.localeCompare(bVal, "ko", { numeric: true })
-          : bVal.localeCompare(aVal, "ko", { numeric: true });
-      }
-
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
-    });
-  }, [tableData, sortConfig]);
-
   /* =========================
      Row 클릭 → 상세 Drawer
   ========================= */
@@ -110,26 +165,20 @@ export default function QualityDefectLog() {
       <Header>
         <h2>불량 / 품질 로그</h2>
       </Header>
+      <SelectBar
+        width="260px"
+        type="single"
+        value={machineFilter}
+        options={machineOptions}
+        onChange={(val) => {
+          const next = typeof val === "string" ? val : val?.target?.value;
+          setMachineFilter(next);
+        }}
+      />
 
-      {/* ===== 차트 ===== */}
-      <Card>
-        <CardTitle>불량 유형별 발생 현황</CardTitle>
-        <ChartBox>
-          <ResponsiveContainer>
-            <BarChart data={defectChartData}>
-              <XAxis dataKey="type" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="qty" fill="#ef4444" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartBox>
-      </Card>
-
-      {/* ===== 테이블 ===== */}
       <Table
         columns={columns}
-        data={sortedData}
+        data={processRows}
         sortConfig={sortConfig}
         onSort={handleSort}
         selectedIds={selectedIds}
@@ -147,7 +196,7 @@ export default function QualityDefectLog() {
 }
 
 /* =========================
-   styled
+   styled (변경 없음)
 ========================= */
 
 const Wrapper = styled.div`
@@ -160,27 +209,6 @@ const Header = styled.div`
   h2 {
     font-size: 22px;
     font-weight: 700;
-  }
-`;
-
-const Card = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
-`;
-
-const CardTitle = styled.h4`
-  font-size: 14px;
-  margin-bottom: 12px;
-`;
-
-const ChartBox = styled.div`
-  height: 260px;
-
-  svg:focus,
-  svg *:focus {
-    outline: none;
   }
 `;
 
