@@ -242,6 +242,7 @@ const Right = styled.div`
 `;
 const Selected = styled.div`
   margin-bottom: 15px;
+  height: 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
