@@ -230,14 +230,14 @@ const STATUS_CONFIG = {
     icon: <FiCheckCircle />,
   },
   YES: {
-    label: "YES",
+    label: "사용중",
     iconColor: "var(--run)", // 녹색/파란색 계열
     textColor: "var(--font)",
     bg: "var(--bgRun)",
     icon: <FiRefreshCw />,
   },
   NO: {
-    label: "NO",
+    label: "사용중지",
     iconColor: "var(--stop)", // 회색 계열
     textColor: "var(--font)",
     bg: "var(--bgStop)",

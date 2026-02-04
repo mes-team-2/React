@@ -19,12 +19,12 @@ export default function ProcessDrawer({
   // 유효성 검사 및 제출 핸들러
   const handleSubmit = () => {
     // 필수값 체크
-    if (!form.processName) {
-      alert("공정명을 입력해주세요.");
-      return;
-    }
     if (!form.seq) {
       alert("공정 순서를 입력해주세요.");
+      return;
+    }
+    if (!form.processName) {
+      alert("공정명을 입력해주세요.");
       return;
     }
     if (form.active === undefined || form.active === null) {
@@ -32,25 +32,21 @@ export default function ProcessDrawer({
       return;
     }
 
-    // 유효성 통과 시 부모의 onSubmit 호출
+    // 2. 유효성 통과 시 부모의 onSubmit 호출
     onSubmit();
   };
 
   return (
-    <SideDrawer
-      open={open}
-      title={mode === "create" ? "공정 등록" : "공정 수정"}
-      onClose={onClose}
-    >
+    <SideDrawer open={open} onClose={onClose}>
       <Wrap>
         <Header>
-          <h3>신규 공정 등록</h3>
+          <h3>{mode === "create" ? "신규 공정 등록" : "공정 수정"}</h3>
         </Header>
         <Content>
           <Section>
             <SectionTitle>공정 정보</SectionTitle>
             <DataGrid>
-              <FullWidthItem>
+              <FullItem>
                 <label>공정 코드</label>
                 <Input
                   value={form.processCode}
@@ -58,9 +54,9 @@ export default function ProcessDrawer({
                   readOnly // 읽기 전용
                   placeholder="자동 생성"
                 />
-              </FullWidthItem>
+              </FullItem>
 
-              <FullWidthItem>
+              <FullItem>
                 <label>공정명</label>
                 <Input
                   value={form.processName}
@@ -69,7 +65,7 @@ export default function ProcessDrawer({
                   }
                   placeholder="공정 이름을 입력하세요"
                 />
-              </FullWidthItem>
+              </FullItem>
             </DataGrid>
           </Section>
           <Section>
@@ -117,7 +113,7 @@ export default function ProcessDrawer({
           <Button variant="cancel" size="l" onClick={onClose}>
             취소
           </Button>
-          <Button variant="ok" size="l" onClick={handleSubmit}>
+          <Button variant="ok" size="l" onClick={onSubmit}>
             {mode === "create" ? "등록" : "수정"}
           </Button>
         </Footer>
@@ -208,7 +204,7 @@ const Item = styled.div`
   }
 `;
 
-const FullWidthItem = styled(Item)`
+const FullItem = styled(Item)`
   grid-column: 1 / -1;
 `;
 
@@ -241,4 +237,34 @@ const Footer = styled.div`
   display: flex;
   justify-content: center;
   gap: 50px;
+`;
+
+/* Toggle 관련 스타일 (기존 유지) */
+const Toggle = styled.div`
+  width: 44px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: ${(p) => (p.$active ? "var(--main)" : "#c9c9c9")};
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+`;
+
+const ToggleThumb = styled.div`
+  width: 18px;
+  height: 18px;
+  background-color: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+  transform: ${(p) => (p.$active ? "translateX(22px)" : "translateX(0)")};
+`;
+
+const StateText = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${(p) => (p.$active ? "var(--main)" : "#888")};
 `;
