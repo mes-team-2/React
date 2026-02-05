@@ -28,10 +28,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-/* =========================
-   더미: 검사 이력 데이터
-   (실 연동 시 API로 교체)
-========================= */
+import SearchDate from "../../components/SearchDate";
 
 const PROCESS_STEPS = [
   "극판 적층",
@@ -131,6 +128,7 @@ export default function TestLog() {
   const [selected, setSelected] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [date, setDate] = useState(null);
 
   // SearchBar onChange (value/event 모두 대응)
   const handleKeywordChange = (v) => {
@@ -416,6 +414,15 @@ export default function TestLog() {
             placeholder="LOT / 작업지시 / 제품 / 설비 / 검사자 검색"
           />
         </SearchWrap>
+
+        <SearchDate
+          type="single"
+          width="m"
+          onChange={(d) => {
+            setDate(d);
+            setPage(1);
+          }}
+        />
 
         <Select
           value={resultFilter}
