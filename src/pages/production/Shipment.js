@@ -245,12 +245,7 @@ const Shipment = () => {
         label: "단위",
         width: 60,
       },
-      { key: "location", label: "위치/출고처", width: 120 },
-      {
-        key: "note",
-        label: "비고",
-        width: 140,
-      },
+      // { key: "location", label: "위치/출고처", width: 120 },
     ],
     [],
   );
@@ -310,7 +305,7 @@ const Shipment = () => {
 
         <SearchBar
           width="l"
-          placeholder="제품코드, 명, 위치, 비고 검색"
+          placeholder="제품코드, 명 검색"
           onSearch={(val) => {
             setSearchTerm(val);
             setPage(1);
