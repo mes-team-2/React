@@ -80,16 +80,12 @@ export default function ProcessLog() {
     if (keyword) {
       const lowerKey = keyword.toLowerCase();
       result = result.filter((item) => {
-        const lot = (item.lotNo || "").toLowerCase();
-        const process = (item.processStep || "").toLowerCase();
-        const machine = (item.machineName || "").toLowerCase();
+        // 기존 LOT, 공정명 제거하고 작업자(workerName) 추가
+        const machine = (item.machineName || "").toLowerCase(); // 설비명
+        const worker = (item.workerName || "").toLowerCase(); // 작업자명
 
-        // 셋 중 하나라도 검색어를 포함하면 통과
-        return (
-          lot.includes(lowerKey) ||
-          process.includes(lowerKey) ||
-          machine.includes(lowerKey)
-        );
+        // 설비명 또는 작업자명에 검색어가 포함되면 통과
+        return machine.includes(lowerKey) || worker.includes(lowerKey);
       });
     }
 
@@ -165,7 +161,7 @@ export default function ProcessLog() {
           />
 
           <SelectBar
-            width="140px"
+            width="s"
             placeholder="공정 선택"
             options={processOptions}
             value={processFilter}
@@ -173,8 +169,8 @@ export default function ProcessLog() {
           />
 
           <SearchBar
-            width="300px"
-            placeholder="LOT / 공정 / 설비 검색"
+            width="l"
+            placeholder="설비 / 작업자 검색"
             value={keyword}
             onChange={setKeyword}
             onSearch={loadData}
