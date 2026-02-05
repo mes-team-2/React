@@ -13,7 +13,6 @@ export default function WorkOrderDetail({ status, workOrder, onStatusChange }) {
   // 상세 내부에서 상태가 바뀌면 UI 갱신을 위해 로컬 상태 사용
   const [currentStatus, setCurrentStatus] = useState(workOrder?.status || "-");
 
-  console.log("전체 workOrder 확인:", workOrder);
   console.log("상태(status) 값 확인:", status);
 
   // workOrder가 변경되면 상세 조회
@@ -97,10 +96,6 @@ export default function WorkOrderDetail({ status, workOrder, onStatusChange }) {
 
   return (
     <Container>
-      <div className="detail-container">
-        {/* [수정 3] props.status -> status 로 변경 */}
-        상태: {status}
-      </div>
       <Header>
         <h3>작업지시 상세</h3>
 

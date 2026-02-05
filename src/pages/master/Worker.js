@@ -161,7 +161,7 @@ export default function Worker() {
           <SearchDate onChange={(start, end) => setDateRange({ start, end })} />
 
           <SelectBar
-            width="140px"
+            width="s"
             options={statusOptions}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -169,7 +169,7 @@ export default function Worker() {
           />
 
           <SearchBar
-            width="280px"
+            width="l"
             placeholder="사원번호 / 사원명 검색"
             value={searchTerm}
             onChange={setSearchTerm}
