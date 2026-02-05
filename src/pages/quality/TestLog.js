@@ -128,13 +128,18 @@ export default function TestLog() {
   const [selected, setSelected] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
-  const [date, setDate] = useState(null);
+
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
 
   // SearchBar onChange (value/event 모두 대응)
   const handleKeywordChange = (v) => {
     if (typeof v === "string") return setKeyword(v);
     if (v?.target?.value !== undefined) return setKeyword(v.target.value);
     setKeyword("");
+  };
+
+  const handleDateChange = (start, end) => {
+    setDateRange({ start, end });
   };
 
   const defectOptions = useMemo(() => {
@@ -416,12 +421,9 @@ export default function TestLog() {
         </SearchWrap>
 
         <SearchDate
-          type="single"
           width="m"
-          onChange={(d) => {
-            setDate(d);
-            setPage(1);
-          }}
+          onChange={handleDateChange}
+          placeholder="입고일자 검색"
         />
 
         <Select
