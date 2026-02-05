@@ -305,8 +305,12 @@ export default function ProductionReport() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="output" fill="var(--run)" />
-                <Bar dataKey="ng" fill="var(--error)" />
+                <Bar
+                  dataKey="output"
+                  fill="var(--main)"
+                  radius={[9, 9, 0, 0]}
+                />
+                <Bar dataKey="ng" fill="var(--error)" radius={[9, 9, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartBox>

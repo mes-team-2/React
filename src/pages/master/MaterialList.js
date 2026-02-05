@@ -293,7 +293,7 @@ export default function MaterialList() {
                 <XAxis dataKey="name" fontSize={10} tick={{ dy: 5 }} />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="stock" fill="var(--main)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="stock" fill="var(--main)" radius={[9, 9, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartBox>
