@@ -192,8 +192,6 @@ export default function MaterialLog() {
     },
 
     { key: "unit", label: "단위", width: 60 },
-    { key: "fromLocation", label: "출발지 (From)", width: 140 },
-    { key: "toLocation", label: "도착지 (To)", width: 140 },
 
     { key: "operator", label: "작업자", width: 90 },
   ];
