@@ -143,16 +143,6 @@ export default function Dashboard() {
           <h1>Dashboard</h1>
           <p>실시간 생산 모니터링 시스템</p>
         </TitleArea>
-        <TimeCard>
-          <div className="env-info">
-            <FaTemperatureHigh className="icon-temp" /> <span>23℃</span>
-            <FaTint className="icon-humidity" /> <span>48%</span>
-          </div>
-          <div className="divider" />
-          <div className="clock-info">
-            <FaClock /> <span>{time}</span>
-          </div>
-        </TimeCard>
       </Header>
 
       <TopSummaryGrid>

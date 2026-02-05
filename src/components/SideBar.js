@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { FaClock, FaTemperatureHigh, FaTint } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import logo from "../images/logo.png";
@@ -205,6 +206,17 @@ const MENU = [
   },
 ];
 
+// 한국 시간 포맷팅 함수
+const getKoreaTime = () => {
+  const now = new Date();
+  return now.toLocaleTimeString("ko-KR", {
+    hour12: false, // 24시간제
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
 export default function SideBar() {
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
@@ -229,6 +241,8 @@ export default function SideBar() {
     const saved = localStorage.getItem(RECENT_PAGES_KEY);
     return saved ? JSON.parse(saved) : [];
   });
+  const [time, setTime] = useState(getKoreaTime());
+  const [weather, setWeather] = useState({ temp: "-", humidity: "-" });
 
   const PIN_KEY = "mes_pinned_tabs";
 
@@ -276,6 +290,64 @@ export default function SideBar() {
     });
   }, [recentPages.length]);
 
+  // 시계 (1초마다 갱신)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(getKoreaTime());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  //현재 위치 날씨 가져오기
+  useEffect(() => {
+    const API_KEY = "3e926bad59d6d0e6f1000cf5a0a26523";
+
+    const fetchWeather = async (lat, lon) => {
+      try {
+        const response = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`,
+        );
+
+        // 응답 상태 확인
+        if (!response.ok) {
+          throw new Error(`API 호출 실패: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.main) {
+          setWeather({
+            temp: Math.round(data.main.temp), // 반올림
+            humidity: data.main.humidity,
+          });
+        }
+      } catch (error) {
+        console.error("날씨 정보를 가져오는데 실패했습니다:", error);
+      }
+    };
+
+    // 브라우저 위치 정보 요청
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // 위치 허용 시: 현재 위치 사용
+          const { latitude, longitude } = position.coords;
+          console.log("현재 위치로 날씨 조회:", latitude, longitude);
+          fetchWeather(latitude, longitude);
+        },
+        (error) => {
+          // 위치 차단/에러 시: 천안 좌표 억지로 가져온다
+          console.warn(
+            "위치 정보를 가져올 수 없어 기본값(서울)을 사용합니다.",
+            error,
+          );
+          fetchWeather(36.8151, 127.1139);
+        },
+      );
+    } else {
+      // GPS 미지원 브라우저: 얘도 천안 좌표 억지로 가져온다
+      fetchWeather(36.8151, 127.1139);
+    }
+  }, []);
+
   const removeTab = (path) => {
     setRecentPages((prev) => {
       const next = prev.filter((p) => p.path !== path);
@@ -283,10 +355,6 @@ export default function SideBar() {
       return next;
     });
   };
-
-  /* =========================
-     대분류/중분류 열림 상태
-  ========================= */
 
   const SIDEBAR_OPEN_KEY = "mes_sidebar_open_keys";
   const [openKeys, setOpenKeys] = useState(() => {
@@ -332,9 +400,6 @@ export default function SideBar() {
     );
   };
 
-  /* =========================
-      탭 스크롤 핸들러 (좌우 이동)
-  ========================= */
   const scrollTabs = (direction) => {
     if (tabsRef.current) {
       const scrollAmount = 200; // 스크롤 이동 거리
@@ -461,7 +526,6 @@ export default function SideBar() {
           <Logo src={logo} alt="logo" onClick={() => navigate("/")} />
         </Brand>
 
-        {/* ===== 사이드 메뉴 ===== */}
         <ScrollContainer>
           <Nav>
             {MENU.map((group) => {
@@ -655,12 +719,18 @@ export default function SideBar() {
           </TopBarLeft>
 
           <TopBarRight>
-            <SearchWrapper>
-              <SearchIcon>
-                <IconSearch />
-              </SearchIcon>
-              <SearchInput placeholder="Search" />
-            </SearchWrapper>
+            <TimeCard>
+              <div className="env-info">
+                <FaTemperatureHigh className="icon-temp" />
+                <span>{weather.temp}℃</span>
+                <FaTint className="icon-humidity" />
+                <span>{weather.humidity}%</span>
+              </div>
+              <div className="divider" />
+              <div className="clock-info">
+                <FaClock /> <span>{time}</span>
+              </div>
+            </TimeCard>
           </TopBarRight>
         </TopBar>
 
@@ -885,8 +955,8 @@ const TopBarLeft = styled.div`
 `;
 
 const IconBtn = styled.button`
-  width: 32px;
-  height: 32px;
+  width: 25px;
+  height: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -904,8 +974,8 @@ const PaddedIconBtn = styled(IconBtn)`
 
 const BorderedChevronBtn = styled(IconBtn)`
   border-right: 1px solid var(--border);
-  width: 40px;
-  height: 40px;
+  width: 25px;
+  height: 25px;
 `;
 
 const Divider = styled.div`
@@ -932,8 +1002,8 @@ const TabsContainer = styled.div`
 `;
 
 const Tab = styled.div`
-  min-width: 150px;
-  padding: 0 16px;
+  min-width: 130px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -990,6 +1060,51 @@ const TopBarRight = styled.div`
   display: flex;
   align-items: center;
   padding: 0 10px;
+  min-width: 200px;
+`;
+
+const TimeCard = styled.div`
+  background: var(--background);
+  padding: 5px 10px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: var(--font);
+  font-weight: var(--bold);
+  font-size: var(--fontXxs);
+
+  .env-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--font2);
+    font-size: var(--fontXxs);
+    .icon-temp {
+      color: var(--error);
+    }
+    .icon-humidity {
+      color: var(--main);
+    }
+    span {
+      font-size: var(--fontXxs);
+    }
+  }
+  .divider {
+    width: 1px;
+    height: 10px;
+    background: var(--border);
+  }
+  .clock-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--font);
+    svg {
+      color: var(--main);
+    }
+  }
 `;
 
 const SearchWrapper = styled.div`

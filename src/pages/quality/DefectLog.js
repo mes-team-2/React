@@ -173,7 +173,7 @@ export default function DefectLog() {
         <h2>불량 이력 조회</h2>
       </Header>
 
-      <ControlRow>
+      <FilterBar>
         <SearchDate
           onChange={(d) => {
             setDate(d);
@@ -202,7 +202,7 @@ export default function DefectLog() {
             setPage(1);
           }}
         />
-      </ControlRow>
+      </FilterBar>
 
       <Table
         columns={columns}
@@ -248,8 +248,9 @@ const Header = styled.div`
   }
 `;
 
-const ControlRow = styled.div`
+const FilterBar = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  margin-top: 20px;
+  gap: 20px;
 `;
