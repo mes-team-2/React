@@ -20,7 +20,10 @@ export default function DefectLog() {
   const [machineFilter, setMachineFilter] = useState("ALL"); // 설비 필터
   const [processFilter, setProcessFilter] = useState("ALL"); // 공정 필터
   const [keyword, setKeyword] = useState(""); // 검색어 (LOT 번호)
-  const [date, setDate] = useState(new Date()); // 날짜
+  const [dateRange, setDateRange] = useState({
+    startDate: null,
+    endDate: null,
+  });
 
   // 페이지네이션 상태
   const [page, setPage] = useState(1);
@@ -79,8 +82,12 @@ export default function DefectLog() {
 
       const rawTime = r.occurredAt ?? r.createdAt;
 
-      if (date) {
-        if (getLocalDate(rawTime) !== getLocalDate(date)) return;
+      if (dateRange.startDate && dateRange.endDate) {
+        const target = getLocalDate(rawTime);
+        const start = getLocalDate(dateRange.startDate);
+        const end = getLocalDate(dateRange.endDate);
+
+        if (target < start || target > end) return;
       }
 
       const key = `${r.lotNo}_${r.processCode}_${r.machineCode}`;
@@ -115,7 +122,7 @@ export default function DefectLog() {
     });
 
     return Object.values(map);
-  }, [rows, machineFilter, keyword, date]);
+  }, [rows, machineFilter, keyword, dateRange]);
 
   const sortedRows = useMemo(() => {
     if (!sortConfig.key) return processRows;
@@ -175,8 +182,9 @@ export default function DefectLog() {
 
       <FilterBar>
         <SearchDate
-          onChange={(d) => {
-            setDate(d);
+          onChange={(start, end) => {
+            setDateRange({ startDate: start, endDate: end });
+
             setPage(1);
           }}
         />
