@@ -339,7 +339,7 @@ export default function ProductLot() {
         />
 
         <SelectBar
-          width="140px"
+          width="s"
           options={STATUS_OPTIONS}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}

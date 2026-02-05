@@ -268,7 +268,7 @@ export default function MaterialLot() {
           placeholder="기간 검색"
         />
         <SelectBar
-          width="140px"
+          width="s"
           placeholder="상태 선택"
           options={STATUS_OPTIONS}
           value={statusFilter}

@@ -317,7 +317,7 @@ const FgInventory = () => {
       <FilterBar>
         <SearchDate width="m" onChange={handleDateSearch} />
         <SelectBar
-          width="140px"
+          width="s"
           placeholder="상태 선택"
           options={STATUS_OPTIONS}
           value={statusFilter}

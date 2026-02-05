@@ -151,31 +151,29 @@ export default function ProcessLog() {
       </Header>
 
       <FilterBar>
-        <FilterGroup>
-          <SelectBar
-            width="l"
-            placeholder="LOT 선택"
-            options={lotOptions}
-            value={lotFilter}
-            onChange={handleLotFilterChange}
-          />
+        <SelectBar
+          width="l"
+          placeholder="LOT 선택"
+          options={lotOptions}
+          value={lotFilter}
+          onChange={handleLotFilterChange}
+        />
 
-          <SelectBar
-            width="s"
-            placeholder="공정 선택"
-            options={processOptions}
-            value={processFilter}
-            onChange={handleProcessFilterChange}
-          />
+        <SelectBar
+          width="s"
+          placeholder="공정 선택"
+          options={processOptions}
+          value={processFilter}
+          onChange={handleProcessFilterChange}
+        />
 
-          <SearchBar
-            width="l"
-            placeholder="설비 / 작업자 검색"
-            value={keyword}
-            onChange={setKeyword}
-            onSearch={loadData}
-          />
-        </FilterGroup>
+        <SearchBar
+          width="l"
+          placeholder="설비 / 작업자 검색"
+          value={keyword}
+          onChange={setKeyword}
+          onSearch={loadData}
+        />
       </FilterBar>
 
       <Table
@@ -224,15 +222,15 @@ const Header = styled.div`
 
 const FilterBar = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-top: 20px;
+  gap: 20px;
 `;
 
 const FilterGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 `;
 
 const PaginationWrapper = styled.div`

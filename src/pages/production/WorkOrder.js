@@ -201,7 +201,7 @@ export default function WorkOrder() {
         <FilterBar>
           <SearchDate width="m" onChange={handleDateChange} />
           <SelectBar
-            width="120px"
+            width="s"
             placeholder="상태 전체"
             options={[
               { value: "ALL", label: "전체" },
@@ -213,7 +213,7 @@ export default function WorkOrder() {
             onChange={(e) => setStatusFilter(e.target.value)}
           />
           <SearchBar
-            width="250px"
+            width="l"
             placeholder="지시번호/제품/담당자 검색"
             onChange={setKeyword}
             onSearch={(val) => console.log("검색:", val)}

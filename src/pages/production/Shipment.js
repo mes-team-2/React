@@ -298,7 +298,7 @@ const Shipment = () => {
           }}
         />
         <SelectBar
-          width="140px"
+          width="s"
           options={STATUS_OPTIONS}
           value={txTypeFilter}
           onChange={(e) => {
