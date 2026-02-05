@@ -57,6 +57,10 @@ function App() {
         <Routes>
           {/* ================= 로그인 (유일한 공개 페이지) ================= */}
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/product-lot-qr/:lotId"
+            element={<ProductLotQrDetail />}
+          />
 
           {/* ================= 인증 보호 영역 ================= */}
           <Route element={<AuthGuard />}>
@@ -67,10 +71,6 @@ function App() {
             />
 
             <Route path="/test-work-start" element={<Test />} />
-            <Route
-              path="/lot-qr-detail/:lotId"
-              element={<ProductLotQrDetail />}
-            />
 
             {/* ================= MES 레이아웃 ================= */}
             <Route path="/mes" element={<SideBar />}>

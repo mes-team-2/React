@@ -4,6 +4,7 @@ import Table from "../../components/TableStyle";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
 import Button from "../../components/Button";
 import Status from "../../components/Status";
+import QRCodeCreate from "../../components/QRCodeCreate";
 
 export default function WorkOrderDetail({ workOrder, onStatusChange }) {
   const [detailData, setDetailData] = useState(null);
@@ -71,6 +72,8 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
     status: "-",
     createdAt: "-",
   };
+
+  const hasLotNo = lotInfo.lotNo && lotInfo.lotNo !== "-";
   const processData = detailData?.processList || [];
   const materialData = detailData?.materialList || [];
 
@@ -102,6 +105,19 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
       </Header>
 
       <Content>
+        <Section>
+          <SectionTitle>LOT 상세정보</SectionTitle>
+          <QRBox>
+            <Item>
+              <QRCodeCreate
+                value={lotInfo.lotNo}
+                size="m"
+                showText={true}
+                showDownload={true}
+              />
+            </Item>
+          </QRBox>
+        </Section>
         <Section>
           <SectionTitle>작업지시 정보</SectionTitle>
           <Grid>
@@ -149,6 +165,7 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
                 <label>LOT 번호</label>
                 <Value>{lotInfo.lotNo}</Value>
               </FullItem>
+
               <Item>
                 <label>LOT 상태</label>
                 <Value>{lotInfo.status}</Value>
@@ -224,6 +241,12 @@ const Section = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
+`;
+
+const QRBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 const SectionTitle = styled.h4`
   font-size: var(--fontMd);

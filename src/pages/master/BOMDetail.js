@@ -279,7 +279,7 @@ export default function BOMDetail({ data, onClose, onSave }) {
   );
 }
 
-// 스타일 컴포넌트 생략 (기존 유지)
+
 const Container = styled.div`
   padding: 20px;
   display: flex;

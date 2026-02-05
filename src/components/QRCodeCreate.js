@@ -5,33 +5,28 @@ import Button from "./Button";
 
 // QR코드 사이즈 매핑 객체
 const sizeMap = {
-  xs: 40,
+  xs: 35,
   s: 50,
   m: 100,
   l: 150,
 };
 
-/**
- * QR코드 생성 및 다운로드 컴포넌트
- * @param {string} value - QR코드로 변환할 데이터
- * @param {string} size - 's' | 'm' | 'l' (기본값: 'm')
- * @param {boolean} showText - QR 하단 텍스트 표시 여부 (기본값: false)
- * @param {boolean} showDownload - QR 다운로드 버튼 표시 여부 (기본값: false)
- */
 const QRCodeCreate = ({
   value,
   size = "m",
-  showText = false, // LOT 번호 TEXT 부를건지 여부
-  showDownload = false, // QR코드 다운로드(PNG로 PC에) 여부
+  showText = false,
+  showDownload = false,
 }) => {
   const qrRef = useRef(null);
-
   const currentSize = sizeMap[size] || 100;
 
-  const HOST_URL = "http://192.168.0.5:3000";
-  const qrUrl = `${HOST_URL}/work-order/detail/${value}`;
+  // ★ 시연할 사람 보세요 !!!!
+  // 내부망이라서 cmd에 ipconfig 쳐서 IPv4 주소 확인해서 넣으면 됩니다
+  // 일단 아래 주소는 제거(하린)에요
+  const HOST_URL = "http://172.30.1.10:3000";
 
-  // QR코드를 PNG 이미지로 저장하는 함수
+  const qrUrl = `${HOST_URL}/product-lot-qr/${value}`;
+
   const downloadQRCode = () => {
     const canvas = qrRef.current.querySelector("canvas");
     if (canvas) {
@@ -76,23 +71,22 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 5px;
-  background: var(--background);
+  gap: 5px;
+  padding: 10px;
+  background: white;
   width: fit-content;
 `;
 
 const QRWrapper = styled.div`
-  background: var(--background);
+  background: white;
   display: flex;
   justify-content: center;
   align-items: center;
 `;
 
 const InfoText = styled.span`
-  font-size: var(--fontMini);
-  font-weight: var(--bold);
-  color: var(--main);
+  font-size: var(--fontXxs);
+  font-weight: var(--normal);
+  color: var(--font2);
   text-align: center;
-  margin-top: -5px;
 `;
