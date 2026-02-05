@@ -7,7 +7,7 @@ export default function TestLogDetail({ row, defectMap = [] }) {
     const found = defectMap.find((d) => d.code === row.defectCode);
     return found ? `${found.name} (${row.defectCode})` : row.defectCode;
   }, [row, defectMap]);
-
+  console.log("DETAIL ROW:", row);
   if (!row) {
     return <Empty>검사 항목을 선택하세요.</Empty>;
   }
@@ -19,13 +19,12 @@ export default function TestLogDetail({ row, defectMap = [] }) {
         <Badge $result={row.result}>{row.result}</Badge>
       </Header>
 
-      <Sub>{row.inspectedAt}</Sub>
+      <Sub>{row.endedAt}</Sub>
 
       <Grid>
         <Item>
           <label>제품</label>
           <strong>{row.productName}</strong>
-          <small>{row.productCode}</small>
         </Item>
 
         <Item>
@@ -43,27 +42,27 @@ export default function TestLogDetail({ row, defectMap = [] }) {
         <Item>
           <label>검사자</label>
           <strong>{row.inspector}</strong>
-          <small>-</small>
+          <small></small>
         </Item>
       </Grid>
 
       <Section>
-        <h4>측정값</h4>
+        <h4>측정시 환경</h4>
         <MeasureGrid>
           <Measure>
-            <span>OCV</span>
-            <b>{row.ocv}</b>
-            <small>Spec: ≥ 12.0</small>
+            <span>전압</span>
+            <b>{row.voltage}</b>
+            <small>Spec ≤ 223</small>
           </Measure>
           <Measure>
-            <span>내압</span>
-            <b>{row.pressure}</b>
-            <small>Spec: ≥ 1.5</small>
+            <span>온도</span>
+            <b>{row.temperature}</b>
+            <small>Spec ≤ 27</small>
           </Measure>
           <Measure>
-            <span>누액</span>
-            <b>{row.leak ? "Yes" : "No"}</b>
-            <small>Spec: No</small>
+            <span>습도</span>
+            <b>{row.humidity}</b>
+            <small>Spec ≤ 50</small>
           </Measure>
         </MeasureGrid>
       </Section>
@@ -81,11 +80,6 @@ export default function TestLogDetail({ row, defectMap = [] }) {
           </Row>
         </DefectBox>
       </Section>
-
-      <Tip>
-        ※ 실제 연동 시: 검사 설비 데이터(전압/전류/온도 로그)와 이 검사건을
-        연결해 “검사 트레이스”까지 확장 가능.
-      </Tip>
     </Wrap>
   );
 }

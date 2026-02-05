@@ -30,89 +30,6 @@ import {
 
 import SearchDate from "../../components/SearchDate";
 
-const PROCESS_STEPS = [
-  "극판 적층",
-  "COS 용접",
-  "전해액 주입/화성",
-  "최종 성능 검사",
-];
-
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function makeMockRows() {
-  // 최근 14일치 더미
-  const rows = [];
-  let id = 1;
-
-  for (let d = 14; d >= 0; d--) {
-    const day = new Date();
-    day.setDate(day.getDate() - d);
-    const dateStr = `${day.getFullYear()}/${String(day.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}/${String(day.getDate()).padStart(2, "0")}`;
-
-    const count = rand(8, 18);
-    for (let i = 0; i < count; i++) {
-      const lotNo = `LOT-202601-${String(rand(1, 80)).padStart(3, "0")}`;
-      const woNo = `WO-202601-00${rand(1, 8)}`;
-      const step = PROCESS_STEPS[rand(0, PROCESS_STEPS.length - 1)];
-
-      // OCV는 최종 검사에서 의미 있는 값
-      const ocv = Number((11.6 + Math.random() * 1.2).toFixed(2)); // 11.60~12.80
-      const pressure = Number((1.0 + Math.random() * 0.9).toFixed(2)); // 1.00~1.90
-      const leak = Math.random() < 0.08; // 누액 확률
-      const ok =
-        step !== "최종 성능 검사"
-          ? Math.random() > 0.08
-          : ocv >= 12.0 && pressure >= 1.5 && !leak;
-
-      let defectCode = "";
-      if (!ok) {
-        // 대충 불량코드 선택
-        if (leak) defectCode = "LEAK";
-        else if (ocv < 12.0) defectCode = "LOW_OCV";
-        else if (pressure < 1.5) defectCode = "PRESS_FAIL";
-        else defectCode = "WELD_BAD";
-      }
-
-      const hh = String(rand(8, 18)).padStart(2, "0");
-      const mm = String(rand(0, 59)).padStart(2, "0");
-
-      rows.push({
-        id: id++,
-        inspectedAt: `${dateStr} ${hh}:${mm}`,
-        productCode: "BAT-12V-60Ah",
-        productName: "자동차 납축전지 12V",
-        workOrderNo: woNo,
-        lotNo,
-        processStep: step,
-        machine:
-          step === "최종 성능 검사"
-            ? "TEST-03"
-            : step === "COS 용접"
-              ? "COS-01"
-              : "LINE-01",
-        ocv,
-        pressure,
-        leak,
-        result: ok ? "OK" : "NG",
-        defectCode,
-        inspector: `WK-${rand(101, 120)}`,
-        note: ok ? "" : "검사 기준 미달",
-      });
-    }
-  }
-  return rows;
-}
-
-const RESULT_COLOR = {
-  OK: "#22c55e",
-  NG: "#ef4444",
-};
-
 export default function TestLog() {
   const [rows, setRows] = useState([]);
   const [dashboard, setDashboard] = useState(null);
@@ -189,6 +106,8 @@ export default function TestLog() {
           keyword: keyword || null,
           isOk: resultFilter === "ALL" ? null : resultFilter === "OK",
           defectType: defectFilter === "ALL" ? null : defectFilter,
+          startDate: dateRange.start || null,
+          endDate: dateRange.end || null,
         };
 
         const res = await LogAPI2.getTestLogs(params);
@@ -225,7 +144,7 @@ export default function TestLog() {
     };
 
     fetchLogs();
-  }, [page, keyword, resultFilter]);
+  }, [page, keyword, resultFilter, defectFilter, dateRange]);
 
   // 통계용
   useEffect(() => {
@@ -235,6 +154,8 @@ export default function TestLog() {
           keyword: keyword || null,
           isOk: resultFilter === "ALL" ? null : resultFilter === "OK",
           defectType: defectFilter === "ALL" ? null : defectFilter,
+          startDate: dateRange.start || null,
+          endDate: dateRange.end || null,
         };
 
         const res = await LogAPI2.getTestSummaryLogs(params);
@@ -245,7 +166,7 @@ export default function TestLog() {
     };
 
     fetchDashboard();
-  }, [keyword, resultFilter]);
+  }, [keyword, resultFilter, defectFilter, dateRange]);
 
   /* =========================
      정렬
@@ -281,13 +202,6 @@ export default function TestLog() {
   /* =========================
      요약 카드
   ========================= */
-
-  /* =========================
-     차트 데이터
-  ========================= */
-  const dailyTrend = dashboard?.daily ?? [];
-
-  const defectBar = dashboard?.defects ?? [];
 
   /* =========================
      테이블 컬럼
@@ -452,7 +366,7 @@ export default function TestLog() {
       <TableWrap>
         <Table
           columns={columns}
-          data={rows}
+          data={sorted}
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
