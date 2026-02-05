@@ -6,6 +6,7 @@ import SideDrawer from "../../components/SideDrawer";
 import SummaryCard from "../../components/SummaryCard";
 import TestLogDetail from "./TestLogDetail";
 import Pagination from "../../components/Pagination";
+import { LogAPI2 } from "../../api/AxiosAPI2";
 
 import {
   FiClipboard,
@@ -27,102 +28,13 @@ import {
   CartesianGrid,
 } from "recharts";
 
-/* =========================
-   더미: 검사 이력 데이터
-   (실 연동 시 API로 교체)
-========================= */
-const DEFECT_CODES = [
-  { code: "LOW_OCV", name: "전압 미달" },
-  { code: "LEAK", name: "누액" },
-  { code: "PRESS_FAIL", name: "내압 불량" },
-  { code: "WELD_BAD", name: "용접 불량" },
-];
-
-const PROCESS_STEPS = [
-  "극판 적층",
-  "COS 용접",
-  "전해액 주입/화성",
-  "최종 성능 검사",
-];
-
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function makeMockRows() {
-  // 최근 14일치 더미
-  const rows = [];
-  let id = 1;
-
-  for (let d = 14; d >= 0; d--) {
-    const day = new Date();
-    day.setDate(day.getDate() - d);
-    const dateStr = `${day.getFullYear()}/${String(day.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}/${String(day.getDate()).padStart(2, "0")}`;
-
-    const count = rand(8, 18);
-    for (let i = 0; i < count; i++) {
-      const lotNo = `LOT-202601-${String(rand(1, 80)).padStart(3, "0")}`;
-      const woNo = `WO-202601-00${rand(1, 8)}`;
-      const step = PROCESS_STEPS[rand(0, PROCESS_STEPS.length - 1)];
-
-      // OCV는 최종 검사에서 의미 있는 값
-      const ocv = Number((11.6 + Math.random() * 1.2).toFixed(2)); // 11.60~12.80
-      const pressure = Number((1.0 + Math.random() * 0.9).toFixed(2)); // 1.00~1.90
-      const leak = Math.random() < 0.08; // 누액 확률
-      const ok =
-        step !== "최종 성능 검사"
-          ? Math.random() > 0.08
-          : ocv >= 12.0 && pressure >= 1.5 && !leak;
-
-      let defectCode = "";
-      if (!ok) {
-        // 대충 불량코드 선택
-        if (leak) defectCode = "LEAK";
-        else if (ocv < 12.0) defectCode = "LOW_OCV";
-        else if (pressure < 1.5) defectCode = "PRESS_FAIL";
-        else defectCode = "WELD_BAD";
-      }
-
-      const hh = String(rand(8, 18)).padStart(2, "0");
-      const mm = String(rand(0, 59)).padStart(2, "0");
-
-      rows.push({
-        id: id++,
-        inspectedAt: `${dateStr} ${hh}:${mm}`,
-        productCode: "BAT-12V-60Ah",
-        productName: "자동차 납축전지 12V",
-        workOrderNo: woNo,
-        lotNo,
-        processStep: step,
-        machine:
-          step === "최종 성능 검사"
-            ? "TEST-03"
-            : step === "COS 용접"
-              ? "COS-01"
-              : "LINE-01",
-        ocv,
-        pressure,
-        leak,
-        result: ok ? "OK" : "NG",
-        defectCode,
-        inspector: `WK-${rand(101, 120)}`,
-        note: ok ? "" : "검사 기준 미달",
-      });
-    }
-  }
-  return rows;
-}
-
-const RESULT_COLOR = {
-  OK: "#22c55e",
-  NG: "#ef4444",
-};
+import SearchDate from "../../components/SearchDate";
 
 export default function TestLog() {
-  const [rows] = useState(() => makeMockRows());
+  const [rows, setRows] = useState([]);
+  const [dashboard, setDashboard] = useState(null);
+
+  const [loading, setLoading] = useState(false);
 
   const [keyword, setKeyword] = useState("");
   const [resultFilter, setResultFilter] = useState("ALL"); // ALL | OK | NG
@@ -131,9 +43,10 @@ export default function TestLog() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
-
-  const PAGE_SIZE = 20;
+  const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
 
   // SearchBar onChange (value/event 모두 대응)
   const handleKeywordChange = (v) => {
@@ -141,6 +54,19 @@ export default function TestLog() {
     if (v?.target?.value !== undefined) return setKeyword(v.target.value);
     setKeyword("");
   };
+
+  const handleDateChange = (start, end) => {
+    setDateRange({ start, end });
+  };
+
+  const defectOptions = useMemo(() => {
+    if (!dashboard?.defects) return [];
+
+    return dashboard.defects.map((d) => ({
+      code: d.defectType,
+      name: d.defectType, // 이름 없으면 코드 그대로
+    }));
+  }, [dashboard]);
 
   /* =========================
      필터 적용
@@ -168,6 +94,79 @@ export default function TestLog() {
     }
     return data;
   }, [rows, keyword, resultFilter, defectFilter]);
+
+  // 검사이력 페이지용
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        setLoading(true);
+
+        const params = {
+          page: page - 1,
+          keyword: keyword || null,
+          isOk: resultFilter === "ALL" ? null : resultFilter === "OK",
+          defectType: defectFilter === "ALL" ? null : defectFilter,
+          startDate: dateRange.start || null,
+          endDate: dateRange.end || null,
+        };
+
+        const res = await LogAPI2.getTestLogs(params);
+
+        // Spring Page 구조
+        const content = res.data.content;
+
+        const mapped = content.map((item, idx) => ({
+          id: idx,
+          inspectedAt: item.endedAt?.replace("T", " ").slice(0, 16),
+          productCode: item.productName, // 없으면 productName으로 대체
+          productName: item.productName,
+          workOrderNo: item.workOrderNo,
+          lotNo: item.lotNo,
+          processStep: item.processStepName,
+          machine: item.machineName,
+          voltage: item.voltage, // 전압
+          humidity: item.humidity, // 임시
+          temperature: item.temperature,
+          leak: false, // 데이터 없으면 false
+          result: item.isOk ? "OK" : "NG",
+          defectCode: item.defectType,
+          inspector: item.workerCode,
+          note: "",
+        }));
+
+        setRows(mapped);
+        setTotalPages(res.data.totalPages);
+      } catch (e) {
+        console.error("검사 이력 조회 실패", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLogs();
+  }, [page, keyword, resultFilter, defectFilter, dateRange]);
+
+  // 통계용
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const params = {
+          keyword: keyword || null,
+          isOk: resultFilter === "ALL" ? null : resultFilter === "OK",
+          defectType: defectFilter === "ALL" ? null : defectFilter,
+          startDate: dateRange.start || null,
+          endDate: dateRange.end || null,
+        };
+
+        const res = await LogAPI2.getTestSummaryLogs(params);
+        setDashboard(res.data);
+      } catch (e) {
+        console.error("대시보드 조회 실패", e);
+      }
+    };
+
+    fetchDashboard();
+  }, [keyword, resultFilter, defectFilter, dateRange]);
 
   /* =========================
      정렬
@@ -203,65 +202,6 @@ export default function TestLog() {
   /* =========================
      요약 카드
   ========================= */
-  const summary = useMemo(() => {
-    const total = filtered.length;
-    const ok = filtered.filter((r) => r.result === "OK").length;
-    const ng = total - ok;
-    const okRate = total === 0 ? 0 : Math.round((ok / total) * 100);
-
-    const defectMap = {};
-    filtered.forEach((r) => {
-      if (r.result === "NG")
-        defectMap[r.defectCode || "UNKNOWN"] =
-          (defectMap[r.defectCode || "UNKNOWN"] || 0) + 1;
-    });
-
-    const top = Object.entries(defectMap).sort((a, b) => b[1] - a[1])[0];
-    const topDefect =
-      top && top[0] !== "UNKNOWN"
-        ? `${(DEFECT_CODES.find((d) => d.code === top[0]) || { name: top[0] }).name} (${top[1]})`
-        : ng > 0
-          ? `기타 (${ng})`
-          : "-";
-
-    return { total, ok, ng, okRate, topDefect };
-  }, [filtered]);
-
-  /* =========================
-     차트 데이터
-  ========================= */
-  const dailyTrend = useMemo(() => {
-    // inspectedAt: "YYYY/MM/DD HH:mm" -> day = "MM/DD"
-    const map = {};
-    filtered.forEach((r) => {
-      const day = r.inspectedAt.slice(5, 10);
-      if (!map[day]) map[day] = { day, OK: 0, NG: 0 };
-      map[day][r.result] += 1;
-    });
-    return Object.values(map);
-  }, [filtered]);
-
-  const defectBar = useMemo(() => {
-    const map = {};
-    filtered.forEach((r) => {
-      if (r.result !== "NG") return;
-      const code = r.defectCode || "UNKNOWN";
-      const name =
-        code === "UNKNOWN"
-          ? "기타"
-          : (DEFECT_CODES.find((d) => d.code === code) || { name: code }).name;
-      map[name] = (map[name] || 0) + 1;
-    });
-    return Object.entries(map).map(([name, count]) => ({ name, count }));
-  }, [filtered]);
-
-  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-
-  const pagedData = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    return sorted.slice(start, end);
-  }, [sorted, page]);
 
   /* =========================
      테이블 컬럼
@@ -274,8 +214,9 @@ export default function TestLog() {
     { key: "workOrderNo", label: "작업지시", width: 140 },
     { key: "processStep", label: "공정", width: 150 },
     { key: "machine", label: "설비", width: 120 },
-    { key: "ocv", label: "OCV", width: 80 },
-    { key: "pressure", label: "내압", width: 80 },
+    { key: "voltage", label: "전압", width: 80 },
+    { key: "humidity", label: "습도", width: 80 },
+    { key: "temperature", label: "온도", width: 80 },
     { key: "inspector", label: "검사자", width: 110 },
   ];
 
@@ -304,31 +245,31 @@ export default function TestLog() {
         <SummaryCard
           icon={<FiClipboard />}
           label="검사 건수"
-          value={summary.total.toLocaleString()}
+          value={(dashboard?.totalCount ?? 0).toLocaleString()}
           color="var(--main)"
         />
         <SummaryCard
           icon={<FiCheckCircle />}
           label="OK"
-          value={summary.ok.toLocaleString()}
+          value={(dashboard?.okCount ?? 0).toLocaleString()}
           color="var(--run)"
         />
         <SummaryCard
           icon={<FiXCircle />}
           label="NG"
-          value={summary.ng.toLocaleString()}
+          value={(dashboard?.ngCount ?? 0).toLocaleString()}
           color="var(--error)"
         />
         <SummaryCard
           icon={<FiPercent />}
           label="OK 비율"
-          value={`${summary.okRate}%`}
+          value={`${dashboard?.okRate ?? 0}%`}
           color="var(--waiting)"
         />
         <SummaryCard
           icon={<FiAlertTriangle />}
           label="최다 불량"
-          value={summary.topDefect}
+          value={dashboard?.topDefectType ?? "-"}
           color="var(--error)"
         />
       </SummaryGrid>
@@ -338,43 +279,47 @@ export default function TestLog() {
         <ChartCard>
           <h4>일자별 OK/NG 추이</h4>
           <ChartBox>
-            <ResponsiveContainer>
-              <LineChart data={dailyTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="OK"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="NG"
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {dashboard && (
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={dashboard.daily}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="ok"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="ng"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </ChartBox>
         </ChartCard>
 
         <ChartCard>
           <h4>불량 유형 분포</h4>
           <ChartBox>
-            <ResponsiveContainer>
-              <BarChart data={defectBar}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#ef4444" />
-              </BarChart>
-            </ResponsiveContainer>
+            {dashboard && dashboard.defects && (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={dashboard.defects}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="defectType" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#ef4444" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </ChartBox>
         </ChartCard>
       </ChartGrid>
@@ -388,6 +333,12 @@ export default function TestLog() {
             placeholder="LOT / 작업지시 / 제품 / 설비 / 검사자 검색"
           />
         </SearchWrap>
+
+        <SearchDate
+          width="m"
+          onChange={handleDateChange}
+          placeholder="입고일자 검색"
+        />
 
         <Select
           value={resultFilter}
@@ -403,7 +354,7 @@ export default function TestLog() {
           onChange={(e) => setDefectFilter(e.target.value)}
         >
           <option value="ALL">불량코드 전체</option>
-          {DEFECT_CODES.map((d) => (
+          {defectOptions.map((d) => (
             <option key={d.code} value={d.code}>
               {d.name} ({d.code})
             </option>
@@ -415,7 +366,7 @@ export default function TestLog() {
       <TableWrap>
         <Table
           columns={columns}
-          data={pagedData}
+          data={sorted}
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
@@ -427,7 +378,7 @@ export default function TestLog() {
 
       {/* ===== 상세 Drawer ===== */}
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <TestLogDetail row={selected} defectMap={DEFECT_CODES} />
+        <TestLogDetail row={selected} defectMap={defectOptions} />
       </SideDrawer>
     </Wrapper>
   );

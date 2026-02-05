@@ -1,12 +1,6 @@
 import styled from "styled-components";
-import {
-  FiBox,
-  FiActivity,
-  FiClock,
-  FiThermometer,
-  FiDroplet,
-  FiZap,
-} from "react-icons/fi";
+import { FiThermometer, FiDroplet, FiZap } from "react-icons/fi";
+import QRCodeCreate from "../../components/QRCodeCreate";
 
 export default function ProcessLogDetail({ log }) {
   if (!log) return null;
@@ -15,148 +9,137 @@ export default function ProcessLogDetail({ log }) {
     <Wrapper>
       <Header>
         <h3>공정 이력 상세</h3>
-        {/* 상태 배지 */}
-        <StatusBadge $status={log.status}>{log.status}</StatusBadge>
       </Header>
 
       <Content>
-        {/* 1. 기본 정보 섹션 */}
         <Section>
-          <SectionTitle>
-            <FiBox /> 기본 정보
-          </SectionTitle>
+          <SectionTitle>LOT 조회</SectionTitle>
+          <Grid>
+            <FullItem>
+              <QRBox>
+                <QRCodeCreate
+                  value={log.lotNo}
+                  size="m"
+                  showText={true}
+                  showDownload={true}
+                />
+              </QRBox>
+            </FullItem>
+            <FullItem>
+              <label>LOT 번호</label>
+              <Value>{log.lotNo}</Value>
+            </FullItem>
+          </Grid>
+        </Section>
+
+        <Section>
+          <SectionTitle>공정 정보</SectionTitle>
+          <Grid>
+            <FullItem>
+              <label>공정명</label>
+              <Value>{log.processStep}</Value>
+            </FullItem>
+            <FullItem>
+              <label>설비명</label>
+              <Value>{log.machineName}</Value>
+            </FullItem>
+
+            <FullItem>
+              <label>작업자</label>
+              <Value>{log.workerName}</Value>
+            </FullItem>
+            <FullItem>
+              <label>시작시간</label>
+              <Value>{log.startTime}</Value>
+            </FullItem>
+            <FullItem>
+              <label>종료시간</label>
+              <Value>{log.endTime}</Value>
+            </FullItem>
+          </Grid>
+        </Section>
+
+        <Section>
+          <SectionTitle>생산 실적 (집계)</SectionTitle>
           <Grid>
             <Item>
-              <Label>LOT 번호</Label>
-              <Value>{log.lotNo}</Value>
+              <label>양품 수량</label>
+              <ValueGood>
+                {log.goodQty?.toLocaleString()} <span>EA</span>
+              </ValueGood>
             </Item>
             <Item>
-              <Label>공정명</Label>
-              <Value>{log.processStep}</Value>
-            </Item>
-            <Item>
-              <Label>설비명</Label>
-              <Value>{log.machineName}</Value>
-            </Item>
-            <Item>
-              <Label>작업자</Label>
-              <Value>{log.workerName}</Value>
+              <label>불량 수량</label>
+              <ValueBad>
+                {log.badQty?.toLocaleString()} <span>EA</span>
+              </ValueBad>
             </Item>
           </Grid>
         </Section>
 
-        {/* 2. 생산 실적 섹션 (집계된 데이터) */}
         <Section>
-          <SectionTitle>
-            <FiActivity /> 생산 실적 (집계)
-          </SectionTitle>
-          <StatsGrid>
-            <StatBox>
-              <StatLabel>양품 수량</StatLabel>
-              <StatValue className="good">
-                {log.goodQty} <span>EA</span>
-              </StatValue>
-            </StatBox>
-            <StatBox>
-              <StatLabel>불량 수량</StatLabel>
-              <StatValue className="bad">
-                {log.badQty} <span>EA</span>
-              </StatValue>
-            </StatBox>
-          </StatsGrid>
-        </Section>
-
-        {/* 3. 환경 데이터 섹션 (평균값) */}
-        <Section>
-          <SectionTitle>
-            <FiThermometer /> 작업 환경 (평균)
-          </SectionTitle>
+          <SectionTitle>작업 환경 (평균)</SectionTitle>
           <Grid col={3}>
-            <EnvItem>
-              <FiThermometer />
-              <div>
-                <span>온도</span>
-                <strong>{log.temperature} ℃</strong>
-              </div>
-            </EnvItem>
-            <EnvItem>
-              <FiDroplet />
-              <div>
-                <span>습도</span>
-                <strong>{log.humidity} %</strong>
-              </div>
-            </EnvItem>
-            <EnvItem>
-              <FiZap />
-              <div>
-                <span>전압</span>
-                <strong>{log.voltage} V</strong>
-              </div>
-            </EnvItem>
+            <MiniItem>
+              <label>온도</label>
+              <IconValue $iconColor="var(--error)">
+                <FiThermometer />
+                {log.temperature} ℃
+              </IconValue>
+            </MiniItem>
+            <MiniItem>
+              <label>습도</label>
+              <IconValue $iconColor="var(--main)">
+                <FiDroplet />
+                {log.humidity} %
+              </IconValue>
+            </MiniItem>
+            <MiniItem>
+              <label>전압</label>
+              <IconValue $iconColor="var(--waiting)">
+                <FiZap />
+                {log.voltage} V
+              </IconValue>
+            </MiniItem>
           </Grid>
-        </Section>
-
-        {/* 4. 시간 정보 섹션 */}
-        <Section>
-          <SectionTitle>
-            <FiClock /> 시간 정보
-          </SectionTitle>
-          <TimeBox>
-            <TimeRow>
-              <span>시작 시간</span>
-              <strong>{log.startTime}</strong>
-            </TimeRow>
-            <div className="line" />
-            <TimeRow>
-              <span>종료 시간</span>
-              <strong>{log.endTime}</strong>
-            </TimeRow>
-          </TimeBox>
         </Section>
       </Content>
     </Wrapper>
   );
 }
 
-// --- Styles ---
 const Wrapper = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 10px 4px;
+  gap: 18px;
+  height: 100%;
 `;
-
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-
+  margin-bottom: 20px;
   h3 {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--font);
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
-`;
-
-const StatusBadge = styled.div`
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  // PASS면 초록, FAIL이면 빨강 배경
-  background-color: ${(props) =>
-    props.$status === "PASS"
-      ? "rgba(34, 197, 94, 0.1)"
-      : "rgba(239, 68, 68, 0.1)"};
-  color: ${(props) => (props.$status === "PASS" ? "#16a34a" : "#dc2626")};
 `;
 
 const Content = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 30px;
+  overflow-y: auto;
+  padding-right: 10px;
+  padding-bottom: 100px;
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
 `;
 
 const Section = styled.div`
@@ -165,16 +148,31 @@ const Section = styled.div`
   gap: 12px;
 `;
 
-const SectionTitle = styled.div`
-  font-size: 15px;
-  font-weight: 600;
+const SectionTitle = styled.h4`
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
   color: var(--font);
   display: flex;
   align-items: center;
-  gap: 8px;
-  svg {
-    color: var(--main);
+  position: relative;
+  padding-left: 12px;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
   }
+`;
+
+const QRBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const Grid = styled.div`
@@ -182,112 +180,96 @@ const Grid = styled.div`
   grid-template-columns: repeat(${(props) => props.col || 2}, 1fr);
   gap: 12px;
 `;
-
 const Item = styled.div`
-  background: var(--background);
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  label {
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
+  }
 `;
 
-const Label = styled.div`
-  font-size: 12px;
-  color: var(--font2);
-  margin-bottom: 4px;
+const MiniItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  label {
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
+  }
 `;
 
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
+`;
 const Value = styled.div`
-  font-size: 14px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  min-height: 38px;
+  font-size: var(--fontSm);
   color: var(--font);
 `;
 
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-`;
-
-const StatBox = styled.div`
-  background: white;
-  padding: 16px;
+const ValueGood = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  text-align: center;
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: var(--font2);
-  margin-bottom: 8px;
-`;
-
-const StatValue = styled.div`
-  font-size: 20px;
-  font-weight: 700;
+  background: var(--background);
+  min-height: 38px;
+  font-size: var(--fontSm);
+  color: var(--run);
+  font-weight: var(--bold);
   span {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: var(--fontXs);
     color: var(--font2);
-  }
-  &.good {
-    color: var(--run);
-  }
-  &.bad {
-    color: var(--error);
+    font-weight: var(--normal);
   }
 `;
 
-const EnvItem = styled.div`
+const ValueBad = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  min-height: 38px;
+  font-size: var(--fontSm);
+  color: var(--error);
+  font-weight: var(--bold);
+  span {
+    font-size: var(--fontXs);
+    color: var(--font2);
+    font-weight: var(--normal);
+  }
+`;
+
+const IconValue = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px;
-  background: var(--background2);
-  border-radius: 10px;
-
-  svg {
-    font-size: 20px;
-    color: var(--font2);
-  }
-  div {
-    display: flex;
-    flex-direction: column;
-    span {
-      font-size: 11px;
-      color: var(--font2);
-    }
-    strong {
-      font-size: 14px;
-      color: var(--font);
-    }
-  }
-`;
-
-const TimeBox = styled.div`
-  background: var(--background);
+  padding: 10px;
   border-radius: 12px;
-  padding: 16px;
   border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  .line {
-    height: 1px;
-    background: var(--border);
-  }
-`;
-
-const TimeRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  span {
-    color: var(--font2);
-  }
-  strong {
-    font-weight: 600;
+  background: var(--background);
+  min-height: 38px;
+  font-size: var(--fontSm);
+  color: var(--font);
+  svg {
+    font-size: var(--fontLg);
+    color: ${(props) => props.$iconColor || "var(--font2)"};
   }
 `;

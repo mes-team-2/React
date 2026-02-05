@@ -293,7 +293,7 @@ export default function MaterialList() {
                 <XAxis dataKey="name" fontSize={10} tick={{ dy: 5 }} />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="stock" fill="var(--main)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="stock" fill="var(--main)" radius={[9, 9, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartBox>
@@ -407,18 +407,19 @@ const ChartGrid = styled.div`
 const Card = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 18px;
+  padding: 20px;
   box-shadow: var(--shadow);
 
   h4 {
     font-size: var(--fontSm);
     margin-bottom: 20px;
-    font-weight: var(--bold);
-    color: var(--font2);
+    font-weight: var(--medium);
+    color: var(--font);
   }
 `;
 const ChartBox = styled.div`
   height: 220px;
+  box-sizing: border-box;
   svg:focus,
   svg *:focus {
     outline: none;

@@ -1,8 +1,10 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
 import SummaryCard from "../../components/SummaryCard";
-import SearchBar from "../../components/SearchBar";
-import Table from "../../components/TableStyle";
+import TableStyle from "../../components/TableStyle";
+import SearchDate from "../../components/SearchDate";
+import Pagination from "../../components/Pagination";
+import SelectBar from "../../components/SelectBar";
 import SideDrawer from "../../components/SideDrawer";
 import ProductionReportDetail from "./ProductionReportDetail";
 
@@ -34,7 +36,7 @@ function rand(min, max) {
 
 function makeDaily() {
   const rows = [];
-  for (let d = 14; d >= 0; d--) {
+  for (let d = 50; d >= 0; d--) {
     const day = new Date();
     day.setDate(day.getDate() - d);
     const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(
@@ -43,15 +45,20 @@ function makeDaily() {
     )}-${String(day.getDate()).padStart(2, "0")}`;
 
     const plan = rand(500, 900);
-    const prod = plan - rand(-30, 120); // 오버/언더
-    const ng = Math.max(0, Math.floor(prod * (rand(5, 25) / 1000))); // 0.5~2.5%
+    const prod = plan - rand(-30, 120);
+    const ng = Math.max(0, Math.floor(prod * (rand(5, 80) / 1000)));
+
+    const defectRate = prod === 0 ? 0 : Math.round((ng / prod) * 100 * 10) / 10;
+
     rows.push({
       date: dateStr,
+      productName: Math.random() > 0.5 ? "12V 소형 배터리" : "12V 중형 배터리",
       plan,
       prod,
       ok: Math.max(0, prod - ng),
       ng,
       yield: prod === 0 ? 0 : Math.round(((prod - ng) / prod) * 1000) / 10,
+      defectRate,
     });
   }
   return rows;
@@ -72,20 +79,62 @@ function makeProcessToday() {
   });
 }
 
+const formatDateString = (date) => {
+  if (!date) return null;
+  if (typeof date === "string") return date;
+
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function ProductionReport() {
   const [daily] = useState(() => makeDaily());
   const [processToday] = useState(() => makeProcessToday());
 
-  const [keyword, setKeyword] = useState("");
+  const [dateRange, setDateRange] = useState({
+    startDate: null,
+    endDate: null,
+  });
+  const [productFilter, setProductFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
+  const productOptions = useMemo(() => {
+    const uniqueProducts = Array.from(
+      new Set(daily.map((item) => item.productName)),
+    );
+    const options = uniqueProducts.map((name) => ({
+      value: name,
+      label: name,
+    }));
+    return [{ value: "all", label: "전체 제품" }, ...options];
+  }, [daily]);
+
+  //  필터링 (날짜 범위 + 제품명)
   const filteredDaily = useMemo(() => {
-    if (!keyword.trim()) return daily;
-    const k = keyword.toLowerCase();
-    return daily.filter((r) => r.date.toLowerCase().includes(k));
-  }, [daily, keyword]);
+    let result = daily;
+
+    // 날짜 검색
+    if (dateRange.startDate && dateRange.endDate) {
+      result = result.filter((r) => {
+        return r.date >= dateRange.startDate && r.date <= dateRange.endDate;
+      });
+    }
+
+    // 제품명 필터
+    if (productFilter !== "all") {
+      result = result.filter((r) => r.productName === productFilter);
+    }
+
+    return result;
+  }, [daily, dateRange, productFilter]);
 
   const summary = useMemo(() => {
     const plan = filteredDaily.reduce((a, b) => a + b.plan, 0);
@@ -118,11 +167,13 @@ export default function ProductionReport() {
 
   const columns = [
     { key: "date", label: "일자", width: 130 },
+    { key: "productName", label: "제품명", width: 90 },
     { key: "plan", label: "계획", width: 90 },
     { key: "prod", label: "실적", width: 90 },
     { key: "ok", label: "양품", width: 90 },
     { key: "ng", label: "불량", width: 90 },
     { key: "yield", label: "수율(%)", width: 100 },
+    { key: "defectRate", label: "불량률(%)", width: 100 },
   ];
 
   const handleSort = (key) => {
@@ -146,9 +197,43 @@ export default function ProductionReport() {
     });
   }, [filteredDaily, sortConfig]);
 
+  const totalPages = Math.ceil(sorted.length / itemsPerPage);
+  const currentData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sorted.slice(startIndex, startIndex + itemsPerPage);
+  }, [sorted, currentPage]);
+
+  const formattedData = useMemo(() => {
+    return currentData.map((row) => ({
+      ...row,
+      defectRate:
+        row.defectRate >= 3.0 ? (
+          <span style={{ color: "var(--error)", fontWeight: "bold" }}>
+            {row.defectRate}%
+          </span>
+        ) : (
+          `${row.defectRate}%`
+        ),
+      yield: `${row.yield}%`,
+    }));
+  }, [currentData]);
+
   const onRowClick = (row) => {
     setSelectedDate(row.date);
     setDrawerOpen(true);
+  };
+
+  const handleDateChange = (start, end) => {
+    setDateRange({
+      startDate: formatDateString(start),
+      endDate: formatDateString(end),
+    });
+    setCurrentPage(1);
+  };
+
+  const handleProductChange = (e) => {
+    setProductFilter(e.target.value);
+    setCurrentPage(1);
   };
 
   return (
@@ -181,12 +266,6 @@ export default function ProductionReport() {
           label="불량"
           value={summary.ng.toLocaleString()}
           color="var(--error)"
-        />
-        <SummaryCard
-          icon={<FiList />}
-          label="리포트 일수"
-          value={filteredDaily.length.toLocaleString()}
-          color="var(--waiting)"
         />
       </SummaryGrid>
 
@@ -226,8 +305,12 @@ export default function ProductionReport() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="output" fill="var(--run)" />
-                <Bar dataKey="ng" fill="var(--error)" />
+                <Bar
+                  dataKey="output"
+                  fill="var(--main)"
+                  radius={[9, 9, 0, 0]}
+                />
+                <Bar dataKey="ng" fill="var(--error)" radius={[9, 9, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartBox>
@@ -235,24 +318,36 @@ export default function ProductionReport() {
       </ChartGrid>
 
       <FilterBar>
-        <SearchWrap>
-          <SearchBar
-            value={keyword}
-            onChange={setKeyword}
-            placeholder="일자 검색 (YYYY-MM-DD)"
-          />
-        </SearchWrap>
+        <SearchDate
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onChange={handleDateChange}
+        />
+        <SelectBar
+          width="l"
+          options={productOptions}
+          value={productFilter}
+          onChange={handleProductChange}
+          placeholder="제품 선택"
+        />
       </FilterBar>
 
       <TableWrap>
-        <Table
+        <TableStyle
           columns={columns}
-          data={sorted}
+          data={formattedData}
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
           onRowClick={onRowClick}
         />
+        {sorted.length > 0 && (
+          <Pagination
+            page={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </TableWrap>
 
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
@@ -268,32 +363,30 @@ export default function ProductionReport() {
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
+  height: 100%;
 `;
 
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: var(--fontXl);
+    font-weight: var(--bold);
+    color: var(--font);
   }
 `;
 
 const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 `;
 
 const ChartGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1200px) {
     grid-template-columns: 1fr;
   }
 `;
@@ -301,17 +394,23 @@ const ChartGrid = styled.div`
 const ChartCard = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-
+  padding: 20px;
+  box-shadow: var(--shadow);
   h4 {
-    font-size: 14px;
-    margin: 0 0 10px 0;
+    font-size: var(--fontSm);
+    margin-bottom: 20px;
+    font-weight: var(--medium);
+    color: var(--font);
   }
 `;
 
 const ChartBox = styled.div`
-  height: 260px;
+  height: 220px;
+  padding-right: 20px;
+  svg:focus,
+  svg *:focus {
+    outline: none;
+  }
 `;
 
 const FilterBar = styled.div`
@@ -326,8 +425,7 @@ const SearchWrap = styled.div`
 `;
 
 const TableWrap = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 `;
