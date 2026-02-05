@@ -100,13 +100,12 @@ const STATUS_CONFIG = {
     icon: <LuHourglass />,
   },
   RUNNING: {
-    label: "생산중",
+    label: "진행중",
     iconColor: "var(--run)",
     textColor: "var(--font)",
     bg: "var(--bgRun)",
     icon: <FiRefreshCw />,
   },
-
   COMPLETED: {
     label: "생산완료",
     iconColor: "var(--complete)",
@@ -196,7 +195,7 @@ const STATUS_CONFIG = {
   },
   // 구버전 호환 (Legacy)
   LOT_WAIT: {
-    label: "대기중",
+    label: "생산 대기",
     iconColor: "var(--waiting)",
     textColor: "var(--font)",
     bg: "var(--bgWaiting)",
@@ -217,7 +216,7 @@ const STATUS_CONFIG = {
     icon: <FiAlertTriangle />,
   },
   LOT_OK: {
-    label: "생산완료",
+    label: "생산 완료",
     iconColor: "var(--complete)",
     textColor: "var(--font)",
     bg: "var(--bgComplete)",

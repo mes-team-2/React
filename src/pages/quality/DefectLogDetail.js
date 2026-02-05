@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { useMemo, useState } from "react";
 import Table from "../../components/TableStyle";
+import QRCodeCreate from "../../components/QRCodeCreate";
 
 export default function QualityDefectLogDetail({ log }) {
   const [sortConfig, setSortConfig] = useState({
@@ -8,9 +9,6 @@ export default function QualityDefectLogDetail({ log }) {
     direction: "asc",
   });
 
-  /* =========================
-     불량 유형별 집계 + 최근 발생 시각
-  ========================= */
   const defectSummary = useMemo(() => {
     if (!log?.defects) return [];
 
@@ -57,9 +55,6 @@ export default function QualityDefectLogDetail({ log }) {
     return Object.values(map);
   }, [log]);
 
-  /* =========================
-     ✅ 정렬된 데이터 (추가)
-  ========================= */
   const sortedDefectSummary = useMemo(() => {
     if (!sortConfig.key) return defectSummary;
 
@@ -111,76 +106,105 @@ export default function QualityDefectLogDetail({ log }) {
       <Header>
         <div>
           <h3>불량 이력 상세</h3>
-          <span>{log.lotNo}</span>
         </div>
       </Header>
 
-      <InfoGrid>
-        <InfoItem>
-          <label>공정</label>
-          <strong>{log.processName ?? "-"}</strong>
-        </InfoItem>
-        <InfoItem>
-          <label>설비</label>
-          <strong>{log.machineName ?? "-"}</strong>
-        </InfoItem>
-        <InfoItem>
-          <label>불량 합계</label>
-          <strong>{log.defectQty ?? 0}</strong>
-        </InfoItem>
-        <InfoItem>
-          <label>LOT 최근 발생</label>
-          <strong>{log.occurredAtText ?? "-"}</strong>
-        </InfoItem>
-      </InfoGrid>
-
-      <Section>
-        <SectionTitle>불량 유형별 이력</SectionTitle>
-        <Table
-          columns={columns}
-          data={sortedDefectSummary}
-          sortConfig={sortConfig}
-          onSort={(key) =>
-            setSortConfig((prev) => ({
-              key,
-              direction:
-                prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-            }))
-          }
-          selectable={false}
-        />
-      </Section>
+      <Content>
+        <Section>
+          <SectionTitle>LOT 정보</SectionTitle>
+          <QRBox>
+            <QRCodeCreate
+              value={log.lotNo}
+              size="m"
+              showText={true}
+              showDownload={true}
+            />
+          </QRBox>
+          <Item>
+            <label>LOT 번호</label>
+            <Value>{log.lotNo}</Value>
+          </Item>
+        </Section>
+        <Section>
+          <SectionTitle>공정 정보</SectionTitle>
+          <Grid>
+            <Item>
+              <label>공정번호</label>
+              {/* 연결 필요 */}
+              <Value>{log.processCode ?? "-"}</Value>
+            </Item>
+            <Item>
+              <label>공정명</label>
+              <Value>{log.processName ?? "-"}</Value>
+            </Item>
+          </Grid>
+        </Section>
+        <Section>
+          <SectionTitle>설비 정보</SectionTitle>
+          <Grid>
+            <Item>
+              <label>설비코드</label>
+              <Value>{log.machineCode ?? "-"}</Value>
+            </Item>
+            <Item>
+              <label>설비명</label>
+              <Value>{log.machineName ?? "-"}</Value>
+            </Item>
+          </Grid>
+        </Section>
+        <Section>
+          <SectionTitle>불량 정보</SectionTitle>
+          <Grid>
+            <FullItem>
+              <label>발생일자</label>
+              <Value>{log.occurredAtText ?? "-"}</Value>
+            </FullItem>
+            <FullItem>
+              <label>불량수량</label>
+              <Value>{log.defectQty ?? "-"}</Value>
+            </FullItem>
+          </Grid>
+          <Item>
+            <label>불량 유형별 이력</label>
+            <Table
+              columns={columns}
+              data={sortedDefectSummary}
+              sortConfig={sortConfig}
+              onSort={(key) =>
+                setSortConfig((prev) => ({
+                  key,
+                  direction:
+                    prev.key === key && prev.direction === "asc"
+                      ? "desc"
+                      : "asc",
+                }))
+              }
+              selectable={false}
+            />
+          </Item>
+        </Section>
+      </Content>
     </Wrapper>
   );
 }
 
-/* =========================
-   styled (변경 없음)
-========================= */
-
 const Wrapper = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 18px;
+  height: 100%;
 `;
-
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-
+  align-items: center;
+  margin-bottom: 20px;
   h3 {
-    font-size: 18px;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  span {
-    font-size: 12px;
-    opacity: 0.6;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
 `;
-
 const Badge = styled.div`
   padding: 6px 14px;
   border-radius: 20px;
@@ -213,17 +237,85 @@ const InfoItem = styled.div`
     font-size: 14px;
   }
 `;
-
-const Section = styled.section``;
-
-const SectionTitle = styled.h4`
-  margin-bottom: 10px;
-  font-size: 15px;
-  font-weight: 600;
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+  padding-right: 10px;
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
+`;
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
 
+const SectionTitle = styled.h4`
+  font-size: var(--fontMd);
+  font-weight: var(--bold);
+  color: var(--font);
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 12px;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
+  }
+`;
+
+const QRBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
 const Empty = styled.div`
   padding: 40px 20px;
   text-align: center;
   opacity: 0.6;
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+`;
+const Item = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  label {
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
+    padding: 2px;
+  }
+`;
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
+`;
+const Value = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  min-height: 38px;
+  font-size: var(--fontSm);
+  color: var(--font);
 `;

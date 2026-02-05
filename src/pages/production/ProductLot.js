@@ -1,11 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import styled from "styled-components";
-import {
-  FiLayers,
-  FiCheckCircle,
-  FiActivity,
-  FiAlertTriangle,
-} from "react-icons/fi";
+import { FiLayers, FiCheckCircle, FiActivity } from "react-icons/fi";
+import { LuHourglass } from "react-icons/lu";
 import TableStyle from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
 import SearchDate from "../../components/SearchDate";
@@ -17,8 +13,20 @@ import LotDetail from "./LotDetail";
 import SelectBar from "../../components/SelectBar";
 import { ProductLotAPI } from "../../api/AxiosAPI";
 
+const formatDate = (date) => {
+  if (!date) return null;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function ProductLot() {
   const [data, setData] = useState([]);
+
   const [keyword, setKeyword] = useState("");
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -34,13 +42,7 @@ export default function ProductLot() {
 
   const loadData = async () => {
     try {
-      const params = {
-        keyword: keyword || null,
-        startDate: dateRange.start || null,
-        endDate: dateRange.end || null,
-        status: statusFilter === "ALL" ? null : statusFilter,
-      };
-      const res = await ProductLotAPI.search(params);
+      const res = await ProductLotAPI.search({});
       setData(res.data);
     } catch (err) {
       console.error("LOT 목록 조회 실패", err);
@@ -49,23 +51,72 @@ export default function ProductLot() {
 
   useEffect(() => {
     loadData();
-  }, [dateRange, statusFilter]);
+  }, []);
+
+  const processedData = useMemo(() => {
+    let result = [...data];
+
+    if (dateRange.start && dateRange.end) {
+      const startStr = formatDate(dateRange.start);
+      const endStr = formatDate(dateRange.end);
+
+      result = result.filter((item) => {
+        if (!item.createdAt) return false;
+        const itemDate = item.createdAt.substring(0, 10);
+        return itemDate >= startStr && itemDate <= endStr;
+      });
+    }
+
+    if (statusFilter !== "ALL") {
+      result = result.filter((item) => item.status === statusFilter);
+    }
+
+    if (keyword) {
+      const lowerKey = keyword.toLowerCase();
+      result = result.filter(
+        (item) =>
+          (item.lotNo && item.lotNo.toLowerCase().includes(lowerKey)) ||
+          (item.productName &&
+            item.productName.toLowerCase().includes(lowerKey)) ||
+          (item.workOrderNo &&
+            item.workOrderNo.toLowerCase().includes(lowerKey)),
+      );
+    }
+
+    if (sortConfig.key !== null) {
+      result.sort((a, b) => {
+        const aValue = a[sortConfig.key] || "";
+        const bValue = b[sortConfig.key] || "";
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data, dateRange, statusFilter, keyword, sortConfig]);
 
   const summaryData = useMemo(() => {
     const total = data.length;
     const run = data.filter((d) => d.status === "IN_PROGRESS").length;
     const ok = data.filter((d) => d.status === "COMPLETED").length;
-    const err = data.filter((d) => d.status === "DEFECTIVE").length;
+    const err = data.filter((d) => d.status === "HOLD").length;
 
     return [
       {
         label: "전체 LOT",
         value: total + " 건",
         icon: <FiLayers />,
-        color: "var(--main)",
+        color: "var(--stop)",
       },
       {
-        label: "생산 진행",
+        label: "생산 대기",
+        value: err + " 건",
+        icon: <LuHourglass />,
+        color: "var(--waiting)",
+      },
+      {
+        label: "진행중",
         value: run + " 건",
         icon: <FiActivity />,
         color: "var(--run)",
@@ -74,13 +125,7 @@ export default function ProductLot() {
         label: "생산 완료",
         value: ok + " 건",
         icon: <FiCheckCircle />,
-        color: "#4CAF50",
-      },
-      {
-        label: "불량 발생",
-        value: err + " 건",
-        icon: <FiAlertTriangle />,
-        color: "var(--error)",
+        color: "var(--complete)",
       },
     ];
   }, [data]);
@@ -90,42 +135,34 @@ export default function ProductLot() {
     { key: "productName", label: "제품명", width: 200 },
     { key: "workOrderNo", label: "작업지시번호", width: 140 },
     {
+      key: "status",
+      label: "작업상태",
+      width: 150,
+      render: (status) => {
+        let statusKey = "DEFAULT";
+        if (status === "HOLD") statusKey = "WAIT";
+        else if (status === "IN_PROGRESS") statusKey = "RUNNING";
+        else if (status === "COMPLETED") statusKey = "COMPLETED";
+        return <Status status={statusKey} />;
+      },
+    },
+    {
       key: "currentQty",
       label: "현재수량",
       width: 80,
-      render: (val, row) => {
-        // [수정] 완료 상태가 아니면 '-'
-        return row.status === "COMPLETED" ? val : "-";
-      },
+      render: (val, row) => (row.status === "COMPLETED" ? val : "-"),
     },
     {
       key: "badQty",
       label: "불량",
       width: 60,
-      render: (val, row) => {
-        // [수정] 완료 상태가 아니면 '-'
-        return row.status === "COMPLETED" ? val : "-";
-      },
+      render: (val, row) => (row.status === "COMPLETED" ? val : "-"),
     },
     { key: "createdAt", label: "생성일", width: 150 },
   ];
 
-  const sortedData = useMemo(() => {
-    let sortableItems = [...data];
-    if (sortConfig.key !== null) {
-      sortableItems.sort((a, b) => {
-        const aValue = a[sortConfig.key] || "";
-        const bValue = b[sortConfig.key] || "";
-        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-    return sortableItems;
-  }, [data, sortConfig]);
-
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-  const paginatedData = sortedData.slice(
+  const totalPages = Math.ceil(processedData.length / itemsPerPage);
+  const paginatedData = processedData.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage,
   );
@@ -162,30 +199,42 @@ export default function ProductLot() {
       </SummaryGrid>
 
       <FilterBar>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <SelectBar
-            width="140px"
-            placeholder="상태 전체"
-            options={[
-              { value: "ALL", label: "전체 상태" },
-              { value: "LOT_RUN", label: "생산 진행" },
-              { value: "LOT_OK", label: "생산 완료" },
-              { value: "LOT_ERR", label: "불량 발생" },
-            ]}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          />
-          <SearchDate onChange={(start, end) => setDateRange({ start, end })} />
-        </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <SearchBar
-            width="300px"
-            placeholder="LOT 번호, 제품명, 작업지시번호 검색"
-            value={keyword}
-            onChange={setKeyword}
-            onSearch={loadData}
-          />
-        </div>
+        <SearchDate
+          startDate={dateRange.start}
+          endDate={dateRange.end}
+          onChange={(start, end) => {
+            setDateRange({ start, end });
+            setPage(1);
+          }}
+        />
+
+        <SelectBar
+          width="s"
+          placeholder="상태 전체"
+          options={[
+            { value: "ALL", label: "전체 상태" },
+            { value: "HOLD", label: "생산 대기" },
+            { value: "IN_PROGRESS", label: "진행중" },
+            { value: "COMPLETED", label: "생산 완료" },
+          ]}
+          value={statusFilter}
+          onChange={(e) => {
+            const val = e.target ? e.target.value : e;
+            setStatusFilter(val);
+            setPage(1);
+          }}
+        />
+
+        <SearchBar
+          width="l"
+          placeholder="LOT 번호 / 제품명 / 작업지시번호 검색"
+          value={keyword}
+          onChange={(val) => {
+            setKeyword(val);
+            setPage(1);
+          }}
+          onSearch={() => {}}
+        />
       </FilterBar>
 
       <TableStyle
@@ -228,7 +277,7 @@ const SummaryGrid = styled.div`
 `;
 const FilterBar = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 20px;
+  gap: 20px;
 `;
