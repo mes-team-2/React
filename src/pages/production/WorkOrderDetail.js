@@ -6,12 +6,15 @@ import Button from "../../components/Button";
 import Status from "../../components/Status";
 import QRCodeCreate from "../../components/QRCodeCreate";
 
-export default function WorkOrderDetail({ workOrder, onStatusChange }) {
+export default function WorkOrderDetail({ status, workOrder, onStatusChange }) {
   const [detailData, setDetailData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // 상세 내부에서 상태가 바뀌면 UI 갱신을 위해 로컬 상태 사용
   const [currentStatus, setCurrentStatus] = useState(workOrder?.status || "-");
+
+  console.log("전체 workOrder 확인:", workOrder);
+  console.log("상태(status) 값 확인:", status);
 
   // workOrder가 변경되면 상세 조회
   useEffect(() => {
@@ -94,6 +97,10 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
 
   return (
     <Container>
+      <div className="detail-container">
+        {/* [수정 3] props.status -> status 로 변경 */}
+        상태: {status}
+      </div>
       <Header>
         <h3>작업지시 상세</h3>
 
@@ -105,7 +112,7 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
       </Header>
 
       <Content>
-        <Section>
+        {/* <Section>
           <SectionTitle>LOT 상세정보</SectionTitle>
           <QRBox>
             <Item>
@@ -117,6 +124,32 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
               />
             </Item>
           </QRBox>
+        </Section> */}
+        <Section>
+          <SectionTitle>생산 LOT 정보</SectionTitle>
+          {detailData ? (
+            <Grid>
+              <FullItem>
+                <label>LOT 번호</label>
+                <Value>{lotInfo.lotNo}</Value>
+              </FullItem>
+
+              <Item>
+                <label>LOT 상태</label>
+                <Status status={lotInfo.status} type="wide" />
+              </Item>
+              <Item>
+                <label>생산 수량</label>
+                <Value>{lotInfo.qty}</Value>
+              </Item>
+              <FullItem>
+                <label>LOT 생성일</label>
+                <Value>{lotInfo.createdAt}</Value>
+              </FullItem>
+            </Grid>
+          ) : (
+            <EmptyBox>LOT 정보가 없습니다.</EmptyBox>
+          )}
         </Section>
         <Section>
           <SectionTitle>작업지시 정보</SectionTitle>
@@ -155,33 +188,6 @@ export default function WorkOrderDetail({ workOrder, onStatusChange }) {
               <Value>{workOrder.dueDate}</Value>
             </Item>
           </Grid>
-        </Section>
-
-        <Section>
-          <SectionTitle>생산 LOT 정보</SectionTitle>
-          {detailData ? (
-            <Grid>
-              <FullItem>
-                <label>LOT 번호</label>
-                <Value>{lotInfo.lotNo}</Value>
-              </FullItem>
-
-              <Item>
-                <label>LOT 상태</label>
-                <Value>{lotInfo.status}</Value>
-              </Item>
-              <Item>
-                <label>생산 수량</label>
-                <Value>{lotInfo.qty}</Value>
-              </Item>
-              <FullItem>
-                <label>LOT 생성일</label>
-                <Value>{lotInfo.createdAt}</Value>
-              </FullItem>
-            </Grid>
-          ) : (
-            <EmptyBox>LOT 정보가 없습니다.</EmptyBox>
-          )}
         </Section>
 
         <Section>

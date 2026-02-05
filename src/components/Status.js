@@ -106,6 +106,7 @@ const STATUS_CONFIG = {
     bg: "var(--bgRun)",
     icon: <FiRefreshCw />,
   },
+
   COMPLETED: {
     label: "생산완료",
     iconColor: "var(--complete)",
@@ -121,11 +122,11 @@ const STATUS_CONFIG = {
     icon: <FiAlertTriangle />,
   },
   HOLD: {
-    label: "보류(Hold)",
+    label: "대기중",
     iconColor: "var(--waiting)",
     textColor: "var(--font)",
     bg: "var(--bgWaiting)",
-    icon: <FiPauseCircle />,
+    icon: <LuHourglass />,
   },
   // 자재/재고 관리 (MaterialLot 등)
   EXHAUSTED: {
@@ -308,9 +309,11 @@ const Status = ({ status, type = "basic" }) => {
     displayStatus = status ? "YES" : "NO";
   }
   // 안전하게 대문자 변환
-  const statusKey = displayStatus
+  let statusKey = displayStatus
     ? String(displayStatus).toUpperCase()
     : "DEFAULT";
+
+  if (status === "IN_PROGRESS") statusKey = "RUNNING";
 
   // 설정값 가져오기
   const config = STATUS_CONFIG[statusKey] || STATUS_CONFIG.DEFAULT;
