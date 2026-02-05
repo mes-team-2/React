@@ -129,7 +129,7 @@ const MENU = [
     title: "모니터링",
     items: [
       { to: "/mes/dashboard", label: "대시보드" },
-      { to: "/mes/process-monitoring", label: "공정 모니터링" },
+      // { to: "/mes/process-monitoring", label: "공정 모니터링" },
     ],
   },
   {
