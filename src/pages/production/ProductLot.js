@@ -53,9 +53,9 @@ export default function ProductLot() {
 
   const summaryData = useMemo(() => {
     const total = data.length;
-    const run = data.filter((d) => d.status === "LOT_RUN").length;
-    const ok = data.filter((d) => d.status === "LOT_OK").length;
-    const err = data.filter((d) => d.status === "LOT_ERR").length;
+    const run = data.filter((d) => d.status === "IN_PROGRESS").length;
+    const ok = data.filter((d) => d.status === "COMPLETED").length;
+    const err = data.filter((d) => d.status === "DEFECTIVE").length;
 
     return [
       {
@@ -89,8 +89,24 @@ export default function ProductLot() {
     { key: "lotNo", label: "LOT 번호", width: 160 },
     { key: "productName", label: "제품명", width: 200 },
     { key: "workOrderNo", label: "작업지시번호", width: 140 },
-    { key: "currentQty", label: "현재수량", width: 80 },
-    { key: "badQty", label: "불량", width: 60 },
+    {
+      key: "currentQty",
+      label: "현재수량",
+      width: 80,
+      render: (val, row) => {
+        // [수정] 완료 상태가 아니면 '-'
+        return row.status === "COMPLETED" ? val : "-";
+      },
+    },
+    {
+      key: "badQty",
+      label: "불량",
+      width: 60,
+      render: (val, row) => {
+        // [수정] 완료 상태가 아니면 '-'
+        return row.status === "COMPLETED" ? val : "-";
+      },
+    },
     { key: "createdAt", label: "생성일", width: 150 },
   ];
 
