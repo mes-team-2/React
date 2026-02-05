@@ -90,4 +90,15 @@ export const InventoryAPI2 = {
   },
 };
 
+export const LogAPI2 = {
+  // 검사 이력 조회
+  getTestLogs: async (params) => {
+    return await AxiosAPI2.get("/api/log/testlog", { params });
+  },
+
+  // 검사 이력 통계용
+  getTestSummaryLogs: async (params) => {
+    return await AxiosAPI2.get("/api/log/testlog/dashboard", { params });
+  },
+};
 export default AxiosAPI2;
