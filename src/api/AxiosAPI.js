@@ -192,4 +192,15 @@ export const LogAPI = {
   },
 };
 
+export const ProductLotAPI = {
+  // LOT 목록 검색
+  search: async (params) => {
+    return await AxiosAPI.get("/api/product-lots", { params });
+  },
+  // LOT 상세 조회 (이력 포함)
+  getDetail: async (lotId) => {
+    return await AxiosAPI.get(`/api/product-lots/${lotId}`);
+  },
+};
+
 export default AxiosAPI;

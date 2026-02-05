@@ -1,35 +1,43 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Table from "../../components/TableStyle";
 import Status from "../../components/Status";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-} from "recharts";
+import { ProductLotAPI } from "../../api/AxiosAPI";
 
-// [수정] props 이름을 lot -> propsLot으로 변경하여 내부 변수와 분리
 export default function LotDetail({ lot: propsLot }) {
-  const { lotId } = useParams(); // [추가] URL에서 lotId 가져오기
+  const { lotId: paramLotId } = useParams();
 
-  // [핵심 수정] props로 받은 lot이 있으면 그걸 쓰고, 없으면 URL의 lotId로 임시 객체 생성
-  const lot =
-    propsLot ||
-    (lotId
-      ? {
-          lotId: lotId, // 여기에 URL 파라미터 매핑
-          productCode: "-",
-          productName: "-",
-          currentQty: 0,
-          workOrderNo: "-",
-        }
-      : null);
+  const [detailData, setDetailData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const targetLotId = propsLot?.id || paramLotId;
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      if (!targetLotId) return;
+      setLoading(true);
+      try {
+        const res = await ProductLotAPI.getDetail(targetLotId);
+        setDetailData(res.data);
+      } catch (err) {
+        console.error("상세 조회 실패", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
+  }, [targetLotId]);
+
+  const displayLot = detailData ||
+    propsLot || {
+      lotNo: "-",
+      productCode: "-",
+      productName: "-",
+      currentQty: 0,
+      workOrderNo: "-",
+      status: "-",
+    };
 
   const [processSort, setProcessSort] = useState({
     key: null,
@@ -39,345 +47,123 @@ export default function LotDetail({ lot: propsLot }) {
     key: null,
     direction: "asc",
   });
-  const [qualitySort, setQualitySort] = useState({
-    key: null,
-    direction: "asc",
-  });
 
-  // 공정 정보 데이터 (Process Log)
-  const processLogs = useMemo(() => {
-    if (!lot) return [];
-    return [
-      {
-        id: 1,
-        date: "2026-01-20",
-        process: "극판 적층",
-        machine: "STACK-02",
-        start: "09:00:00",
-        end: "09:35:00",
-        status: "COMPLETE",
-      },
-      {
-        id: 2,
-        date: "2026-01-20",
-        process: "COS 용접",
-        machine: "COS-01",
-        start: "09:40:00",
-        end: "10:10:00",
-        status: "COMPLETE",
-      },
-      {
-        id: 3,
-        date: "2026-01-20",
-        process: "화성(충전)",
-        machine: "FORM-10",
-        start: "10:20:00",
-        end: "11:40:00",
-        status: "COMPLETE",
-      },
-      {
-        id: 4,
-        date: "2026-01-20",
-        process: "최종 성능 검사",
-        machine: "TEST-03",
-        start: "11:50:00",
-        end: "12:10:00",
-        status: "COMPLETE",
-      },
-    ];
-  }, [lot]);
-
-  // 생산 정보 (투입 자재) 데이터 (Material Input)
-  const materialLogs = useMemo(() => {
-    if (!lot) return [];
-    return [
-      {
-        id: 1,
-        materialCode: "MAT-CASE-01",
-        materialName: "배터리 케이스 (L3)",
-        lotNo: "MATLOT-2512-001",
-        qty: 100,
-      },
-      {
-        id: 2,
-        materialCode: "MAT-LEAD-A",
-        materialName: "납판 (음극)",
-        lotNo: "MATLOT-2512-055",
-        qty: 600,
-      },
-      {
-        id: 3,
-        materialCode: "MAT-LEAD-C",
-        materialName: "납판 (양극)",
-        lotNo: "MATLOT-2512-056",
-        qty: 600,
-      },
-      {
-        id: 4,
-        materialCode: "MAT-ELEC-S",
-        materialName: "전해액 (황산)",
-        lotNo: "MATLOT-2601-002",
-        qty: 50,
-      },
-    ];
-  }, [lot]);
-
-  // 품질 검사 데이터 (Quality Check)
-  const qualityLogs = useMemo(() => {
-    if (!lot) return [];
-    return [
-      { id: 1, item: "OCV(개방회로전압)", ok: 490, ng: 10 },
-      { id: 2, item: "내압 테스트", ok: 495, ng: 5 },
-      { id: 3, item: "누액 검사", ok: 498, ng: 2 },
-      { id: 4, item: "외관 검사", ok: 500, ng: 0 },
-    ];
-  }, [lot]);
-
-  // 정렬 유틸
-  const sortData = (data, config) => {
-    if (!config.key) return data;
-    return [...data].sort((a, b) => {
-      const aVal = a?.[config.key];
-      const bVal = b?.[config.key];
-      if (typeof aVal === "string") {
-        return config.direction === "asc"
-          ? aVal.localeCompare(bVal, "ko", { numeric: true })
-          : bVal.localeCompare(aVal, "ko", { numeric: true });
-      }
-      return config.direction === "asc" ? aVal - bVal : bVal - aVal;
-    });
-  };
-
-  const sortedProcess = useMemo(
-    () => sortData(processLogs, processSort),
-    [processLogs, processSort],
-  );
-  const sortedMaterial = useMemo(
-    () => sortData(materialLogs, materialSort),
-    [materialLogs, materialSort],
-  );
-  const sortedQuality = useMemo(
-    () => sortData(qualityLogs, qualitySort),
-    [qualityLogs, qualitySort],
-  );
-
-  // 공정 정보 컬럼
+  // [수정] 공정 이력 컬럼 (1분 단위 집계 시간 표시)
   const processColumns = [
-    { key: "date", label: "일자", width: 100 },
-    { key: "process", label: "공정", width: 140 },
-    { key: "machine", label: "설비", width: 120 },
-    { key: "start", label: "시작", width: 100 },
-    { key: "end", label: "종료", width: 100 },
+    { key: "date", label: "작업 시간 (분)", width: 140 }, // yyyy-MM-dd HH:mm
+    { key: "process", label: "공정명", width: 120 },
+    { key: "machine", label: "설비명", width: 120 },
+    { key: "start", label: "시작(초)", width: 80 },
+    { key: "end", label: "종료(초)", width: 80 },
     {
       key: "status",
       label: "상태",
-      width: 150,
-      render: (val) => <Status status={val} type="basic" />,
+      width: 80,
+      render: (val) => (
+        <Status
+          status={val === "PASS" ? "OK" : val === "FAIL" ? "ERROR" : "RUN"}
+          label={val}
+        />
+      ),
     },
   ];
 
-  // 생산 정보(투입자재) 컬럼
+  // [수정] 자재 투입 이력 컬럼 (자재코드, 자재LOT 포함)
   const materialColumns = [
     { key: "materialCode", label: "자재코드", width: 140 },
-    { key: "materialName", label: "자재명", width: 180 },
+    { key: "materialName", label: "자재명", width: 150 },
     { key: "lotNo", label: "자재 LOT", width: 160 },
-    {
-      key: "qty",
-      label: "수량",
-      width: 80,
-      render: (val) => val.toLocaleString(),
-    },
+    { key: "qty", label: "투입량", width: 80 },
   ];
 
-  // 품질 검사 컬럼
-  const qualityColumns = [
-    { key: "item", label: "검사 항목", width: 180 },
-    {
-      key: "ok",
-      label: "OK",
-      width: 80,
-    },
-    {
-      key: "ng",
-      label: "NG",
-      width: 80,
-    },
-    {
-      key: "passRate",
-      label: "양품률",
-      width: 100,
-      render: (_, row) => {
-        const total = row.ok + row.ng;
-        return total === 0 ? (
-          "-"
-        ) : (
-          <ResultText $type="ok">
-            {((row.ok / total) * 100).toFixed(1)}%
-          </ResultText>
-        );
-      },
-    },
-    {
-      key: "failRate",
-      label: "불량률",
-      width: 100,
-      render: (_, row) => {
-        const total = row.ok + row.ng;
-        return total === 0 ? (
-          "-"
-        ) : (
-          <ResultText $type="ng">
-            {((row.ng / total) * 100).toFixed(1)}%
-          </ResultText>
-        );
-      },
-    },
-  ];
-
-  if (!lot) return <Empty>LOT를 선택하세요.</Empty>;
+  if (loading) return <Wrapper>Loading...</Wrapper>;
+  if (!displayLot.lotNo) return <Wrapper>선택된 LOT가 없습니다.</Wrapper>;
 
   return (
     <Wrapper>
       <Header>
-        <h3>제품 LOT 상세 조회</h3>
+        <h3>{displayLot.lotNo}</h3>
+        <Status
+          type="lot"
+          status={
+            displayLot.status === "LOT_RUN"
+              ? "RUN"
+              : displayLot.status === "LOT_OK"
+                ? "OK"
+                : displayLot.status === "LOT_ERR"
+                  ? "ERROR"
+                  : "WAIT"
+          }
+        />
       </Header>
+
       <Content>
+        {/* 기본 정보 섹션 */}
         <Section>
-          <SectionTitle>LOT 정보</SectionTitle>
+          <SectionTitle>기본 정보</SectionTitle>
           <Grid>
-            <FullItem>
-              <label>LOT 번호</label>
-              <Value>{lot.lotId || lot.lotNo || lotId}</Value>
-            </FullItem>
+            <Item>
+              <label>제품코드</label>
+              <Value>{displayLot.productCode}</Value>
+            </Item>
+            <Item>
+              <label>제품명</label>
+              <Value>{displayLot.productName}</Value>
+            </Item>
+            <Item>
+              <label>작업지시번호</label>
+              <Value>{displayLot.workOrderNo}</Value>
+            </Item>
+            <Item>
+              <label>현재수량</label>
+              <Value>{displayLot.currentQty} EA</Value>
+            </Item>
             <FullItem>
               <label>LOT 생성일</label>
-              <Value>
-                {processLogs[0]?.date} {processLogs[0]?.start?.slice(0, 5)}
-              </Value>
-            </FullItem>
-            <Item>
-              <label>LOT 상태</label>
-
-              <Status status={lot.status || "PROCESS"} type="wide" />
-            </Item>
-            <Item>
-              <label>현재 수량</label>
-              <Value>{Number(lot.currentQty ?? 0).toLocaleString()}</Value>
-            </Item>
-          </Grid>
-        </Section>
-
-        <Section>
-          <SectionTitle>제품정보</SectionTitle>
-          <Grid>
-            <FullItem>
-              <label>제품코드</label>
-              <Value>{lot.productCode}</Value>
-            </FullItem>
-            <FullItem>
-              <label>제품명</label>
-              <Value>{lot.productName}</Value>
-            </FullItem>
-            <FullItem>
-              <label>작업지시</label>
-              <Value>{lot.workOrderNo}</Value>
+              <Value>{displayLot.createdAt}</Value>
             </FullItem>
           </Grid>
         </Section>
 
-        {/* ... (이하 기존 코드 동일) */}
-
+        {/* 공정 이력 섹션 (1분 단위 집계) */}
         <Section>
-          <SectionTitle>공정 이력</SectionTitle>
+          <SectionTitle>공정 이력 (1분 단위 상세)</SectionTitle>
           <Table
             columns={processColumns}
-            data={sortedProcess}
+            data={detailData?.processLogs || []}
             sortConfig={processSort}
             onSort={(key) =>
-              setProcessSort((p) => ({
+              setProcessSort({
                 key,
-                direction:
-                  p.key === key && p.direction === "asc" ? "desc" : "asc",
-              }))
+                direction: processSort.direction === "asc" ? "desc" : "asc",
+              })
             }
             selectable={false}
           />
         </Section>
 
+        {/* 자재 투입 이력 섹션 (1분 단위 + 자재LOT 표시) */}
         <Section>
-          <SectionTitle>투입 자재 정보</SectionTitle>
+          <SectionTitle>자재 투입 이력</SectionTitle>
           <Table
             columns={materialColumns}
-            data={sortedMaterial}
+            data={detailData?.materialLogs || []}
             sortConfig={materialSort}
             onSort={(key) =>
-              setMaterialSort((p) => ({
+              setMaterialSort({
                 key,
-                direction:
-                  p.key === key && p.direction === "asc" ? "desc" : "asc",
-              }))
+                direction: materialSort.direction === "asc" ? "desc" : "asc",
+              })
             }
             selectable={false}
           />
-        </Section>
-
-        <Section>
-          <SectionTitle>품질 검사 결과</SectionTitle>
-          <Table
-            columns={qualityColumns}
-            data={sortedQuality}
-            sortConfig={qualitySort}
-            onSort={(key) =>
-              setQualitySort((p) => ({
-                key,
-                direction:
-                  p.key === key && p.direction === "asc" ? "desc" : "asc",
-              }))
-            }
-            selectable={false}
-          />
-        </Section>
-
-        <Section>
-          <SectionTitle>항목별 불량률 분석</SectionTitle>
-          <ChartCard>
-            <ChartBox>
-              <ResponsiveContainer>
-                <BarChart
-                  data={qualityLogs}
-                  layout="vertical"
-                  margin={{ left: 40 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    horizontal={true}
-                    vertical={true}
-                  />
-                  <XAxis type="number" unit="%" />
-                  <YAxis
-                    type="category"
-                    dataKey="item"
-                    width={100}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    dataKey="ng"
-                    name="불량 수량"
-                    fill="var(--error)"
-                    barSize={20}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartBox>
-          </ChartCard>
         </Section>
       </Content>
     </Wrapper>
   );
 }
 
+// 스타일 유지
 const Wrapper = styled.div`
   padding: 20px;
   display: flex;
@@ -385,31 +171,22 @@ const Wrapper = styled.div`
   gap: 18px;
   height: 100%;
 `;
-
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
   h3 {
     font-size: var(--fontHd);
     font-weight: var(--bold);
-    margin-bottom: 20px;
   }
 `;
-
-const Empty = styled.div`
-  padding: 40px 20px;
-  color: var(--font2);
-  text-align: center;
-`;
-
 const Content = styled.div`
   display: flex;
   flex-direction: column;
   gap: 30px;
   overflow-y: auto;
   padding-right: 10px;
-
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -418,13 +195,11 @@ const Content = styled.div`
     border-radius: 3px;
   }
 `;
-
 const Section = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
 `;
-
 const SectionTitle = styled.h4`
   font-size: var(--fontMd);
   font-weight: var(--bold);
@@ -433,7 +208,6 @@ const SectionTitle = styled.h4`
   align-items: center;
   position: relative;
   padding-left: 12px;
-
   &::before {
     content: "";
     position: absolute;
@@ -446,13 +220,11 @@ const SectionTitle = styled.h4`
     border-radius: 2px;
   }
 `;
-
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 `;
-
 const Item = styled.div`
   display: flex;
   flex-direction: column;
@@ -464,11 +236,9 @@ const Item = styled.div`
     padding: 2px;
   }
 `;
-
 const FullItem = styled(Item)`
   grid-column: 1 / -1;
 `;
-
 const Value = styled.div`
   display: flex;
   align-items: center;
@@ -476,23 +246,7 @@ const Value = styled.div`
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--background);
-  height: 38px;
+  min-height: 38px;
   font-size: var(--fontSm);
   color: var(--font);
-`;
-
-const ChartCard = styled.div`
-  border-radius: 16px;
-  padding: 14px;
-  border: 1px solid var(--border);
-`;
-
-const ChartBox = styled.div`
-  height: 200px;
-  font-size: 12px;
-`;
-
-const ResultText = styled.span`
-  font-weight: var(--bold);
-  color: ${(props) => (props.$type === "ok" ? "var(--main)" : "var(--error)")};
 `;
