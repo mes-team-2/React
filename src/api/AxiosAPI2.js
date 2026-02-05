@@ -93,6 +93,7 @@ export const InventoryAPI2 = {
 export const LogAPI2 = {
   // 검사 이력 조회
   getTestLogs: async (params) => {
+    console.log(params);
     return await AxiosAPI2.get("/api/log/testlog", { params });
   },
 

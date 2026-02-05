@@ -55,6 +55,10 @@ export default function TestLog() {
     setKeyword("");
   };
 
+  useEffect(() => {
+    console.log("keyword:", keyword);
+  }, [keyword]);
+
   const handleDateChange = (start, end) => {
     setDateRange({ start, end });
   };
@@ -167,7 +171,6 @@ export default function TestLog() {
 
     fetchDashboard();
   }, [keyword, resultFilter, defectFilter, dateRange]);
-
   /* =========================
      정렬
   ========================= */
