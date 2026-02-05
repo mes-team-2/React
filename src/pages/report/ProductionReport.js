@@ -5,8 +5,6 @@ import TableStyle from "../../components/TableStyle";
 import SearchDate from "../../components/SearchDate";
 import Pagination from "../../components/Pagination";
 import SelectBar from "../../components/SelectBar";
-import SideDrawer from "../../components/SideDrawer";
-import ProductionReportDetail from "./ProductionReportDetail";
 
 import {
   ResponsiveContainer,
@@ -349,13 +347,6 @@ export default function ProductionReport() {
           />
         )}
       </TableWrap>
-
-      <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <ProductionReportDetail
-          date={selectedDate}
-          processRows={processToday}
-        />
-      </SideDrawer>
     </Wrapper>
   );
 }
