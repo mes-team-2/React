@@ -50,6 +50,24 @@ const Shipment = () => {
   const [shipmentData, setShipmentData] = useState([]);
   const [inventoryData, setInventoryData] = useState([]);
 
+  const [expandedMap, setExpandedMap] = useState({});
+
+  // 🔥 제품별 누적 출고 수량 계산
+  const totalOutByProduct = useMemo(() => {
+    return shipmentData.reduce((acc, sh) => {
+      if (!acc[sh.productCode]) acc[sh.productCode] = 0;
+      if (sh.qty < 0) acc[sh.productCode] += Math.abs(sh.qty);
+      return acc;
+    }, {});
+  }, [shipmentData]);
+
+  const toggleExpand = (productCode) => {
+    setExpandedMap((prev) => ({
+      ...prev,
+      [productCode]: !prev[productCode],
+    }));
+  };
+
   const STATUS_OPTIONS = [
     { value: "ALL", label: "전체 구분" },
     { value: "IN", label: "생산입고" },
@@ -77,10 +95,10 @@ const Shipment = () => {
           productCode: inv.productCode,
           productName: inv.productName,
           qty: inv.stockQty,
-
           rowType: "BASE",
           status_key: "in",
           tx_time: inv.updatedAt ?? null,
+          initialQty: inv.stockQty + (totalOutByProduct[inv.productCode] ?? 0),
         },
         shipments: [],
       };
@@ -88,8 +106,8 @@ const Shipment = () => {
 
     // 2️⃣ 출고 이력 붙이기
     shipmentData.forEach((sh) => {
-      const code = sh.fgInventory?.productCode;
-      const name = sh.fgInventory?.productName;
+      const code = sh.productCode;
+      const name = sh.productName;
 
       if (!code) return; // 안전장치
 
@@ -109,11 +127,13 @@ const Shipment = () => {
     });
 
     // 3️⃣ 기준행 → 출고행 순서로 평탄화
-    return Object.values(map).flatMap((g) => [
-      g.base,
-      ...g.shipments.sort((a, b) => new Date(a.tx_time) - new Date(b.tx_time)),
-    ]);
-  }, [inventoryData, shipmentData]);
+    return Object.values(map).flatMap((g) => {
+      const code = g.base.productCode;
+      const expanded = expandedMap[code];
+
+      return expanded ? [g.base, ...g.shipments] : [g.base];
+    });
+  }, [inventoryData, shipmentData, expandedMap]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (page - 1) * itemsPerPage;
@@ -123,23 +143,31 @@ const Shipment = () => {
   const totalPages = Math.ceil(mergedData.length / itemsPerPage);
 
   const summary = useMemo(() => {
-    let totalIn = 0;
     let totalOut = 0;
-    let adjustmentQty = 0;
-    let totalCount = mergedData.length;
 
-    mergedData.forEach((item) => {
-      if (item.rowType !== "SHIPMENT") return; // 출고 이력만 집계
-
-      if (item.qty > 0) {
-        totalIn += item.qty;
-      } else {
-        totalOut += Math.abs(item.qty);
+    //출고 합계 (shipmentData 기준)
+    shipmentData.forEach((sh) => {
+      if (sh.qty < 0) {
+        totalOut += Math.abs(sh.qty);
       }
     });
 
-    return { totalCount, totalIn, totalOut, adjustmentQty };
-  }, [mergedData]);
+    //현재 재고 합계 (inventoryData 기준)
+    const totalStock = inventoryData.reduce(
+      (sum, inv) => sum + inv.stockQty,
+      0,
+    );
+
+    //총 입고 = 재고 + 출고
+    const totalIn = totalStock + totalOut;
+
+    return {
+      totalCount: shipmentData.length,
+      totalIn,
+      totalOut,
+      adjustmentQty: 0,
+    };
+  }, [shipmentData, inventoryData]);
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -163,7 +191,42 @@ const Shipment = () => {
         render: (val) => <Status status={val} />,
       },
       { key: "productCode", label: "제품코드", width: 130 },
-      { key: "productName", label: "제품명", width: 180 },
+      {
+        key: "productName",
+        label: "제품명",
+        render: (val, row) => {
+          if (row.rowType === "BASE") {
+            const code = row.productCode;
+
+            return (
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                <span
+                  style={{ cursor: "pointer" }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleExpand(code);
+                  }}
+                >
+                  {expandedMap[code] ? "▼" : "▶"}
+                </span>
+                <span>{val}</span>
+              </span>
+            );
+          }
+
+          // 출고행
+          return (
+            <span style={{ paddingLeft: 24, color: "#666" }}>↳ {val}</span>
+          );
+        },
+      },
       {
         key: "qty",
         label: "수량",
@@ -179,13 +242,8 @@ const Shipment = () => {
       },
       { key: "unit", label: "단위", width: 60 },
     ],
-    [],
+    [expandedMap],
   );
-
-  const toDateParam = (date) => {
-    if (!date) return null;
-    return new Date(date).toISOString();
-  };
 
   const fetchShipmentHistory = async () => {
     const params = {};
@@ -202,7 +260,6 @@ const Shipment = () => {
       <Header>
         <h2>제품 입출고 이력 조회</h2>
       </Header>
-
       <SummaryGrid>
         <SummaryCard
           icon={<FiEdit />}
@@ -229,7 +286,6 @@ const Shipment = () => {
           color="var(--waiting)"
         />
       </SummaryGrid>
-
       <FilterBar>
         <SearchDate
           width="m"
@@ -256,11 +312,7 @@ const Shipment = () => {
             setPage(1);
           }}
         />
-        <Button variant="primary" onClick={() => setDrawerOpen(true)}>
-          출하 등록
-        </Button>
       </FilterBar>
-
       <TableContainer>
         <TableStyle
           data={paginatedData}
@@ -269,6 +321,7 @@ const Shipment = () => {
           onSort={handleSort}
           selectable={false}
           onRowClick={(row) => {
+            if (row.rowType === "SHIPMENT") return;
             setSelectedRow(row);
             setDrawerOpen(true);
           }}
@@ -289,6 +342,13 @@ const Shipment = () => {
           fetchShipmentHistory();
           setDrawerOpen(false);
         }}
+        shipmentHistory={
+          selectedRow
+            ? shipmentData.filter(
+                (sh) => sh.productCode === selectedRow.productCode,
+              )
+            : []
+        }
       />
     </Wrapper>
   );
@@ -296,7 +356,7 @@ const Shipment = () => {
 
 export default Shipment;
 
-/* ===== styles (변경 없음) ===== */
+/* ===== styles ===== */
 
 const Wrapper = styled.div`
   display: flex;

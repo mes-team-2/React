@@ -2,28 +2,49 @@ import { useState } from "react";
 import styled from "styled-components";
 import SideDrawer from "../../components/SideDrawer";
 import Button from "../../components/Button";
+import TableStyle from "../../components/TableStyle";
+
 import { ShipmentAPI } from "../../api/AxiosAPI3";
 
-export default function ShipmentDrawer({ open, onClose, onSuccess, baseItem }) {
+export default function ShipmentDrawer({
+  open,
+  onClose,
+  onSuccess,
+  baseItem,
+  shipmentHistory = [],
+}) {
   const [form, setForm] = useState({
     qty: "",
     location: "",
-    note: "",
   });
+
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+
+    // "YYYY-MM-DD HH:mm:ss" → ISO 변환
+    const normalized =
+      typeof value === "string" && value.includes(" ")
+        ? value.replace(" ", "T")
+        : value;
+
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return "-";
+
+    return date.toLocaleString();
+  };
 
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const submit = async () => {
+  const onSubmit = async () => {
     try {
       await ShipmentAPI.create({
         txType: "SHIPMENT_OUT",
         qty: Math.abs(Number(form.qty)),
         unit: baseItem.unit,
         location: form.location,
-        note: form.note,
         productCode: baseItem.productCode,
         productName: baseItem.productName,
       });
@@ -39,7 +60,6 @@ export default function ShipmentDrawer({ open, onClose, onSuccess, baseItem }) {
         qty: -Math.abs(Number(form.qty)),
         unit: baseItem.unit,
         location: form.location,
-        note: form.note,
       });
     } catch (e) {
       alert("출하 처리 중 오류가 발생했습니다.");
@@ -51,74 +71,120 @@ export default function ShipmentDrawer({ open, onClose, onSuccess, baseItem }) {
 
   return (
     <SideDrawer open={open} onClose={onClose} title="출하 등록">
-      <Container>
-        {/* ===== 제품 정보 ===== */}
-        <Section>
-          <SectionTitle>출하 대상 제품</SectionTitle>
-          <InfoGrid>
-            <InfoItem>
-              <label>제품코드</label>
-              <span>{baseItem.productCode}</span>
-            </InfoItem>
-            <InfoItem>
-              <label>제품명</label>
-              <span>{baseItem.productName}</span>
-            </InfoItem>
-            <InfoItem>
-              <label>현재 재고</label>
-              <Stock $low={baseItem.qty <= 0}>
-                {(baseItem?.qty ?? 0).toLocaleString()} {baseItem?.unit ?? ""}
-              </Stock>
-            </InfoItem>
-          </InfoGrid>
-        </Section>
+      <Wrapper>
+        <Header>
+          <h3>출하 등록</h3>
+        </Header>
 
-        {/* ===== 출하 입력 ===== */}
-        <Section>
-          <SectionTitle>출하 정보 입력</SectionTitle>
+        <Content>
+          {/* 제품 정보 */}
+          <Section>
+            <SectionTitle>제품 정보</SectionTitle>
+            <Grid>
+              <Item>
+                <label>제품코드</label>
+                <Value>{baseItem.productCode}</Value>
+              </Item>
+              <Item>
+                <label>제품명</label>
+                <Value>{baseItem.productName}</Value>
+              </Item>
+              <Item>
+                <label>최초 입고 수량</label>
+                <Value>
+                  {baseItem.initialQty.toLocaleString()} {baseItem.unit}
+                </Value>
+              </Item>
+              <Item>
+                <label>현재 재고</label>
+                <Value>
+                  {baseItem.qty.toLocaleString()} {baseItem.unit}
+                </Value>
+              </Item>
+            </Grid>
+          </Section>
 
-          <Field>
-            <label>출하 수량</label>
-            <input
-              type="number"
-              name="qty"
-              value={form.qty}
-              onChange={onChange}
-              placeholder="출하할 수량 입력"
+          {/* 출하 입력 */}
+          <Section>
+            <SectionTitle>출하 정보 입력</SectionTitle>
+            <Grid>
+              <Item>
+                <label>출하 수량</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={baseItem.qty}
+                  value={form.qty}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      qty: e.target.value,
+                    }))
+                  }
+                  placeholder={`최대 ${baseItem.qty.toLocaleString()}`}
+                />
+              </Item>
+              <Item>
+                <label>출고처</label>
+                <Input
+                  value={form.location}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      location: e.target.value,
+                    }))
+                  }
+                  placeholder="출고처 입력"
+                />
+              </Item>
+            </Grid>
+          </Section>
+
+          <Section>
+            <SectionTitle>출고 이력</SectionTitle>
+            <TableStyle
+              data={shipmentHistory.map((item, idx) => ({
+                id: item.shipmentNo ?? idx,
+                tx_time: formatDateTime(item.tx_time),
+                location: item.location,
+                qty: item.qty,
+              }))}
+              columns={[
+                {
+                  key: "tx_time",
+                  label: "일시",
+                  width: 160,
+                },
+                {
+                  key: "location",
+                  label: "출고처",
+                  width: 120,
+                },
+                {
+                  key: "qty",
+                  label: "수량",
+                  width: 80,
+                  render: (val) => (
+                    <span style={{ color: "var(--error)", fontWeight: "bold" }}>
+                      -{Math.abs(val).toLocaleString()}
+                    </span>
+                  ),
+                },
+              ]}
+              selectable={false}
             />
-          </Field>
+          </Section>
+        </Content>
 
-          <Field>
-            <label>출고처</label>
-            <input
-              name="location"
-              value={form.location}
-              onChange={onChange}
-              placeholder="예: 현대모비스"
-            />
-          </Field>
-
-          <Field>
-            <label>비고</label>
-            <input
-              name="note"
-              value={form.note}
-              onChange={onChange}
-              placeholder="출하번호 / 메모"
-            />
-          </Field>
-        </Section>
-
-        {/* ===== 버튼 ===== */}
-        <ActionBar>
-          <Button variant="secondary" onClick={onClose}>
+        <Footer>
+          <Button variant="cancel" size="m" onClick={onClose}>
             취소
           </Button>
-          <Button variant="primary" onClick={submit}>
+          <Button variant="ok" size="m" onClick={onSubmit}>
             출하 등록
           </Button>
-        </ActionBar>
-      </Container>
+        </Footer>
+      </Wrapper>
     </SideDrawer>
   );
 }
@@ -127,75 +193,140 @@ export default function ShipmentDrawer({ open, onClose, onSuccess, baseItem }) {
    styled-components
    ========================= */
 
-const Container = styled.div`
+const Wrapper = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
+  height: 100%;
+`;
+
+const Header = styled.div`
+  h3 {
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
+  }
+`;
+
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+  padding-right: 10px;
 `;
 
 const Section = styled.div`
-  background: var(--bgSub);
-  border-radius: 12px;
-  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 `;
 
 const SectionTitle = styled.h4`
-  margin: 0;
-  font-size: var(--fontLg);
+  font-size: var(--fontMd);
   font-weight: var(--bold);
-  color: var(--font);
+  padding-left: 12px;
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background-color: var(--main);
+    border-radius: 2px;
+  }
 `;
 
-const InfoGrid = styled.div`
+const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 `;
 
-const InfoItem = styled.div`
+const Item = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
-
   label {
-    font-size: var(--fontSm);
-    color: var(--fontSub);
-  }
-
-  span {
-    font-size: var(--fontMd);
-    font-weight: var(--bold);
+    font-size: var(--fontXs);
+    font-weight: var(--medium);
+    color: var(--font2);
   }
 `;
 
-const Stock = styled.span`
-  color: ${(props) => (props.$low ? "var(--error)" : "var(--run)")};
+const Value = styled.div`
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: var(--fontSm);
 `;
 
-const Field = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+const Input = styled.input`
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: var(--fontSm);
+  outline: none;
 
-  label {
-    font-size: var(--fontSm);
-    color: var(--fontSub);
+  &:focus {
+    border-color: var(--main);
   }
 
-  input {
-    height: 36px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    padding: 0 10px;
-    font-size: var(--fontMd);
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &[type="number"] {
+    -moz-appearance: textfield;
   }
 `;
 
-const ActionBar = styled.div`
+const Footer = styled.div`
+  margin-top: auto;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+`;
+
+const HistoryList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const HistoryRow = styled.div`
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.8fr;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--background2);
+  font-size: var(--fontSm);
+`;
+
+const HistoryDate = styled.div`
+  color: var(--font2);
+`;
+
+const HistoryLocation = styled.div`
+  color: var(--font);
+`;
+
+const HistoryQty = styled.div`
+  text-align: right;
+  font-weight: var(--bold);
+  color: var(--error);
+`;
+
+const EmptyText = styled.div`
+  font-size: var(--fontSm);
+  color: var(--font2);
+  padding: 12px;
 `;
