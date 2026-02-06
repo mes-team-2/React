@@ -214,4 +214,11 @@ export const ProductionReportAPI = {
   },
 };
 
+export const ProductLotQrAPI = {
+  // LOT 상세 조회 (LotNo 문자열 기준)
+  getDetailByNo: async (lotNo) => {
+    return await AxiosAPI.get(`/api/qr/product-lots/${lotNo}`);
+  },
+};
+
 export default AxiosAPI;
