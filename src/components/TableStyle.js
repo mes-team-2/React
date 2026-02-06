@@ -6,9 +6,9 @@ const TableStyle = ({
   data = [],
   columns = [],
   sortConfig = { key: null, direction: null },
-  onSort = () => { },
+  onSort = () => {},
   selectedIds = [],
-  onSelectChange = () => { },
+  onSelectChange = () => {},
   onRowClick,
   selectable = false,
 }) => {
@@ -20,7 +20,7 @@ const TableStyle = ({
 
     // selectable이 true일 때만 체크박스 컬럼 너비 추가
     if (selectable) {
-      initialWidths.check = 42;
+      initialWidths.check = 50;
     }
     return initialWidths;
   });
@@ -166,8 +166,6 @@ const TableStyle = ({
 
 export default TableStyle;
 
-
-
 const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
@@ -189,7 +187,7 @@ const StyledTable = styled.table`
     font-size: var(--fontXs);
     font-weight: var(--medium);
     white-space: nowrap;
-    user-select: none; 
+    user-select: none;
     height: 30px;
     box-sizing: border-box;
     vertical-align: middle;
@@ -206,7 +204,7 @@ const StyledTable = styled.table`
     height: 30px;
     box-sizing: border-box;
     vertical-align: middle;
-      }
+  }
 `;
 
 const Resizer = styled.div`

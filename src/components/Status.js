@@ -43,7 +43,7 @@ const STATUS_CONFIG = {
     icon: <FiAlertTriangle />,
   },
   RUN: {
-    label: "실행중",
+    label: "진행중",
     iconColor: "var(--run)",
     textColor: "var(--font)",
     bg: "var(--bgRun)",
@@ -273,7 +273,7 @@ const STATUS_CONFIG = {
     icon: <LuHourglass />,
   },
   IN_PROGRESS: {
-    label: "실행중",
+    label: "진행중",
     iconColor: "var(--run)",
     textColor: "var(--font)",
     bg: "var(--bgRun)",

@@ -51,6 +51,9 @@ export default function WorkOrder() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
+  // 체크박스 선택 상태
+  const [selectedIds, setSelectedIds] = useState([]);
+
   // 데이터 로드
   const loadData = async () => {
     try {
@@ -172,13 +175,46 @@ export default function WorkOrder() {
     loadData();
   };
 
+  // 선택된 항목 작업 시작 핸들러
+  const handleStartWork = async () => {
+    if (selectedIds.length === 0) {
+      alert("작업을 시작할 항목을 선택해주세요.");
+      return;
+    }
+
+    const invalidItems = workOrders.filter(
+      (item) => selectedIds.includes(item.id) && item.status !== "WAIT",
+    );
+
+    if (invalidItems.length > 0) {
+      alert("대기(WAIT) 상태인 작업만 시작할 수 있습니다.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `선택한 ${selectedIds.length}건의 작업을 시작하시겠습니까?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await Promise.all(selectedIds.map((id) => WorkOrderAPI.startWork(id)));
+
+      alert("작업이 시작되었습니다.");
+      setSelectedIds([]); // 선택 초기화
+      loadData(); // 데이터 갱신
+    } catch (err) {
+      console.error(err);
+      alert("작업 시작 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <Wrapper>
       <Header>
-        <div>
-          <h2>작업지시 관리</h2>
-          <p>작업지시 등록/조회 및 LOT 생성 흐름을 관리합니다.</p>
-        </div>
+        <h2>작업지시 관리</h2>
       </Header>
 
       <SummaryGrid>
@@ -225,15 +261,23 @@ export default function WorkOrder() {
           />
         </FilterBar>
 
-        <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
-          작업지시 등록
-        </Button>
+        <ButtonGroup>
+          <Button variant="ok" size="m" onClick={handleStartWork}>
+            작업시작
+          </Button>
+          <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
+            작업지시 등록
+          </Button>
+        </ButtonGroup>
       </FilterGroup>
 
       <TableWrap>
         <TableStyle
           columns={columns}
           data={paginatedData}
+          selectable={true}
+          selectedIds={selectedIds} // 체크박스 선택된 ID 목록
+          onSelectChange={setSelectedIds} // 선택 변경 핸들러
           onRowClick={(row) => {
             setSelected(row);
             setDetailOpen(true);
@@ -297,6 +341,11 @@ const FilterBar = styled.div`
   display: flex;
   gap: 20px;
   align-items: center;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 20px;
 `;
 
 const TableWrap = styled.div`

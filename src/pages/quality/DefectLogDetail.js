@@ -122,7 +122,7 @@ export default function QualityDefectLogDetail({ log }) {
       key: "defectType",
       label: "불량 유형",
       width: 180,
-      render: (code) => getDefectName(code), // 코드(SCRATCH) -> 한글(스크래치) 변환
+      render: (code) => getDefectName(code),
     },
     { key: "qty", label: "총 불량 수량", width: 120 },
     {
