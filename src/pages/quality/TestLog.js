@@ -8,6 +8,7 @@ import TestLogDetail from "./TestLogDetail";
 import Pagination from "../../components/Pagination";
 import { LogAPI2 } from "../../api/AxiosAPI2";
 import SelectBar from "../../components/SelectBar";
+import Status from "../../components/Status";
 
 import {
   FiClipboard,
@@ -31,7 +32,26 @@ import {
 
 import SearchDate from "../../components/SearchDate";
 
-// [유틸] YYYY-MM-DD 문자열 반환
+// 불량 코드 한글 매핑 상수
+const DEFECT_NAMES = {
+  SCRATCH: "스크래치",
+  THICKNESS_ERROR: "두께 불량",
+  MISALIGNMENT: "정렬 불량",
+  MISSING_PART: "부품 누락",
+  LOW_VOLTAGE: "전압 미달",
+  HIGH_TEMP: "고온 발생",
+  WELDING_ERROR: "용접 불량",
+  LABEL_ERROR: "라벨 부착 불량",
+  DIMENSION_ERROR: "치수 불량",
+  FOREIGN_MATERIAL: "이물질 혼입",
+  ETC: "기타",
+  NONE: "양품",
+};
+
+// 코드 -> 한글 변환 헬퍼 함수
+const getDefectName = (code) => DEFECT_NAMES[code] || code;
+
+// YYYY-MM-DD 문자열 반환
 const formatDateStr = (date) => {
   if (!date) return null;
   const d = new Date(date);
@@ -99,13 +119,14 @@ export default function TestLog() {
       .filter((d) => d && d.defectType)
       .map((d) => ({
         value: d.defectType,
-        label: `${d.defectType}`,
+        label: getDefectName(d.defectType), // 프론트에 출력되는 불량유형명
       }));
     return [...baseOption, ...dynamicOptions];
   }, [defectCodeList]);
 
-  // 1. [데이터 조회] 백엔드에서 '전체 데이터'를 한 번에 가져옴 (size: 2000)
-  // 이유: 백엔드 필터가 500 에러를 내므로, 일단 다 가져와서 프론트에서 처리
+  // 데이터 조회 / 백엔드에서 '전체 데이터'를 한 번에 가져옴
+  // 필요한 데이터만 가져오면 좋은데 백엔드 필터가 500 에러 남
+  // 백엔드 수정하기 어려워서 일단 무식하게 다 가져와서 프론트에서 처리한다는 마인드 ㅇㅇ
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -151,11 +172,10 @@ export default function TestLog() {
     fetchAllData();
   }, []); // 의존성 배열 비움 (처음에 한 번만 로드)
 
-  // 2. [통계 조회] (대시보드용)
+  // 통계 조회
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        // 통계 API는 에러가 안 난다면 필터 없이 호출하거나, 필요시 제거
         const params = {};
         const res = await LogAPI2.getTestSummaryLogs(params);
         setDashboard(res.data);
@@ -169,33 +189,30 @@ export default function TestLog() {
     fetchDashboard();
   }, []);
 
-  // 3. [프론트엔드 필터링 & 정렬] - 핵심 로직
+  // 프론트엔드 필터링 & 정렬
   const processedData = useMemo(() => {
     let data = [...allRows];
 
-    // (1) 날짜 필터 (문자열 비교)
     if (dateRange.start && dateRange.end) {
       const startStr = formatDateStr(dateRange.start);
       const endStr = formatDateStr(dateRange.end);
 
       data = data.filter((row) => {
         if (!row.inspectedAt) return false;
-        const rowDate = row.inspectedAt.substring(0, 10); // YYYY-MM-DD 추출
+        const rowDate = row.inspectedAt.substring(0, 10);
         return rowDate >= startStr && rowDate <= endStr;
       });
     }
 
-    // (2) 판정 필터
     if (resultFilter !== "ALL") {
       data = data.filter((row) => row.result === resultFilter);
     }
 
-    // (3) 불량코드 필터 (전체 데이터 대상)
+    // 불량코드 필터 (영어 코드로 비교)
     if (defectFilter !== "ALL") {
       data = data.filter((row) => row.defectCode === defectFilter);
     }
 
-    // (4) 검색어 필터
     if (keyword) {
       const k = keyword.toLowerCase();
       data = data.filter(
@@ -204,11 +221,12 @@ export default function TestLog() {
           (row.workOrderNo && row.workOrderNo.toLowerCase().includes(k)) ||
           (row.productName && row.productName.toLowerCase().includes(k)) ||
           (row.machine && row.machine.toLowerCase().includes(k)) ||
-          (row.inspector && row.inspector.toLowerCase().includes(k)),
+          (row.inspector && row.inspector.toLowerCase().includes(k)) ||
+          // 검색어로 한글 불량명을 입력했을 때도 검색되게 추가
+          (row.defectCode && getDefectName(row.defectCode).includes(k)),
       );
     }
 
-    // (5) 정렬
     if (sortConfig.key) {
       data.sort((a, b) => {
         const aVal = a[sortConfig.key];
@@ -229,7 +247,7 @@ export default function TestLog() {
     return data;
   }, [allRows, dateRange, resultFilter, defectFilter, keyword, sortConfig]);
 
-  // 4. [페이지네이션] 필터링된 데이터(processedData)를 자름
+  // 페이지네이션
   const totalPages = Math.ceil(processedData.length / itemsPerPage) || 1;
 
   const currentTableData = useMemo(() => {
@@ -257,16 +275,42 @@ export default function TestLog() {
 
   // 테이블 컬럼 정의
   const columns = [
-    { key: "inspectedAt", label: "검사일시", width: 170 },
-    { key: "result", label: "판정", width: 80 },
-    { key: "defectCode", label: "불량코드", width: 120 },
+    { key: "inspectedAt", label: "검사일시", width: 150 },
+    {
+      key: "result",
+      label: "판정",
+      width: 150,
+      render: (val) => <Status status={val} />,
+    },
+    {
+      key: "defectCode",
+      label: "불량유형",
+      width: 120,
+      render: (code) => (code ? getDefectName(code) : "-"),
+    },
     { key: "lotNo", label: "LOT", width: 160 },
+    { key: "productName", label: "제품명", width: 160 },
     { key: "workOrderNo", label: "작업지시", width: 140 },
     { key: "processStep", label: "공정", width: 150 },
     { key: "machine", label: "설비", width: 120 },
-    { key: "voltage", label: "전압", width: 80 },
-    { key: "humidity", label: "습도", width: 80 },
-    { key: "temperature", label: "온도", width: 80 },
+    {
+      key: "voltage",
+      label: "전압",
+      width: 80,
+      render: (val) => (val ? `${val}V` : "-"),
+    },
+    {
+      key: "humidity",
+      label: "습도",
+      width: 80,
+      render: (val) => (val ? `${val}%` : "-"),
+    },
+    {
+      key: "temperature",
+      label: "온도",
+      width: 80,
+      render: (val) => (val ? `${val}°C` : ""),
+    },
     { key: "inspector", label: "검사자", width: 110 },
   ];
 
@@ -305,7 +349,7 @@ export default function TestLog() {
         <SummaryCard
           icon={<FiAlertTriangle />}
           label="최다 불량"
-          value={dashboard?.topDefectType ?? "-"}
+          value={getDefectName(dashboard?.topDefectType) || "-"}
           color="var(--error)"
         />
       </SummaryGrid>
@@ -349,9 +393,14 @@ export default function TestLog() {
               <ResponsiveContainer>
                 <BarChart data={dashboard.defects}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="defectType" />
+                  <XAxis
+                    dataKey="defectType"
+                    tickFormatter={(val) => getDefectName(val)}
+                    interval={0} // 모든 라벨 표시
+                    tick={{ fontSize: 9 }}
+                  />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip labelFormatter={(label) => getDefectName(label)} />
                   <Bar
                     dataKey="count"
                     fill="var(--error)"
@@ -374,7 +423,6 @@ export default function TestLog() {
           options={resultOptions}
           onChange={(e) => {
             setResultFilter(extractValue(e));
-            // page는 useEffect에서 자동 리셋됨
           }}
         />
 
@@ -395,17 +443,14 @@ export default function TestLog() {
         />
       </FilterBar>
 
-      {/* 테이블 영역 */}
-      <TableWrap>
-        <Table
-          columns={columns}
-          data={currentTableData} // 필터링 + 페이징 처리된 데이터 전달
-          sortConfig={sortConfig}
-          onSort={handleSort}
-          selectable={false}
-          onRowClick={onRowClick}
-        />
-      </TableWrap>
+      <Table
+        columns={columns}
+        data={currentTableData}
+        sortConfig={sortConfig}
+        onSort={handleSort}
+        selectable={false}
+        onRowClick={onRowClick}
+      />
 
       {/* 페이지네이션 */}
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
@@ -475,11 +520,4 @@ const FilterBar = styled.div`
   gap: 12px;
   align-items: center;
   margin-top: 20px;
-`;
-
-const TableWrap = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
 `;

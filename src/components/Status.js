@@ -71,11 +71,18 @@ const STATUS_CONFIG = {
     icon: <FiXCircle />,
   },
   OK: {
-    label: "정상",
+    label: "OK",
     iconColor: "var(--complete)",
     textColor: "var(--font)",
     bg: "var(--bgComplete)",
     icon: <FiCheckCircle />,
+  },
+  NG: {
+    label: "NG",
+    iconColor: "var(--error)",
+    textColor: "var(--font)",
+    bg: "var(--bgError)",
+    icon: <FiAlertTriangle />,
   },
   ON: {
     label: "출근",

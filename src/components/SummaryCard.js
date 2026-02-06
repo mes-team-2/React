@@ -13,7 +13,6 @@ export default function SummaryCard({ icon, label, value, color }) {
   );
 }
 
-
 const Card = styled.div`
   background: white;
   border-radius: 15px;
@@ -28,7 +27,11 @@ const IconBox = styled.div`
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: color-mix(in srgb, ${(props) => props.color || 'black'}, transparent 90%);
+  background: color-mix(
+    in srgb,
+    ${(props) => props.color || "black"},
+    transparent 90%
+  );
   color: ${(props) => props.color};
   display: flex;
   align-items: center;
@@ -41,9 +44,9 @@ const IconBox = styled.div`
 `;
 
 const TextBox = styled.div`
-display: flex;
-flex-direction: column;
-gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   span {
     font-size: var(--fontSm);
     opacity: 0.7;
@@ -51,7 +54,7 @@ gap: 10px;
 
   strong {
     display: block;
-    font-size: var(--font2xl);
+    font-size: var(--fontXl);
     font-weight: var(--bold);
   }
 `;
