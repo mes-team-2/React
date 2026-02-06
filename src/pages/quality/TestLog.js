@@ -7,6 +7,7 @@ import SummaryCard from "../../components/SummaryCard";
 import TestLogDetail from "./TestLogDetail";
 import Pagination from "../../components/Pagination";
 import { LogAPI2 } from "../../api/AxiosAPI2";
+import SelectBar from "../../components/SelectBar";
 
 import {
   FiClipboard,
@@ -30,150 +31,217 @@ import {
 
 import SearchDate from "../../components/SearchDate";
 
+// [유틸] YYYY-MM-DD 문자열 반환
+const formatDateStr = (date) => {
+  if (!date) return null;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function TestLog() {
-  const [rows, setRows] = useState([]);
+  // 전체 원본 데이터 (필터링 전)
+  const [allRows, setAllRows] = useState([]);
   const [dashboard, setDashboard] = useState(null);
+
+  // 불량코드 옵션용 리스트
+  const [defectCodeList, setDefectCodeList] = useState([]);
 
   const [loading, setLoading] = useState(false);
 
+  // 필터 상태
   const [keyword, setKeyword] = useState("");
-  const [resultFilter, setResultFilter] = useState("ALL"); // ALL | OK | NG
-  const [defectFilter, setDefectFilter] = useState("ALL"); // ALL | code
+  const [resultFilter, setResultFilter] = useState("ALL");
+  const [defectFilter, setDefectFilter] = useState("ALL");
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
+
+  // 정렬 및 페이지 상태
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 20; // 페이지당 항목 수
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(1);
 
-  const [dateRange, setDateRange] = useState({ start: null, end: null });
-
-  // SearchBar onChange (value/event 모두 대응)
-  const handleKeywordChange = (v) => {
-    if (typeof v === "string") return setKeyword(v);
-    if (v?.target?.value !== undefined) return setKeyword(v.target.value);
-    setKeyword("");
+  // SelectBar 값 추출 헬퍼
+  const extractValue = (e) => {
+    if (!e) return "";
+    if (e.target && typeof e.target.value !== "undefined")
+      return e.target.value;
+    if (e.value !== undefined) return e.value;
+    return e;
   };
 
-  useEffect(() => {
-    console.log("keyword:", keyword);
-  }, [keyword]);
+  const handleKeywordChange = (v) => {
+    const val = extractValue(v);
+    setKeyword(val);
+    if (val === "") setPage(1);
+  };
 
   const handleDateChange = (start, end) => {
     setDateRange({ start, end });
+    setPage(1);
   };
 
+  const resultOptions = [
+    { value: "ALL", label: "전체 판정" },
+    { value: "OK", label: "OK" },
+    { value: "NG", label: "NG" },
+  ];
+
   const defectOptions = useMemo(() => {
-    if (!dashboard?.defects) return [];
+    const baseOption = [{ value: "ALL", label: "불량코드 전체" }];
+    if (!defectCodeList || defectCodeList.length === 0) return baseOption;
+    const dynamicOptions = defectCodeList
+      .filter((d) => d && d.defectType)
+      .map((d) => ({
+        value: d.defectType,
+        label: `${d.defectType}`,
+      }));
+    return [...baseOption, ...dynamicOptions];
+  }, [defectCodeList]);
 
-    return dashboard.defects.map((d) => ({
-      code: d.defectType,
-      name: d.defectType, // 이름 없으면 코드 그대로
-    }));
-  }, [dashboard]);
-
-  /* =========================
-     필터 적용
-  ========================= */
-  const filtered = useMemo(() => {
-    let data = rows;
-
-    if (resultFilter !== "ALL") {
-      data = data.filter((r) => r.result === resultFilter);
-    }
-    if (defectFilter !== "ALL") {
-      data = data.filter((r) => r.defectCode === defectFilter);
-    }
-    if (keyword.trim()) {
-      const k = keyword.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.lotNo.toLowerCase().includes(k) ||
-          r.workOrderNo.toLowerCase().includes(k) ||
-          r.productCode.toLowerCase().includes(k) ||
-          r.productName.toLowerCase().includes(k) ||
-          r.machine.toLowerCase().includes(k) ||
-          r.inspector.toLowerCase().includes(k),
-      );
-    }
-    return data;
-  }, [rows, keyword, resultFilter, defectFilter]);
-
-  // 검사이력 페이지용
+  // 1. [데이터 조회] 백엔드에서 '전체 데이터'를 한 번에 가져옴 (size: 2000)
+  // 이유: 백엔드 필터가 500 에러를 내므로, 일단 다 가져와서 프론트에서 처리
   useEffect(() => {
-    const fetchLogs = async () => {
+    const fetchAllData = async () => {
       try {
         setLoading(true);
-
+        // 백엔드에 필터 조건을 보내지 않음 (500 에러 방지)
+        // size를 크게 설정하여 전체 데이터를 확보
         const params = {
-          page: page - 1,
-          keyword: keyword || null,
-          isOk: resultFilter === "ALL" ? null : resultFilter === "OK",
-          defectType: defectFilter === "ALL" ? null : defectFilter,
-          startDate: dateRange.start || null,
-          endDate: dateRange.end || null,
+          page: 0,
+          size: 2000,
         };
 
         const res = await LogAPI2.getTestLogs(params);
-
-        // Spring Page 구조
-        const content = res.data.content;
+        const content = res.data.content || [];
 
         const mapped = content.map((item, idx) => ({
           id: idx,
-          inspectedAt: item.endedAt?.replace("T", " ").slice(0, 16),
-          productCode: item.productName, // 없으면 productName으로 대체
+          inspectedAt: item.endedAt?.replace("T", " ").slice(0, 16), // YYYY-MM-DD HH:mm
+          productCode: item.productName,
           productName: item.productName,
           workOrderNo: item.workOrderNo,
           lotNo: item.lotNo,
           processStep: item.processStepName,
           machine: item.machineName,
-          voltage: item.voltage, // 전압
-          humidity: item.humidity, // 임시
+          voltage: item.voltage,
+          humidity: item.humidity,
           temperature: item.temperature,
-          leak: false, // 데이터 없으면 false
+          leak: false,
           result: item.isOk ? "OK" : "NG",
           defectCode: item.defectType,
           inspector: item.workerCode,
           note: "",
         }));
 
-        setRows(mapped);
-        setTotalPages(res.data.totalPages);
+        setAllRows(mapped);
       } catch (e) {
-        console.error("검사 이력 조회 실패", e);
+        console.error("데이터 조회 실패", e);
+        setAllRows([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLogs();
-  }, [page, keyword, resultFilter, defectFilter, dateRange]);
+    fetchAllData();
+  }, []); // 의존성 배열 비움 (처음에 한 번만 로드)
 
-  // 통계용
+  // 2. [통계 조회] (대시보드용)
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const params = {
-          keyword: keyword || null,
-          isOk: resultFilter === "ALL" ? null : resultFilter === "OK",
-          defectType: defectFilter === "ALL" ? null : defectFilter,
-          startDate: dateRange.start || null,
-          endDate: dateRange.end || null,
-        };
-
+        // 통계 API는 에러가 안 난다면 필터 없이 호출하거나, 필요시 제거
+        const params = {};
         const res = await LogAPI2.getTestSummaryLogs(params);
         setDashboard(res.data);
+        if (res.data && res.data.defects) {
+          setDefectCodeList(res.data.defects);
+        }
       } catch (e) {
         console.error("대시보드 조회 실패", e);
       }
     };
-
     fetchDashboard();
-  }, [keyword, resultFilter, defectFilter, dateRange]);
-  /* =========================
-     정렬
-  ========================= */
+  }, []);
+
+  // 3. [프론트엔드 필터링 & 정렬] - 핵심 로직
+  const processedData = useMemo(() => {
+    let data = [...allRows];
+
+    // (1) 날짜 필터 (문자열 비교)
+    if (dateRange.start && dateRange.end) {
+      const startStr = formatDateStr(dateRange.start);
+      const endStr = formatDateStr(dateRange.end);
+
+      data = data.filter((row) => {
+        if (!row.inspectedAt) return false;
+        const rowDate = row.inspectedAt.substring(0, 10); // YYYY-MM-DD 추출
+        return rowDate >= startStr && rowDate <= endStr;
+      });
+    }
+
+    // (2) 판정 필터
+    if (resultFilter !== "ALL") {
+      data = data.filter((row) => row.result === resultFilter);
+    }
+
+    // (3) 불량코드 필터 (전체 데이터 대상)
+    if (defectFilter !== "ALL") {
+      data = data.filter((row) => row.defectCode === defectFilter);
+    }
+
+    // (4) 검색어 필터
+    if (keyword) {
+      const k = keyword.toLowerCase();
+      data = data.filter(
+        (row) =>
+          (row.lotNo && row.lotNo.toLowerCase().includes(k)) ||
+          (row.workOrderNo && row.workOrderNo.toLowerCase().includes(k)) ||
+          (row.productName && row.productName.toLowerCase().includes(k)) ||
+          (row.machine && row.machine.toLowerCase().includes(k)) ||
+          (row.inspector && row.inspector.toLowerCase().includes(k)),
+      );
+    }
+
+    // (5) 정렬
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (aVal === undefined && bVal === undefined) return 0;
+        if (aVal === undefined) return 1;
+        if (bVal === undefined) return -1;
+
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          return sortConfig.direction === "asc"
+            ? aVal.localeCompare(bVal, "ko", { numeric: true })
+            : bVal.localeCompare(aVal, "ko", { numeric: true });
+        }
+        return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+      });
+    }
+
+    return data;
+  }, [allRows, dateRange, resultFilter, defectFilter, keyword, sortConfig]);
+
+  // 4. [페이지네이션] 필터링된 데이터(processedData)를 자름
+  const totalPages = Math.ceil(processedData.length / itemsPerPage) || 1;
+
+  const currentTableData = useMemo(() => {
+    const startIdx = (page - 1) * itemsPerPage;
+    return processedData.slice(startIdx, startIdx + itemsPerPage);
+  }, [processedData, page]);
+
+  // 필터 변경 시 1페이지로 리셋
+  useEffect(() => {
+    setPage(1);
+  }, [resultFilter, defectFilter, keyword, dateRange]);
+
   const handleSort = (key) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -182,33 +250,12 @@ export default function TestLog() {
     );
   };
 
-  const sorted = useMemo(() => {
-    if (!sortConfig.key) return filtered;
+  const onRowClick = (row) => {
+    setSelected(row);
+    setDrawerOpen(true);
+  };
 
-    return [...filtered].sort((a, b) => {
-      const aVal = a?.[sortConfig.key];
-      const bVal = b?.[sortConfig.key];
-
-      if (aVal === undefined && bVal === undefined) return 0;
-      if (aVal === undefined) return 1;
-      if (bVal === undefined) return -1;
-
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return sortConfig.direction === "asc"
-          ? aVal.localeCompare(bVal, "ko", { numeric: true })
-          : bVal.localeCompare(aVal, "ko", { numeric: true });
-      }
-      return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
-    });
-  }, [filtered, sortConfig]);
-
-  /* =========================
-     요약 카드
-  ========================= */
-
-  /* =========================
-     테이블 컬럼
-  ========================= */
+  // 테이블 컬럼 정의
   const columns = [
     { key: "inspectedAt", label: "검사일시", width: 170 },
     { key: "result", label: "판정", width: 80 },
@@ -223,27 +270,13 @@ export default function TestLog() {
     { key: "inspector", label: "검사자", width: 110 },
   ];
 
-  const onRowClick = (row) => {
-    setSelected(row);
-    setDrawerOpen(true);
-  };
-
-  // 필터 변경 시 정렬 초기화 (UX)
-  useEffect(() => {
-    setSortConfig({ key: null, direction: "asc" });
-  }, [resultFilter, defectFilter]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [resultFilter, defectFilter, keyword, sortConfig]);
-
   return (
     <Wrapper>
       <Header>
         <h2>검사 이력</h2>
       </Header>
 
-      {/* ===== 요약 ===== */}
+      {/* 요약 카드 */}
       <SummaryGrid>
         <SummaryCard
           icon={<FiClipboard />}
@@ -277,13 +310,13 @@ export default function TestLog() {
         />
       </SummaryGrid>
 
-      {/* ===== 차트 ===== */}
+      {/* 차트 영역 */}
       <ChartGrid>
         <ChartCard>
           <h4>일자별 OK/NG 추이</h4>
           <ChartBox>
             {dashboard && (
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer>
                 <LineChart data={dashboard.daily}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day" />
@@ -292,14 +325,14 @@ export default function TestLog() {
                   <Line
                     type="monotone"
                     dataKey="ok"
-                    stroke="#22c55e"
+                    stroke="var(--run)"
                     strokeWidth={2}
                     dot={false}
                   />
                   <Line
                     type="monotone"
                     dataKey="ng"
-                    stroke="#ef4444"
+                    stroke="var(--error)"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -313,13 +346,17 @@ export default function TestLog() {
           <h4>불량 유형 분포</h4>
           <ChartBox>
             {dashboard && dashboard.defects && (
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer>
                 <BarChart data={dashboard.defects}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="defectType" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#ef4444" />
+                  <Bar
+                    dataKey="count"
+                    fill="var(--error)"
+                    radius={[9, 9, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -327,49 +364,42 @@ export default function TestLog() {
         </ChartCard>
       </ChartGrid>
 
-      {/* ===== 필터바 ===== */}
+      {/* 필터 영역 */}
       <FilterBar>
-        <SearchWrap>
-          <SearchBar
-            value={keyword}
-            onChange={handleKeywordChange}
-            placeholder="LOT / 작업지시 / 제품 / 설비 / 검사자 검색"
-          />
-        </SearchWrap>
+        <SearchDate onChange={handleDateChange} placeholder="입고일자 검색" />
 
-        <SearchDate
-          width="m"
-          onChange={handleDateChange}
-          placeholder="입고일자 검색"
+        <SelectBar
+          width="s"
+          value={resultFilter}
+          options={resultOptions}
+          onChange={(e) => {
+            setResultFilter(extractValue(e));
+            // page는 useEffect에서 자동 리셋됨
+          }}
         />
 
-        <Select
-          value={resultFilter}
-          onChange={(e) => setResultFilter(e.target.value)}
-        >
-          <option value="ALL">전체</option>
-          <option value="OK">OK</option>
-          <option value="NG">NG</option>
-        </Select>
-
-        <Select
+        <SelectBar
+          width="m"
           value={defectFilter}
-          onChange={(e) => setDefectFilter(e.target.value)}
-        >
-          <option value="ALL">불량코드 전체</option>
-          {defectOptions.map((d) => (
-            <option key={d.code} value={d.code}>
-              {d.name} ({d.code})
-            </option>
-          ))}
-        </Select>
+          options={defectOptions}
+          onChange={(e) => {
+            setDefectFilter(extractValue(e));
+          }}
+        />
+
+        <SearchBar
+          width="l"
+          value={keyword}
+          onChange={handleKeywordChange}
+          placeholder="LOT / 작업지시 / 제품 / 설비 / 검사자 검색"
+        />
       </FilterBar>
 
-      {/* ===== 테이블 ===== */}
+      {/* 테이블 영역 */}
       <TableWrap>
         <Table
           columns={columns}
-          data={sorted}
+          data={currentTableData} // 필터링 + 페이징 처리된 데이터 전달
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
@@ -377,9 +407,9 @@ export default function TestLog() {
         />
       </TableWrap>
 
+      {/* 페이지네이션 */}
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      {/* ===== 상세 Drawer ===== */}
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <TestLogDetail row={selected} defectMap={defectOptions} />
       </SideDrawer>
@@ -387,28 +417,23 @@ export default function TestLog() {
   );
 }
 
-/* =========================
-   styled
-========================= */
-
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 `;
 
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: var(--fontHd);
+    font-weight: var(--bold);
   }
 `;
 
 const SummaryGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-
+  gap: 20px;
   @media (max-width: 1200px) {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -416,10 +441,9 @@ const SummaryGrid = styled.div`
 
 const ChartGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-
-  @media (max-width: 1100px) {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  @media (max-width: 1200px) {
     grid-template-columns: 1fr;
   }
 `;
@@ -427,18 +451,19 @@ const ChartGrid = styled.div`
 const ChartCard = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-
+  padding: 20px;
+  box-shadow: var(--shadow);
   h4 {
-    font-size: 14px;
-    margin: 0 0 10px 0;
+    font-size: var(--fontSm);
+    margin-bottom: 20px;
+    font-weight: var(--medium);
+    color: var(--font);
   }
 `;
 
 const ChartBox = styled.div`
-  height: 260px;
-
+  height: 220px;
+  padding-right: 20px;
   svg:focus,
   svg *:focus {
     outline: none;
@@ -450,19 +475,6 @@ const FilterBar = styled.div`
   gap: 12px;
   align-items: center;
   margin-top: 20px;
-`;
-
-const SearchWrap = styled.div`
-  flex: 1;
-`;
-
-const Select = styled.select`
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: white;
-  font-size: 13px;
-  min-width: 160px;
 `;
 
 const TableWrap = styled.div`
