@@ -12,8 +12,12 @@ import SummaryCard from "../../components/SummaryCard";
 import Status from "../../components/Status";
 import Pagination from "../../components/Pagination";
 import SelectBar from "../../components/SelectBar";
+import Button from "../../components/Button";
+import ShipmentDrawer from "./ShipmentDrawer";
+import { InventoryAPI2 } from "../../api/AxiosAPI2";
+import { ShipmentAPI } from "../../api/AxiosAPI3";
 
-// 날짜 포맷 함수 (yyyy-MM-dd HH:mm)
+// 날짜 포맷 함수
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
   const date = new Date(dateStr);
@@ -26,170 +30,108 @@ const formatDate = (dateStr) => {
 };
 
 const Shipment = () => {
-  // 상태 관리
-  const [historyData, setHistoryData] = useState([]);
   const [sortConfig, setSortConfig] = useState({
     key: "tx_time",
     direction: "desc",
   });
+  const [selectedRow, setSelectedRow] = useState(null);
 
-  // 검색 필터 상태
   const [searchTerm, setSearchTerm] = useState("");
   const [searchDateRange, setSearchDateRange] = useState({
     start: null,
     end: null,
   });
-  const [txTypeFilter, setTxTypeFilter] = useState("ALL"); // ALL, IN, OUT
+  const [txTypeFilter, setTxTypeFilter] = useState("ALL");
 
-  // 페이지네이션 상태
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
 
-  // 구분 필터 옵션 정의
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [shipmentData, setShipmentData] = useState([]);
+  const [inventoryData, setInventoryData] = useState([]);
+
   const STATUS_OPTIONS = [
     { value: "ALL", label: "전체 구분" },
     { value: "IN", label: "생산입고" },
     { value: "OUT", label: "출고" },
   ];
 
-  // 초기 데이터 로드
+  const fetchInventory = async () => {
+    const res = await InventoryAPI2.getFgInventory();
+    setInventoryData(res.data);
+  };
+
   useEffect(() => {
-    const dummyData = [
-      {
-        id: 101,
-        tx_time: "2026-01-28 14:30:00",
-        tx_type: "PRODUCTION_IN", // 입고 (생산)
-        status_key: "in",
-        product_code: "BAT-12V-100A",
-        product_name: "리튬이온 배터리 (100Ah)",
-        qty: 500,
-        unit: "EA",
-        location: "A-101",
-        note: "WO-260128-05",
-      },
-      {
-        id: 102,
-        tx_time: "2026-01-28 16:00:00",
-        tx_type: "SHIPMENT_OUT", // 출고 (출하)
-        status_key: "out",
-        product_code: "BAT-12V-100A",
-        product_name: "리튬이온 배터리 (100Ah)",
-        qty: -200,
-        unit: "EA",
-        location: "현대모비스", // 출고처
-        note: "SH-260128-01",
-      },
-      {
-        id: 103,
-        tx_time: "2026-01-27 09:15:00",
-        tx_type: "PRODUCTION_IN",
-        status_key: "in",
-        product_code: "BAT-12V-120A",
-        product_name: "리튬이온 배터리 (120Ah)",
-        qty: 300,
-        unit: "EA",
-        location: "B-202",
-        note: "WO-260127-02",
-      },
-      {
-        id: 104,
-        tx_time: "2026-01-26 15:20:00",
-        tx_type: "ADJUSTMENT", // 재고 조정
-        status_key: "out",
-        product_code: "BAT-12V-200A",
-        product_name: "산업용 배터리 (200Ah)",
-        qty: -2,
-        unit: "EA",
-        location: "A-105",
-        note: "정기 재고실사 차이 반영",
-      },
-      ...Array.from({ length: 20 }).map((_, i) => ({
-        id: 200 + i,
-        tx_time: `2026-01-${20 - (i % 20)} 10:00:00`,
-        tx_type: i % 2 === 0 ? "PRODUCTION_IN" : "SHIPMENT_OUT",
-        status_key: i % 2 === 0 ? "in" : "out",
-        product_code: "BAT-12V-100A",
-        product_name: "리튬이온 배터리 (100Ah)",
-        qty: i % 2 === 0 ? 100 : -50,
-        unit: "EA",
-        location: i % 2 === 0 ? "A-101" : "출하장",
-        note: "-",
-      })),
-    ];
-    setHistoryData(dummyData);
+    fetchInventory();
+    fetchShipmentHistory();
   }, []);
 
-  // 필터링 로직
-  const filteredData = useMemo(() => {
-    let data = [...historyData];
+  const mergedData = useMemo(() => {
+    const map = {};
 
-    // 날짜 필터
-    if (searchDateRange.start && searchDateRange.end) {
-      const start = new Date(searchDateRange.start);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(searchDateRange.end);
-      end.setHours(23, 59, 59, 999);
+    // 1️⃣ 재고 기준행
+    inventoryData.forEach((inv) => {
+      map[inv.productCode] = {
+        base: {
+          ...inv,
+          productCode: inv.productCode,
+          productName: inv.productName,
+          qty: inv.stockQty,
 
-      data = data.filter((item) => {
-        const itemTime = new Date(item.tx_time);
-        return itemTime >= start && itemTime <= end;
-      });
-    }
+          rowType: "BASE",
+          status_key: "in",
+          tx_time: inv.updatedAt ?? null,
+        },
+        shipments: [],
+      };
+    });
 
-    // 텍스트 검색
-    if (searchTerm) {
-      const lower = searchTerm.toLowerCase();
-      data = data.filter(
-        (item) =>
-          item.product_code.toLowerCase().includes(lower) ||
-          item.product_name.toLowerCase().includes(lower) ||
-          item.note.toLowerCase().includes(lower) ||
-          item.location.toLowerCase().includes(lower),
-      );
-    }
+    // 2️⃣ 출고 이력 붙이기
+    shipmentData.forEach((sh) => {
+      const code = sh.fgInventory?.productCode;
+      const name = sh.fgInventory?.productName;
 
-    // 입출고 타입 필터
-    if (txTypeFilter !== "ALL") {
-      if (txTypeFilter === "IN") {
-        data = data.filter((item) => item.qty > 0);
-      } else if (txTypeFilter === "OUT") {
-        data = data.filter((item) => item.qty < 0);
+      if (!code) return; // 안전장치
+
+      if (map[code]) {
+        map[code].shipments.push({
+          ...sh,
+
+          // 🔥 핵심: 기준행과 같은 필드명으로 맞춤
+          productCode: code,
+          productName: name,
+
+          qty: sh.qty, // 음수
+          rowType: "SHIPMENT",
+          status_key: "out",
+        });
       }
-    }
+    });
 
-    // 정렬
-    if (sortConfig.key) {
-      data.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key])
-          return sortConfig.direction === "asc" ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key])
-          return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
+    // 3️⃣ 기준행 → 출고행 순서로 평탄화
+    return Object.values(map).flatMap((g) => [
+      g.base,
+      ...g.shipments.sort((a, b) => new Date(a.tx_time) - new Date(b.tx_time)),
+    ]);
+  }, [inventoryData, shipmentData]);
 
-    return data;
-  }, [historyData, searchTerm, searchDateRange, txTypeFilter, sortConfig]);
-
-  // 현재 페이지 데이터 슬라이싱
   const paginatedData = useMemo(() => {
     const startIndex = (page - 1) * itemsPerPage;
-    return filteredData.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredData, page]);
+    return mergedData.slice(startIndex, startIndex + itemsPerPage);
+  }, [mergedData, page]);
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const totalPages = Math.ceil(mergedData.length / itemsPerPage);
 
-  // Summary 통계 계산
   const summary = useMemo(() => {
     let totalIn = 0;
     let totalOut = 0;
     let adjustmentQty = 0;
-    let totalCount = filteredData.length;
+    let totalCount = mergedData.length;
 
-    filteredData.forEach((item) => {
-      if (item.tx_type === "ADJUSTMENT") {
-        adjustmentQty += item.qty;
-      } else if (item.qty > 0) {
+    mergedData.forEach((item) => {
+      if (item.rowType !== "SHIPMENT") return; // 출고 이력만 집계
+
+      if (item.qty > 0) {
         totalIn += item.qty;
       } else {
         totalOut += Math.abs(item.qty);
@@ -197,9 +139,8 @@ const Shipment = () => {
     });
 
     return { totalCount, totalIn, totalOut, adjustmentQty };
-  }, [filteredData]);
+  }, [mergedData]);
 
-  // 핸들러
   const handleSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc")
@@ -207,7 +148,6 @@ const Shipment = () => {
     setSortConfig({ key, direction });
   };
 
-  // 테이블 컬럼 정의
   const columns = useMemo(
     () => [
       {
@@ -220,35 +160,42 @@ const Shipment = () => {
         key: "status_key",
         label: "구분",
         width: 150,
-        render: (val, row) => {
-          return <Status status={val} />;
-        },
+        render: (val) => <Status status={val} />,
       },
-      {
-        key: "product_code",
-        label: "제품코드",
-        width: 130,
-      },
-      { key: "product_name", label: "제품명", width: 180 },
+      { key: "productCode", label: "제품코드", width: 130 },
+      { key: "productName", label: "제품명", width: 180 },
       {
         key: "qty",
         label: "수량",
-        width: 90,
-        render: (val) => (
-          <QtyText $isPositive={val > 0}>
-            {val > 0 ? `+${val.toLocaleString()}` : val.toLocaleString()}
-          </QtyText>
-        ),
+        render: (val, row) => {
+          const qty = Number(val ?? 0);
+
+          return (
+            <QtyText $isPositive={qty > 0}>
+              {qty > 0 ? `+${qty.toLocaleString()}` : qty.toLocaleString()}
+            </QtyText>
+          );
+        },
       },
-      {
-        key: "unit",
-        label: "단위",
-        width: 60,
-      },
-      // { key: "location", label: "위치/출고처", width: 120 },
+      { key: "unit", label: "단위", width: 60 },
     ],
     [],
   );
+
+  const toDateParam = (date) => {
+    if (!date) return null;
+    return new Date(date).toISOString();
+  };
+
+  const fetchShipmentHistory = async () => {
+    const params = {};
+    if (searchDateRange.start)
+      params.start = searchDateRange.start.toISOString();
+    if (searchDateRange.end) params.end = searchDateRange.end.toISOString();
+
+    const res = await ShipmentAPI.getList(params);
+    setShipmentData(res.data);
+  };
 
   return (
     <Wrapper>
@@ -283,7 +230,6 @@ const Shipment = () => {
         />
       </SummaryGrid>
 
-      {/* 검색 필터 */}
       <FilterBar>
         <SearchDate
           width="m"
@@ -302,7 +248,6 @@ const Shipment = () => {
           }}
           placeholder="구분 선택"
         />
-
         <SearchBar
           width="l"
           placeholder="제품코드, 명 검색"
@@ -311,6 +256,9 @@ const Shipment = () => {
             setPage(1);
           }}
         />
+        <Button variant="primary" onClick={() => setDrawerOpen(true)}>
+          출하 등록
+        </Button>
       </FilterBar>
 
       <TableContainer>
@@ -320,19 +268,35 @@ const Shipment = () => {
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
+          onRowClick={(row) => {
+            setSelectedRow(row);
+            setDrawerOpen(true);
+          }}
         />
-
         <Pagination
           page={page}
           totalPages={totalPages}
           onPageChange={setPage}
         />
       </TableContainer>
+
+      <ShipmentDrawer
+        open={drawerOpen}
+        baseItem={selectedRow}
+        onClose={() => setDrawerOpen(false)}
+        onSuccess={() => {
+          fetchInventory();
+          fetchShipmentHistory();
+          setDrawerOpen(false);
+        }}
+      />
     </Wrapper>
   );
 };
 
 export default Shipment;
+
+/* ===== styles (변경 없음) ===== */
 
 const Wrapper = styled.div`
   display: flex;

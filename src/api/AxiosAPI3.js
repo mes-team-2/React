@@ -2,7 +2,7 @@ import axios from "axios";
 
 const BASE_URL = "http://localhost:8088";
 
-const DefectLogAPI = {
+export const DefectLogAPI = {
   /**
    * 불량 로그 테이블 조회
    * @param {string} date yyyy-MM-dd
@@ -14,4 +14,22 @@ const DefectLogAPI = {
     }),
 };
 
-export default DefectLogAPI;
+export const ShipmentAPI = {
+  /**
+   * 출하 / 입고 이력 조회
+   * @param {Object} params { start, end }
+   */
+  getList: (params) =>
+    axios.get(`${BASE_URL}/api/shipments`, {
+      params,
+      withCredentials: true,
+    }),
+
+  /**
+   * 출하 등록
+   */
+  create: (data) =>
+    axios.post(`${BASE_URL}/api/shipments`, data, {
+      withCredentials: true,
+    }),
+};
