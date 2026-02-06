@@ -176,27 +176,27 @@ export default function ProcessLog() {
         />
       </FilterBar>
 
-      <Table
-        columns={columns}
-        data={currentData}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        onRowClick={(row) => {
-          setSelectedLog(row);
-          setOpen(true);
-        }}
-        selectable={false}
-      />
+      <TableWrap>
+        <Table
+          columns={columns}
+          data={currentData}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          onRowClick={(row) => {
+            setSelectedLog(row);
+            setOpen(true);
+          }}
+          selectable={false}
+        />
 
-      {processedData.length > 0 && (
-        <PaginationWrapper>
+        {processedData.length > 0 && (
           <Pagination
             page={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
           />
-        </PaginationWrapper>
-      )}
+        )}
+      </TableWrap>
 
       <SideDrawer open={open} onClose={() => setOpen(false)}>
         <ProcessLogDetail log={selectedLog} />
@@ -239,4 +239,12 @@ const PaginationWrapper = styled.div`
   margin-top: auto;
   padding-top: 20px;
   padding-bottom: 20px;
+`;
+
+const TableWrap = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
