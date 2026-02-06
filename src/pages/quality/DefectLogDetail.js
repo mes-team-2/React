@@ -3,7 +3,32 @@ import { useMemo, useState } from "react";
 import Table from "../../components/TableStyle";
 import QRCodeCreate from "../../components/QRCodeCreate";
 
+// 불량 코드 한글 매핑 상수
+const DEFECT_NAMES = {
+  SCRATCH: "스크래치",
+  THICKNESS_ERROR: "두께 불량",
+  MISALIGNMENT: "정렬 불량",
+  MISSING_PART: "부품 누락",
+  LOW_VOLTAGE: "전압 미달",
+  HIGH_TEMP: "고온 발생",
+  WELDING_ERROR: "용접 불량",
+  LABEL_ERROR: "라벨 부착 불량",
+  DIMENSION_ERROR: "치수 불량",
+  FOREIGN_MATERIAL: "이물질 혼입",
+  ETC: "기타",
+  NONE: "양품",
+};
+
+// 코드 -> 한글 변환 헬퍼 함수
+const getDefectName = (code) => DEFECT_NAMES[code] || code;
+
 export default function QualityDefectLogDetail({ log }) {
+  const defectName = useMemo(() => {
+    if (!log?.defectCode) return "-";
+    return getDefectName(log.defectCode);
+  }, [log]);
+
+  console.log("DETAIL ROW:", log);
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
@@ -92,7 +117,13 @@ export default function QualityDefectLogDetail({ log }) {
   }
 
   const columns = [
-    { key: "defectType", label: "불량 유형", width: 180 },
+    { key: "defectType", label: "불량 코드", width: 180 },
+    {
+      key: "defectType",
+      label: "불량 유형",
+      width: 180,
+      render: (code) => getDefectName(code), // 코드(SCRATCH) -> 한글(스크래치) 변환
+    },
     { key: "qty", label: "총 불량 수량", width: 120 },
     {
       key: "occurredAtText",
