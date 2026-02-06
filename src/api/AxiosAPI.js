@@ -203,4 +203,15 @@ export const ProductLotAPI = {
   },
 };
 
+export const ProductionReportAPI = {
+  // 일자별 리포트 조회
+  getDailyReport: async (params) => {
+    return await AxiosAPI.get("/api/report/production", { params });
+  },
+  // 오늘 공정별 현황 조회
+  getProcessStatus: async () => {
+    return await AxiosAPI.get("/api/report/process-today");
+  },
+};
+
 export default AxiosAPI;

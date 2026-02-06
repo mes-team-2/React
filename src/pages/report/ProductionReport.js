@@ -1,10 +1,12 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import SummaryCard from "../../components/SummaryCard";
 import TableStyle from "../../components/TableStyle";
 import SearchDate from "../../components/SearchDate";
 import Pagination from "../../components/Pagination";
 import SelectBar from "../../components/SelectBar";
+// [핵심] AxiosAPI.js에 추가한 API 객체 import
+import { ProductionReportAPI } from "../../api/AxiosAPI";
 
 import {
   ResponsiveContainer,
@@ -18,64 +20,7 @@ import {
   Bar,
 } from "recharts";
 
-import {
-  FiTrendingUp,
-  FiTarget,
-  FiAlertTriangle,
-  FiBox,
-  FiList,
-} from "react-icons/fi";
-
-const PROCESS = ["극판 적층", "COS 용접", "전해액 주입/화성", "최종 성능 검사"];
-
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function makeDaily() {
-  const rows = [];
-  for (let d = 50; d >= 0; d--) {
-    const day = new Date();
-    day.setDate(day.getDate() - d);
-    const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(day.getDate()).padStart(2, "0")}`;
-
-    const plan = rand(500, 900);
-    const prod = plan - rand(-30, 120);
-    const ng = Math.max(0, Math.floor(prod * (rand(5, 80) / 1000)));
-
-    const defectRate = prod === 0 ? 0 : Math.round((ng / prod) * 100 * 10) / 10;
-
-    rows.push({
-      date: dateStr,
-      productName: Math.random() > 0.5 ? "12V 소형 배터리" : "12V 중형 배터리",
-      plan,
-      prod,
-      ok: Math.max(0, prod - ng),
-      ng,
-      yield: prod === 0 ? 0 : Math.round(((prod - ng) / prod) * 1000) / 10,
-      defectRate,
-    });
-  }
-  return rows;
-}
-
-function makeProcessToday() {
-  return PROCESS.map((p) => {
-    const input = rand(400, 900);
-    const output = input - rand(0, 40);
-    const ng = rand(0, 10);
-    return {
-      process: p,
-      input,
-      output,
-      ng,
-      fpY: input === 0 ? 0 : Math.round(((output - ng) / input) * 1000) / 10,
-    };
-  });
-}
+import { FiTrendingUp, FiTarget, FiAlertTriangle, FiBox } from "react-icons/fi";
 
 const formatDateString = (date) => {
   if (!date) return null;
@@ -89,8 +34,8 @@ const formatDateString = (date) => {
 };
 
 export default function ProductionReport() {
-  const [daily] = useState(() => makeDaily());
-  const [processToday] = useState(() => makeProcessToday());
+  const [daily, setDaily] = useState([]);
+  const [processToday, setProcessToday] = useState([]);
 
   const [dateRange, setDateRange] = useState({
     startDate: null,
@@ -100,9 +45,40 @@ export default function ProductionReport() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({
+    key: "date",
+    direction: "desc",
+  });
+
+  // [API 호출]
+  const loadData = async () => {
+    try {
+      // 1. 일자별 리포트 API 호출
+      const params = {};
+      if (dateRange.startDate) params.startDate = dateRange.startDate;
+      if (dateRange.endDate) params.endDate = dateRange.endDate;
+
+      const resDaily = await ProductionReportAPI.getDailyReport(params);
+      setDaily(resDaily.data || []);
+
+      // 2. 오늘 공정별 현황 API 호출
+      const resProcess = await ProductionReportAPI.getProcessStatus();
+
+      // 차트용 데이터 포맷 변환 (DTO -> Chart)
+      const chartData = (resProcess.data || []).map((p) => ({
+        name: p.processName,
+        output: p.output,
+        ng: p.ng,
+      }));
+      setProcessToday(chartData);
+    } catch (err) {
+      console.error("리포트 조회 실패:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [dateRange]);
 
   const productOptions = useMemo(() => {
     const uniqueProducts = Array.from(
@@ -115,30 +91,21 @@ export default function ProductionReport() {
     return [{ value: "all", label: "전체 제품" }, ...options];
   }, [daily]);
 
-  //  필터링 (날짜 범위 + 제품명)
+  // 클라이언트 측 제품명 필터링
   const filteredDaily = useMemo(() => {
     let result = daily;
-
-    // 날짜 검색
-    if (dateRange.startDate && dateRange.endDate) {
-      result = result.filter((r) => {
-        return r.date >= dateRange.startDate && r.date <= dateRange.endDate;
-      });
-    }
-
-    // 제품명 필터
     if (productFilter !== "all") {
       result = result.filter((r) => r.productName === productFilter);
     }
-
     return result;
-  }, [daily, dateRange, productFilter]);
+  }, [daily, productFilter]);
 
   const summary = useMemo(() => {
-    const plan = filteredDaily.reduce((a, b) => a + b.plan, 0);
-    const prod = filteredDaily.reduce((a, b) => a + b.prod, 0);
-    const ng = filteredDaily.reduce((a, b) => a + b.ng, 0);
-    const ok = Math.max(0, prod - ng);
+    const plan = filteredDaily.reduce((a, b) => a + (b.plan || 0), 0);
+    const prod = filteredDaily.reduce((a, b) => a + (b.prod || 0), 0);
+    const ng = filteredDaily.reduce((a, b) => a + (b.ng || 0), 0);
+    const ok = filteredDaily.reduce((a, b) => a + (b.ok || 0), 0);
+
     const yieldRate = prod === 0 ? 0 : Math.round((ok / prod) * 1000) / 10;
     const achievement = plan === 0 ? 0 : Math.round((prod / plan) * 100);
 
@@ -146,26 +113,19 @@ export default function ProductionReport() {
   }, [filteredDaily]);
 
   const chartDaily = useMemo(() => {
-    return filteredDaily.map((r) => ({
-      day: r.date.slice(5, 10),
-      plan: r.plan,
-      prod: r.prod,
-      yield: r.yield,
-      ng: r.ng,
-    }));
+    const grouped = {};
+    filteredDaily.forEach((r) => {
+      if (!grouped[r.date])
+        grouped[r.date] = { day: r.date.slice(5, 10), plan: 0, prod: 0 };
+      grouped[r.date].plan += r.plan;
+      grouped[r.date].prod += r.prod;
+    });
+    return Object.values(grouped).sort((a, b) => (a.day > b.day ? 1 : -1));
   }, [filteredDaily]);
-
-  const chartProcess = useMemo(() => {
-    return processToday.map((r) => ({
-      name: r.process,
-      output: r.output,
-      ng: r.ng,
-    }));
-  }, [processToday]);
 
   const columns = [
     { key: "date", label: "일자", width: 130 },
-    { key: "productName", label: "제품명", width: 90 },
+    { key: "productName", label: "제품명", width: 150 },
     { key: "plan", label: "계획", width: 90 },
     { key: "prod", label: "실적", width: 90 },
     { key: "ok", label: "양품", width: 90 },
@@ -213,13 +173,12 @@ export default function ProductionReport() {
           `${row.defectRate}%`
         ),
       yield: `${row.yield}%`,
+      prod: Number(row.prod).toLocaleString(),
+      plan: Number(row.plan).toLocaleString(),
+      ok: Number(row.ok).toLocaleString(),
+      ng: Number(row.ng).toLocaleString(),
     }));
   }, [currentData]);
-
-  const onRowClick = (row) => {
-    setSelectedDate(row.date);
-    setDrawerOpen(true);
-  };
 
   const handleDateChange = (start, end) => {
     setDateRange({
@@ -232,6 +191,10 @@ export default function ProductionReport() {
   const handleProductChange = (e) => {
     setProductFilter(e.target.value);
     setCurrentPage(1);
+  };
+
+  const onRowClick = (row) => {
+    // 상세 로직 필요 시 구현
   };
 
   return (
@@ -282,12 +245,14 @@ export default function ProductionReport() {
                   stroke="var(--main)"
                   strokeWidth={2}
                   dot={false}
+                  name="계획"
                 />
                 <Line
                   dataKey="prod"
                   stroke="var(--run)"
                   strokeWidth={2}
                   dot={false}
+                  name="실적"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -298,7 +263,7 @@ export default function ProductionReport() {
           <h4>오늘 공정별 Output / NG</h4>
           <ChartBox>
             <ResponsiveContainer>
-              <BarChart data={chartProcess}>
+              <BarChart data={processToday}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -307,8 +272,14 @@ export default function ProductionReport() {
                   dataKey="output"
                   fill="var(--main)"
                   radius={[9, 9, 0, 0]}
+                  name="Output"
                 />
-                <Bar dataKey="ng" fill="var(--error)" radius={[9, 9, 0, 0]} />
+                <Bar
+                  dataKey="ng"
+                  fill="var(--error)"
+                  radius={[9, 9, 0, 0]}
+                  name="NG"
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartBox>
@@ -409,10 +380,6 @@ const FilterBar = styled.div`
   gap: 12px;
   align-items: center;
   margin-top: 20px;
-`;
-
-const SearchWrap = styled.div`
-  flex: 1;
 `;
 
 const TableWrap = styled.div`
