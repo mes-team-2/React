@@ -20,7 +20,11 @@ import { WorkOrderAPI } from "../../api/AxiosAPI";
 
 // [유틸] 안전한 날짜 변환 함수
 const safeFormatDate = (dateStr) => {
-  if (!dateStr) return "-";
+  if (!dateStr || dateStr === "-") return "-";
+  // 백엔드에서 이미 포맷팅된 문자열("yyyy-MM-dd HH:mm")이 올 경우 그대로 반환
+  if (dateStr.length === 16 && dateStr.includes("-") && dateStr.includes(":")) {
+    return dateStr;
+  }
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return "-";
   return format(date, "yyyy-MM-dd HH:mm");
@@ -63,7 +67,8 @@ export default function WorkOrder() {
         startDate: safeFormatDate(item.startDate),
         endDate: safeFormatDate(item.endDate),
         dueDate: safeFormatDate(item.dueDate),
-        createdAt: safeFormatDate(item.createdAt || new Date()),
+        // [수정] 백엔드 데이터를 그대로 사용 (fallback 제거)
+        createdAt: safeFormatDate(item.createdAt),
         manager: item.manager || "-",
       }));
 
