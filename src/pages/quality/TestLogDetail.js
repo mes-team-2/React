@@ -37,13 +37,21 @@ export default function TestLogDetail({ row }) {
   return (
     <Wrapper>
       <Header>
-        <h3>검사 상세</h3>
+        <h3>검사이력 상세 조회</h3>
       </Header>
 
       <Content>
         <Section>
           <SectionTitle>기본정보</SectionTitle>
           <Grid>
+            <Item>
+              <label>검사결과</label>
+              <Status status={row.result} type="wide" />
+            </Item>
+            <Item>
+              <label>검사자</label>
+              <Value>{row.inspector}</Value>
+            </Item>
             <FullItem>
               <label>제품명</label>
               <Value>{row.productName}</Value>
@@ -64,10 +72,6 @@ export default function TestLogDetail({ row }) {
             <FullItem>
               <label>설비명</label>
               <Value>{row.machine}</Value>
-            </FullItem>
-            <FullItem>
-              <label>검사자</label>
-              <Value>{row.inspector}</Value>
             </FullItem>
           </Grid>
         </Section>
