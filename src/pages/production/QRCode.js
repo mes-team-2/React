@@ -8,18 +8,68 @@ import QRCodeCreate from "../../components/QRCodeCreate";
 import { ProductLotAPI, InventoryAPI } from "../../api/AxiosAPI";
 import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
+// 화면 표시용 날짜 포맷 (yyyy-MM-dd HH:mm)
+const formatDate = (dateStr) => {
+  if (!dateStr || dateStr === "-") return "-";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "-"; // 유효하지 않은 날짜 처리
+
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+};
+
+// 날짜 범위 비교 헬퍼 함수
+const isDateInRange = (targetDateStr, startDateStr, endDateStr) => {
+  if (!targetDateStr || targetDateStr === "-") return false;
+  if (!startDateStr || !endDateStr) return true;
+
+  try {
+    // 문자열을 날짜 객체로 변환 (시간은 00:00:00으로 통일)
+    const target = new Date(targetDateStr);
+    target.setHours(0, 0, 0, 0);
+
+    const start = new Date(startDateStr);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(endDateStr);
+    end.setHours(0, 0, 0, 0);
+
+    // 날짜 비교
+    return target >= start && target <= end;
+  } catch (e) {
+    console.error("날짜 비교 오류:", e);
+    return false;
+  }
+};
+
 export default function QRCodePage() {
-  const [items, setItems] = useState([]); // 전체 통합 데이터
-  const [items2, setItems2] = useState([]); // 전체 통합 데이터
-  const [filteredItems, setFilteredItems] = useState([]); // 필터링된 데이터
-  const [filteredItems2, setFilteredItems2] = useState([]); // 자재
+  const [items, setItems] = useState([]); // 제품 데이터
+  const [items2, setItems2] = useState([]); // 자재 데이터
+  const [filteredItems, setFilteredItems] = useState([]); // 필터링된 제품
+  const [filteredItems2, setFilteredItems2] = useState([]); // 필터링된 자재
 
   const [inputBuffer, setInputBuffer] = useState("");
 
-  // 필터 상태
+  // 날짜 필터 상태
+  const [productDateRange, setProductDateRange] = useState({
+    start: null,
+    end: null,
+  });
+  const [materialDateRange, setMaterialDateRange] = useState({
+    start: null,
+    end: null,
+  });
+
+  // 제품용 필터
   const [keyword, setKeyword] = useState("");
-  const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [productNameFilter, setProductNameFilter] = useState("ALL");
+
+  // 자재용 필터
+  const [materialKeyword, setMaterialKeyword] = useState("");
   const [materialNameFilter, setMaterialNameFilter] = useState("ALL");
 
   const loadData = async () => {
@@ -34,10 +84,10 @@ export default function QRCodePage() {
       ]);
 
       if (prodRes.data && prodRes.data.length > 0) {
-        console.log("🔥 [제품 데이터 확인]", prodRes.data[0]);
+        console.log("🔥 [제품 데이터]", prodRes.data[0]);
       }
       if (matRes.data?.content && matRes.data.content.length > 0) {
-        console.log("🔥 [자재 데이터 확인]", matRes.data.content[0]);
+        console.log("🔥 [자재 데이터]", matRes.data.content[0]);
       }
 
       // 데이터 표준화
@@ -45,31 +95,30 @@ export default function QRCodePage() {
         id: `PROD-${p.lotNo}`,
         type: "PRODUCT",
         name: p.productName,
-        code: p.lotNo, // QR에 들어갈 값
+        code: p.lotNo,
         category: "제품 LOT",
         qty: p.currentQty,
         desc: `제품코드: ${p.productCode}`,
-        date: p.createdAt || "-",
-        rawData: p,
+        date: formatDate(p.createdAt || "-"),
+        rawData: p, // 원본 데이터 보존 (createdAt 사용 위함)
       }));
 
       const materials = (matRes.data?.content || []).map((m) => ({
         id: `MAT-${m.lotNo}`,
         type: "MATERIAL",
         name: m.materialName,
-        code: m.lotNo, // QR에 들어갈 값
+        code: m.lotNo,
         category: "자재 LOT",
         qty: m.currentQty,
         desc: `자재코드: ${m.materialCode}`,
-        date: m.inboundDate || "-",
-        rawData: m,
+        date: formatDate(m.inboundDate || "-"),
+        rawData: m, // 원본 데이터 보존 (inboundDate 사용 위함)
       }));
 
-      // 합치기
       setItems(products);
       setItems2(materials);
     } catch (err) {
-      console.error("QR 데이터 로드 실패:", err);
+      console.error("데이터 로드 실패:", err);
       setItems([]);
       setItems2([]);
     }
@@ -88,6 +137,16 @@ export default function QRCodePage() {
     return [{ value: "ALL", label: "전체 품목" }, ...options];
   }, [items]);
 
+  const materialOptions = useMemo(() => {
+    const uniqueNames = [...new Set(items2.map((item) => item.name))];
+    const options = uniqueNames.map((name) => ({
+      value: name,
+      label: name,
+    }));
+    return [{ value: "ALL", label: "전체 자재" }, ...options];
+  }, [items2]);
+
+  // 제품 필터링 로직
   useEffect(() => {
     let result = [...items];
 
@@ -95,27 +154,55 @@ export default function QRCodePage() {
       result = result.filter((item) => item.name === productNameFilter);
     }
 
-    // 키워드 검색 (LOT번호)
     if (keyword.trim()) {
       const k = keyword.toLowerCase();
       result = result.filter((item) => item.code.toLowerCase().includes(k));
+    }
+
+    // 날짜 필터 (원본 rawData.createdAt 사용)
+    if (productDateRange.start && productDateRange.end) {
+      console.log("제품 날짜 필터링:", productDateRange);
+      result = result.filter((item) =>
+        isDateInRange(
+          item.rawData.createdAt,
+          productDateRange.start,
+          productDateRange.end,
+        ),
+      );
     }
 
     setFilteredItems(result);
-  }, [items, productNameFilter, keyword, dateRange]);
+  }, [items, productNameFilter, keyword, productDateRange]);
 
-  // 자재용 필터
+  // 자재 필터링 로직
   useEffect(() => {
     let result = [...items2];
 
-    if (keyword.trim()) {
-      const k = keyword.toLowerCase();
+    if (materialNameFilter !== "ALL") {
+      result = result.filter((item) => item.name === materialNameFilter);
+    }
+
+    if (materialKeyword.trim()) {
+      const k = materialKeyword.toLowerCase();
       result = result.filter((item) => item.code.toLowerCase().includes(k));
     }
 
-    setFilteredItems2(result);
-  }, [items2, keyword, dateRange]);
+    // 날짜 필터 (원본 rawData.inboundDate 사용)
+    if (materialDateRange.start && materialDateRange.end) {
+      console.log("자재 날짜 필터링:", materialDateRange);
+      result = result.filter((item) =>
+        isDateInRange(
+          item.rawData.inboundDate,
+          materialDateRange.start,
+          materialDateRange.end,
+        ),
+      );
+    }
 
+    setFilteredItems2(result);
+  }, [items2, materialKeyword, materialNameFilter, materialDateRange]);
+
+  // 스캐너 핸들링
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Enter") {
@@ -124,7 +211,6 @@ export default function QRCodePage() {
           setInputBuffer("");
         }
       } else {
-        // 일반 문자열만 버퍼에 추가
         if (e.key.length === 1) {
           setInputBuffer((prev) => prev + e.key);
         }
@@ -133,11 +219,11 @@ export default function QRCodePage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [inputBuffer, items]);
+  }, [inputBuffer, items, items2]);
 
   const handleScan = (code) => {
-    // 스캔된 코드와 일치하는 항목 찾기
-    const found = items.find(
+    const allItems = [...items, ...items2];
+    const found = allItems.find(
       (item) => item.code.trim().toUpperCase() === code.trim().toUpperCase(),
     );
 
@@ -155,13 +241,17 @@ export default function QRCodePage() {
       </Header>
       <Content>
         <Section>
-          <SectionTitle>
-            제품 LOT ({filteredItems.filter((i) => i.type === "PRODUCT").length}
-            )
-          </SectionTitle>
+          <SectionTitle>제품 LOT ({filteredItems.length})</SectionTitle>
           <FilterBar>
+            <SearchDate
+              width="m"
+              onChange={(s, e) => {
+                console.log("제품 날짜 선택:", s, e);
+                setProductDateRange({ start: s, end: e });
+              }}
+            />
             <SelectBar
-              width="l"
+              width="m"
               placeholder="제품 선택"
               options={productOptions}
               value={productNameFilter}
@@ -202,23 +292,27 @@ export default function QRCodePage() {
         </Section>
 
         <Section>
-          <SectionTitle>
-            자재 LOT
-            {filteredItems2.length}
-          </SectionTitle>
+          <SectionTitle>자재 LOT ({filteredItems2.length})</SectionTitle>
           <FilterBar>
+            <SearchDate
+              width="m"
+              onChange={(s, e) => {
+                console.log("자재 날짜 선택:", s, e);
+                setMaterialDateRange({ start: s, end: e });
+              }}
+            />
             <SelectBar
-              width="l"
+              width="m"
               placeholder="자재 선택"
-              options={productOptions}
-              value={productNameFilter}
-              onChange={(e) => setProductNameFilter(e.target.value)}
+              options={materialOptions}
+              value={materialNameFilter}
+              onChange={(e) => setMaterialNameFilter(e.target.value)}
             />
             <SearchBar
               width="l"
               placeholder="LOT 번호 검색"
-              value={keyword}
-              onChange={setKeyword}
+              value={materialKeyword}
+              onChange={setMaterialKeyword}
               onSearch={() => {}}
             />
           </FilterBar>
@@ -373,16 +467,16 @@ const ProductName = styled.div`
 `;
 
 const CategoryBadge = styled.span`
-  font-size: 11px;
+  font-size: var(--fontXxs);
   background: ${(props) =>
     props.$type === "PRODUCT" ? "var(--run)" : "var(--waiting)"};
-  color: white;
+  color: var(--font3);
   padding: 4px 8px;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: var(--medium);
 `;
 
 const QRWrapper = styled.div`
   padding: 10px;
-  background: white;
+  background: var(--background);
 `;
