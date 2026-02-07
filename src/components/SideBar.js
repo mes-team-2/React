@@ -199,11 +199,6 @@ const MENU = [
     title: "QR코드 조회",
     items: [{ to: "qrcode", label: "QR코드 조회" }],
   },
-  {
-    key: "test",
-    title: "test",
-    items: [{ to: "/mes/test", label: "test" }],
-  },
 ];
 
 // 한국 시간 포맷팅 함수

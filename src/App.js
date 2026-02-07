@@ -37,7 +37,6 @@ import Traceability from "./pages/report/Traceability";
 import ProductionReport from "./pages/report/ProductionReport";
 
 import ProcessLog from "./pages/production/ProcessLog";
-import Test from "./pages/Test";
 import QRCode from "./pages/production/QRCode";
 
 import ProductLotQrDetail from "./pages/production/ProductLotQrDetail";
@@ -74,8 +73,6 @@ function App() {
               path="/"
               element={<Navigate to="/mes/dashboard" replace />}
             />
-
-            <Route path="/test-work-start" element={<Test />} />
 
             {/* ================= MES 레이아웃 ================= */}
             <Route path="/mes" element={<SideBar />}>
@@ -125,9 +122,6 @@ function App() {
 
               {/* ================= 공정 로그 ================= */}
               <Route path="process-log" element={<ProcessLog />} />
-
-              {/* 테스트 */}
-              <Route path="test" element={<Test />} />
             </Route>
           </Route>
 
