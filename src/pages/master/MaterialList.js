@@ -10,6 +10,8 @@ import SideDrawer from "../../components/SideDrawer";
 import MaterialCreate from "./MaterialCreate";
 import { InventoryAPI } from "../../api/AxiosAPI";
 import SelectBar from "../../components/SelectBar";
+import SummaryCard from "../../components/SummaryCard";
+import { Package, ShieldCheck, AlertTriangle, XCircle } from "lucide-react";
 
 import {
   PieChart,
@@ -60,6 +62,24 @@ export default function MaterialList() {
     { value: "DANGER", label: "경고(품절)" },
   ];
 
+  const summaryData = useMemo(() => {
+    let total = data.length;
+    let safe = 0;
+    let caution = 0;
+    let danger = 0;
+
+    data.forEach((item) => {
+      const stock = Number(item.stockQty || 0);
+      const safeQty = Number(item.safeQty || 0);
+
+      if (stock === 0) danger++;
+      else if (stock >= safeQty) safe++;
+      else caution++;
+    });
+
+    return { total, safe, caution, danger };
+  }, [data]);
+
   // 데이터 조회
   const fetchMaterials = async () => {
     try {
@@ -107,24 +127,6 @@ export default function MaterialList() {
       { name: "경고", value: danger },
     ];
   }, [data]);
-
-  const stockByMaterialData = useMemo(() => {
-    const sorted = [...data]
-      .sort((a, b) => b.stockQty - a.stockQty)
-      .slice(0, 5);
-    return sorted.map((item) => ({
-      name: item.materialName,
-      stock: item.stockQty,
-    }));
-  }, [data]);
-
-  const txTrendData = [
-    { date: "01-01", inbound: 300, outbound: 200 },
-    { date: "01-02", inbound: 200, outbound: 260 },
-    { date: "01-03", inbound: 420, outbound: 320 },
-    { date: "01-04", inbound: 360, outbound: 280 },
-    { date: "01-05", inbound: 520, outbound: 430 },
-  ];
 
   // 필터 및 정렬 로직
   const filteredData = useMemo(() => {
@@ -273,8 +275,8 @@ export default function MaterialList() {
                 <Pie
                   data={inventoryStatusData}
                   dataKey="value"
-                  innerRadius={55}
-                  outerRadius={80}
+                  innerRadius={70}
+                  outerRadius={90}
                 >
                   {inventoryStatusData.map((_, i) => (
                     <Cell key={i} fill={COLORS[i]} />
@@ -285,43 +287,31 @@ export default function MaterialList() {
             </ResponsiveContainer>
           </ChartBox>
         </Card>
-        <Card>
-          <h4>자재별 재고 현황</h4>
-          <ChartBox>
-            <ResponsiveContainer>
-              <BarChart data={stockByMaterialData}>
-                <XAxis dataKey="name" fontSize={10} tick={{ dy: 5 }} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="stock" fill="var(--main)" radius={[9, 9, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartBox>
-        </Card>
-        <Card>
-          <h4>자재 입 / 출고 추이 (주간)</h4>
-          <ChartBox>
-            <ResponsiveContainer>
-              <LineChart data={txTrendData}>
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  dataKey="inbound"
-                  stroke="var(--main)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  dataKey="outbound"
-                  stroke="var(--error)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartBox>
-        </Card>
+        <SummaryGrid>
+          <SummaryCard
+            label="전체 자재"
+            value={summaryData.total}
+            icon={<Package size={22} />}
+          />
+          <SummaryCard
+            label="안전"
+            value={summaryData.safe}
+            icon={<ShieldCheck size={22} />}
+            color="var(--run)"
+          />
+          <SummaryCard
+            label="주의"
+            value={summaryData.caution}
+            icon={<AlertTriangle size={22} />}
+            color="var(--waiting)"
+          />
+          <SummaryCard
+            label="경고(품절)"
+            value={summaryData.danger}
+            icon={<XCircle size={22} />}
+            color="var(--error)"
+          />
+        </SummaryGrid>
       </ChartGrid>
 
       <FilterBar>
@@ -382,6 +372,15 @@ export default function MaterialList() {
     </Wrapper>
   );
 }
+const SummaryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 2fr);
+  gap: 20px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+`;
 
 const Wrapper = styled.div`
   display: flex;
@@ -397,7 +396,7 @@ const Header = styled.div`
 `;
 const ChartGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
 
   @media (max-width: 1200px) {
@@ -407,7 +406,7 @@ const ChartGrid = styled.div`
 const Card = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 20px;
+  padding: 16px;
   box-shadow: var(--shadow);
 
   h4 {
