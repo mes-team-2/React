@@ -12,6 +12,24 @@ export default function MaterialLogDetail({ id, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  /* [Helper] 날짜 포맷터 함수 
+     전달된 날짜 데이터를 yyyy-mm-dd hh:min 형식으로 변환함
+  */
+  const toDateOnly = (d) => {
+    if (!d) return "-";
+
+    const date = new Date(d);
+    // 날짜 객체가 유효하지 않을 경우 대비
+    if (isNaN(date.getTime())) return d;
+
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    const hh = String(date.getHours()).padStart(2, "0");
+    const min = String(date.getMinutes()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+  };
+
   useEffect(() => {
     if (!id) return;
 
@@ -25,18 +43,14 @@ export default function MaterialLogDetail({ id, onClose }) {
 
         setDetail({
           id: item.id,
-          occurredAt: item.txTime?.replace(" ", "T"),
-
+          /* [수정] 원본 데이터를 저장하고 출력 시 포맷터를 거치도록 함 */
+          occurredAt: item.txTime,
           type: item.txType?.trim().toUpperCase() === "INBOUND" ? "IN" : "OUT",
-
           qty: Number(item.qty),
           beforeQty: Number(item.beforeQty ?? 0),
           remainQty: Number(item.remainQty ?? 0),
-
           materialCode: item.materialCode ?? "-",
           materialName: item.materialName ?? "-",
-
-          // 서버에 없으니까 기본값
           fromLocation: "자재 창고 1",
           toLocation: "전극 공정 라인 1",
           manager: "Kim Harin",
@@ -58,18 +72,7 @@ export default function MaterialLogDetail({ id, onClose }) {
   if (error) return <Empty>{error}</Empty>;
   if (!detail) return null;
 
-  // 수량 포맷팅 (콤마 추가)
-  const formattedQty = id.qty ? id.qty.toLocaleString() : "-";
-
   const statusKey = detail.type === "IN" ? "MATIN" : "MATOUT";
-
-  // 임시 데이터
-  // const type = row.type === "IN" ? "입고" : row.type === "OUT" ? "출고" : "생산투입";
-  // const fromLocation = row.fromLocation || "자재 창고 1";
-  // const toLocation = row.toLocation || "전극 공정 라인 1";
-  // const manager = row.operator || "Kim Harin";
-  // const beforeQty = 1500; // 임시
-  // const afterQty = 1000; // 임시
 
   return (
     <Wrap>
@@ -83,38 +86,24 @@ export default function MaterialLogDetail({ id, onClose }) {
       </Header>
 
       <Content>
-        {/* LOT 정보 섹션
-        <Section>
-          <SectionTitle>LOT정보</SectionTitle>
-          <LotInfoGrid>
-            <Item>
-              <LotNo>{row.lotNo}</LotNo>
-            </Item>
-            <BarcodeWrapper>
-              <Barcode value={row.lotNo} width={1} height={60} fontSize={12} />
-            </BarcodeWrapper>
-          </LotInfoGrid>
-        </Section> */}
-
-        {/* 입출고 정보 섹션 */}
         <Section>
           <SectionTitle>입출고정보</SectionTitle>
           <DataGrid>
             <Item>
               <label>구분</label>
-
               <Status status={statusKey} type="wide" />
             </Item>
             <Item>
               <label>일시</label>
               <Field>
-                <strong>{detail.occurredAt}</strong>
+                {/* [적용] 날짜 포맷터 함수 사용 */}
+                <strong>{toDateOnly(detail.occurredAt)}</strong>
               </Field>
             </Item>
             <Item>
               <label>이동 수량</label>
               <Field>
-                <strong>{detail.qty}</strong>
+                <strong>{detail.qty.toLocaleString()}</strong>
               </Field>
             </Item>
             <Item>
@@ -141,7 +130,6 @@ export default function MaterialLogDetail({ id, onClose }) {
           </DataGrid>
         </Section>
 
-        {/* 자재 정보 섹션 */}
         <Section>
           <SectionTitle>자재정보</SectionTitle>
           <DataGrid>
@@ -160,7 +148,6 @@ export default function MaterialLogDetail({ id, onClose }) {
           </DataGrid>
         </Section>
 
-        {/* 참조 정보 섹션 */}
         <Section>
           <SectionTitle>참조정보</SectionTitle>
           <DataGrid>
@@ -183,6 +170,7 @@ export default function MaterialLogDetail({ id, onClose }) {
   );
 }
 
+/* --- 스타일 정의 (기존과 동일) --- */
 const Wrap = styled.div`
   padding: 20px;
   display: flex;
@@ -250,29 +238,6 @@ const SectionTitle = styled.h4`
     background-color: var(--main);
     border-radius: 2px;
   }
-`;
-
-const LotInfoGrid = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
-`;
-
-const LotNo = styled.div`
-  font-size: var(--fontSm);
-  font-weight: var(--medium);
-  color: var(--font);
-`;
-
-const BarcodeWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
 `;
 
 const DataGrid = styled.div`

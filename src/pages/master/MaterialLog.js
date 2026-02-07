@@ -27,20 +27,33 @@ export default function MaterialLog() {
   const [keyword, setKeyword] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [dateRange, setDateRange] = useState({ start: null, end: null }); // 날짜 검색상태
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // 테이블 정렬 상태 관리
-  // 입출고 유형 필터 상태
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [typeFilter, setTypeFilter] = useState("ALL");
 
-  // 날짜 변환 함수
-  const toDateOnly = (d) => {
-    if (!d) return null;
+  // [수정 1] 화면 표시용 날짜 포맷터 (yyyy-MM-dd HH:mm)
+  const formatDateTime = (d) => {
+    if (!d) return "-";
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return d; // 유효하지 않은 날짜 처리
 
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    const hh = String(date.getHours()).padStart(2, "0");
+    const min = String(date.getMinutes()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+  };
+
+  // [수정 2] API 전송용 날짜 포맷터 (yyyy-MM-dd)
+  // 검색 파라미터는 보통 시간 없이 날짜만 보내는 경우가 많으므로 분리함
+  const formatDateParam = (d) => {
+    if (!d) return null;
     const date = new Date(d);
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, "0");
     const dd = String(date.getDate()).padStart(2, "0");
-
     return `${yyyy}-${mm}-${dd}`;
   };
 
@@ -51,7 +64,7 @@ export default function MaterialLog() {
     return null;
   };
 
-  // 데이터 가져오기(페이지)
+  // 데이터 가져오기
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -61,15 +74,18 @@ export default function MaterialLog() {
           page,
           keyword,
           type: convertTypeForServer(typeFilter),
-          ...(dateRange.start && { startDate: toDateOnly(dateRange.start) }),
-          ...(dateRange.end && { endDate: toDateOnly(dateRange.end) }),
+          // API에는 yyyy-MM-dd 형식으로 전달
+          ...(dateRange.start && {
+            startDate: formatDateParam(dateRange.start),
+          }),
+          ...(dateRange.end && { endDate: formatDateParam(dateRange.end) }),
         });
         const data = res.data;
 
         setRows(
-          data.content.map((item, idx) => ({
+          data.content.map((item) => ({
             id: item.id,
-            occurredAt: item.txTime?.replace(" ", "T"),
+            occurredAt: item.txTime, // 원본 데이터 유지 (render에서 변환)
             type:
               item.txType?.trim().toUpperCase() === "INBOUND" ? "IN" : "USE",
             materialName: item.materialName,
@@ -95,6 +111,7 @@ export default function MaterialLog() {
     fetchData();
   }, [page, keyword, typeFilter, dateRange]);
 
+  // 요약 정보 가져오기
   const [totalSummary, setTotalSummary] = useState({
     inQty: 0,
     outUseQty: 0,
@@ -103,19 +120,29 @@ export default function MaterialLog() {
 
   useEffect(() => {
     const fetchSummary = async () => {
-      const res = await InventoryAPI2.getMaterialTxSummary({
-        type: convertTypeForServer(typeFilter),
-        startDate: toDateOnly(dateRange.start),
-        endDate: toDateOnly(dateRange.end),
-        keyword,
-      });
-      setTotalSummary(res.data);
+      try {
+        const params = {
+          type: convertTypeForServer(typeFilter),
+          keyword: keyword || "",
+        };
+
+        // API에는 yyyy-MM-dd 형식으로 전달
+        if (dateRange.start)
+          params.startDate = formatDateParam(dateRange.start);
+        if (dateRange.end) params.endDate = formatDateParam(dateRange.end);
+
+        const res = await InventoryAPI2.getMaterialTxSummary(params);
+        if (res && res.data) {
+          setTotalSummary(res.data);
+        }
+      } catch (e) {
+        console.error("Summary Load Error:", e);
+      }
     };
 
     fetchSummary();
   }, [keyword, typeFilter, dateRange]);
 
-  // SelectBar 옵션 정의
   const LOG_TYPE_OPTIONS = [
     { value: "ALL", label: "전체 구분" },
     { value: "IN", label: "자재입고" },
@@ -130,9 +157,7 @@ export default function MaterialLog() {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
-        if (typeof aValue === "number" && typeof bValue === "number") {
-          // 숫자 비교
-        } else {
+        if (typeof aValue !== "number") {
           aValue = String(aValue);
           bValue = String(bValue);
         }
@@ -145,7 +170,6 @@ export default function MaterialLog() {
     return sortableItems;
   }, [rows, sortConfig]);
 
-  //  정렬 핸들러
   const handleSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
@@ -155,8 +179,6 @@ export default function MaterialLog() {
   };
 
   const handleDateChange = (start, end) => {
-    console.log("start:", start);
-    console.log("end:", end);
     setDateRange({ start, end });
     setPage(0);
   };
@@ -166,9 +188,14 @@ export default function MaterialLog() {
     setDrawerOpen(true);
   };
 
-  // 각 컬럼 설정
+  // [수정 3] 컬럼 render에 formatDateTime 적용
   const columns = [
-    { key: "occurredAt", label: "일시", width: 150 },
+    {
+      key: "occurredAt",
+      label: "일시",
+      width: 150,
+      render: (val) => formatDateTime(val),
+    },
     {
       key: "type",
       label: "구분",
@@ -190,9 +217,7 @@ export default function MaterialLog() {
         </QtyText>
       ),
     },
-
     { key: "unit", label: "단위", width: 60 },
-
     { key: "operator", label: "작업자", width: 90 },
   ];
 
@@ -242,7 +267,7 @@ export default function MaterialLog() {
         <SearchBar
           width="l"
           placeholder="자재명 / LOT 검색"
-          onChange={setKeyword} // 키워드 상태 업데이트
+          onChange={setKeyword}
           onSearch={(val) => {
             setKeyword(val);
             setPage(0);
