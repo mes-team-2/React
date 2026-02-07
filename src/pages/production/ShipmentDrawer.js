@@ -189,10 +189,6 @@ export default function ShipmentDrawer({
   );
 }
 
-/* =========================
-   styled-components
-   ========================= */
-
 const Wrapper = styled.div`
   padding: 20px;
   display: flex;
@@ -202,9 +198,13 @@ const Wrapper = styled.div`
 `;
 
 const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   h3 {
     font-size: var(--fontHd);
     font-weight: var(--bold);
+    margin-bottom: 20px;
   }
 `;
 
@@ -214,6 +214,14 @@ const Content = styled.div`
   gap: 30px;
   overflow-y: auto;
   padding-right: 10px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background2);
+    border-radius: 3px;
+  }
 `;
 
 const Section = styled.div`
@@ -225,8 +233,12 @@ const Section = styled.div`
 const SectionTitle = styled.h4`
   font-size: var(--fontMd);
   font-weight: var(--bold);
-  padding-left: 12px;
+  color: var(--font);
+  display: flex;
+  align-items: center;
   position: relative;
+  padding-left: 12px;
+
   &::before {
     content: "";
     position: absolute;
@@ -254,79 +266,49 @@ const Item = styled.div`
     font-size: var(--fontXs);
     font-weight: var(--medium);
     color: var(--font2);
+    padding: 2px;
   }
+`;
+
+const FullItem = styled(Item)`
+  grid-column: 1 / -1;
 `;
 
 const Value = styled.div`
+  display: flex;
+  align-items: center;
   padding: 10px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--background);
+  height: 38px;
   font-size: var(--fontSm);
+  color: var(--font);
 `;
 
+// 실제 입력 필드 스타일
 const Input = styled.input`
-  padding: 10px;
+  padding: 10px 12px;
+  height: 38px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--background);
-  font-size: var(--fontSm);
+  font-size: 14px;
   outline: none;
+  transition: all 0.2s;
 
   &:focus {
-    border-color: var(--main);
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
-
-  &::-webkit-inner-spin-button,
-  &::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-
-  &[type="number"] {
-    -moz-appearance: textfield;
+  :hover {
+    border-color: var(--font2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 `;
 
 const Footer = styled.div`
   margin-top: auto;
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-`;
-
-const HistoryList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const HistoryRow = styled.div`
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 0.8fr;
-  align-items: center;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--background2);
-  font-size: var(--fontSm);
-`;
-
-const HistoryDate = styled.div`
-  color: var(--font2);
-`;
-
-const HistoryLocation = styled.div`
-  color: var(--font);
-`;
-
-const HistoryQty = styled.div`
-  text-align: right;
-  font-weight: var(--bold);
-  color: var(--error);
-`;
-
-const EmptyText = styled.div`
-  font-size: var(--fontSm);
-  color: var(--font2);
-  padding: 12px;
+  justify-content: center;
+  gap: 50px;
 `;
