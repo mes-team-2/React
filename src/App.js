@@ -18,7 +18,6 @@ import WorkOrders from "./pages/production/WorkOrder";
 import ProductLot from "./pages/production/ProductLot";
 import MaterialLot from "./pages/production/MaterialLot";
 import Shipment from "./pages/production/Shipment";
-import Barcode from "./pages/production/Barcode";
 
 import Bom from "./pages/master/BOM";
 import Machine from "./pages/master/Machine";
@@ -42,6 +41,7 @@ import Test from "./pages/Test";
 import QRCode from "./pages/production/QRCode";
 
 import ProductLotQrDetail from "./pages/production/ProductLotQrDetail";
+import MaterialLotQrDetail from "./pages/production/MaterialLotQrDetail";
 
 import { AuthProvider } from "./context/AuthContext";
 
@@ -61,6 +61,10 @@ function App() {
           <Route
             path="/product-lot-qr/:lotId"
             element={<ProductLotQrDetail />}
+          />
+          <Route
+            path="/material-lot-qr/:lotId"
+            element={<MaterialLotQrDetail />}
           />
 
           {/* ================= 인증 보호 영역 ================= */}

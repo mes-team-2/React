@@ -1,30 +1,107 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { FiBox, FiActivity, FiCalendar } from "react-icons/fi";
 import Status from "../../components/Status";
-import { useEffect, useState } from "react";
-import { InventoryAPI2 } from "../../api/AxiosAPI2";
+import { InventoryAPI2 } from "../../api/AxiosAPI2"; // MaterialLot.js와 동일한 API 사용
 
-export default function MaterialLotDetail({ row, onClose }) {
+const MaterialLotQrDetail = ({ row, onClose }) => {
+  const { lotId } = useParams(); // URL 파라미터 (QR 접속 시 문자열 LOT 번호)
+  const navigate = useNavigate();
+
   const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!row?.id) return;
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
 
-    const fetchDetail = async () => {
       try {
-        const res = await InventoryAPI2.getMaterialLotDetail(row.id);
-        setDetail(res.data);
+        let targetDbId = null;
+
+        // [Case 1] 모달로 열었을 때 (row에 이미 진짜 ID가 있음 - 가장 쉬운 케이스)
+        if (row?.id) {
+          targetDbId = row.id;
+        }
+        // [Case 2] QR 코드로 접속했을 때 (lotId는 문자열임 -> 검색 API로 ID 찾아야 함)
+        else if (lotId) {
+          console.log("🔎 QR 검색 시작 (LOT 번호):", lotId);
+
+          // ★ 핵심 해결책 ★
+          // MaterialLot.js에서 쓰는 '목록 검색 API'를 활용하여 LOT 번호로 데이터를 찾습니다.
+          // 전체를 뒤지는 것보다 훨씬 빠르고 정확합니다.
+          const searchParams = {
+            page: 0,
+            size: 10,
+            keyword: lotId, // 검색어에 LOT 번호를 넣음
+          };
+
+          const listRes = await InventoryAPI2.getMaterialLotList(searchParams);
+          const searchResults = listRes.data?.content || [];
+
+          // 검색 결과 중에서 LOT 번호가 정확히 일치하는 항목 찾기
+          const foundItem = searchResults.find(
+            (item) => item.lotNo === lotId || item.materialLotNo === lotId,
+          );
+
+          if (foundItem) {
+            console.log("✅ ID 발견:", foundItem.id);
+            targetDbId = foundItem.id;
+          } else {
+            throw new Error(
+              `LOT 번호(${lotId})에 해당하는 데이터를 찾을 수 없습니다.`,
+            );
+          }
+        }
+
+        if (!targetDbId) return;
+
+        // 3. 진짜 ID로 상세 정보 조회
+        const res = await InventoryAPI2.getMaterialLotDetail(targetDbId);
+
+        if (res.data) {
+          setDetail(res.data);
+        } else {
+          throw new Error("상세 데이터가 비어있습니다.");
+        }
       } catch (e) {
-        console.error("상세 조회 실패", e);
+        console.error("상세 조회 실패:", e);
+        setError(e.message || "데이터를 불러오는 중 오류가 발생했습니다.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchDetail();
-  }, [row?.id]);
+    fetchData();
+  }, [lotId, row]);
 
-  if (!row) return null;
-  if (!detail) return null;
+  // --- 화면 렌더링 ---
+
+  if (loading)
+    return (
+      <Container>
+        <Message>데이터 조회 중...</Message>
+      </Container>
+    );
+
+  if (error)
+    return (
+      <Container>
+        <Message>{error}</Message>
+        {!onClose && (
+          <StyledButton onClick={() => navigate(-1)}>뒤로가기</StyledButton>
+        )}
+      </Container>
+    );
+
+  if (!detail) {
+    return onClose ? null : (
+      <Container>
+        <Message>정보가 없습니다.</Message>
+      </Container>
+    );
+  }
 
   // 상태값 매핑 (Status 컴포넌트용)
   let statusKey = "DEFAULT";
@@ -36,11 +113,6 @@ export default function MaterialLotDetail({ row, onClose }) {
     <Container>
       <Header>
         <h3>자재 LOT 상세 조회</h3>
-        {onClose && (
-          <Button variant="cancel" size="s" onClick={onClose}>
-            닫기
-          </Button>
-        )}
       </Header>
 
       <Content>
@@ -87,7 +159,7 @@ export default function MaterialLotDetail({ row, onClose }) {
           <SectionTitle>재고 현황</SectionTitle>
           <Grid>
             <FullItem>
-              <label>현재고</label>
+              <label>현재고(A)</label>
               <Value>
                 {(detail.remainQty ?? 0).toLocaleString()} <Unit>EA</Unit>
               </Value>
@@ -118,7 +190,7 @@ export default function MaterialLotDetail({ row, onClose }) {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4}>이력이 없습니다.</td>
+                    <td colSpan={3}>이력이 없습니다.</td>
                   </tr>
                 )}
               </tbody>
@@ -133,7 +205,9 @@ export default function MaterialLotDetail({ row, onClose }) {
       </Content>
     </Container>
   );
-}
+};
+
+export default MaterialLotQrDetail;
 
 const Container = styled.div`
   padding: 20px;
@@ -141,6 +215,18 @@ const Container = styled.div`
   flex-direction: column;
   gap: 18px;
   height: 100%;
+  min-height: 100vh;
+  background: white;
+`;
+
+const Message = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 16px;
+  color: var(--font2);
+  font-weight: var(--mediu,);
 `;
 
 const Header = styled.div`
@@ -159,7 +245,8 @@ const Content = styled.div`
   flex-direction: column;
   gap: 20px;
   overflow-y: auto;
-  padding-right: 15px;
+  padding-right: 5px;
+  flex: 1;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -226,10 +313,11 @@ const Value = styled.div`
   padding: 10px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: white;
-  min-height: 38px;
-  font-size: var(--fontSm);
+  background: var(--background);
+  height: 38px;
+  font-weight: var(--normal);
   color: var(--font);
+  font-size: var(--fontXs);
 `;
 
 const Unit = styled.span`
@@ -239,8 +327,8 @@ const Unit = styled.span`
   margin-left: 4px;
 `;
 
-const Button = styled.button`
-  padding: 10px 24px;
+const StyledButton = styled.button`
+  padding: 8px 16px;
   border-radius: 8px;
   background: var(--font2);
   color: white;

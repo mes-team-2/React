@@ -1,383 +1,118 @@
-import React, { useState } from "react";
+import React from "react";
 import styled from "styled-components";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import { FiX, FiActivity, FiAlertCircle, FiLayers } from "react-icons/fi";
+import QRCodeCreate from "../components/QRCodeCreate"; // 경로에 맞게 수정하세요
 
-// --- [Mock Data] 테스트용 더미 데이터 ---
+const Test = () => {
+  // 테스트용 더미 데이터
+  const productLot = {
+    code: "LOT-20260207-007",
+    date: "2024-02-07",
+  };
 
-// 1. 시간대별 생산 실적 데이터 (09시 ~ 18시)
-const HOURLY_DATA = [
-  { time: "09:00", plan: 100, prod: 95 },
-  { time: "10:00", plan: 100, prod: 98 },
-  { time: "11:00", plan: 100, prod: 102 }, // 초과 달성
-  { time: "13:00", plan: 100, prod: 90 }, // 점심 이후 약간 저조
-  { time: "14:00", plan: 100, prod: 85 }, // 설비 이슈 발생 가정
-  { time: "15:00", plan: 100, prod: 92 },
-  { time: "16:00", plan: 100, prod: 98 },
-  { time: "17:00", plan: 100, prod: 100 },
-];
-
-// 2. 불량 원인 분석 데이터 (배터리 공정 특화)
-const DEFECT_DATA = [
-  { name: "COS 용접 불량", value: 12 },
-  { name: "전압 미달", value: 8 },
-  { name: "전해액 누수", value: 5 },
-  { name: "스크래치", value: 3 },
-  { name: "기타", value: 2 },
-];
-
-// 3. 투입 자재(LOT) 이력 데이터
-const LOT_LOGS = [
-  {
-    id: 1,
-    time: "09:15",
-    lotNo: "P-251217-001",
-    material: "Lead Plate A",
-    status: "OK",
-  },
-  {
-    id: 2,
-    time: "10:30",
-    lotNo: "P-251217-002",
-    material: "Case Type-B",
-    status: "OK",
-  },
-  {
-    id: 3,
-    time: "14:10",
-    lotNo: "P-251217-003",
-    material: "Electrolyte E-1",
-    status: "NG",
-  }, // 불량 발생
-  {
-    id: 4,
-    time: "16:45",
-    lotNo: "P-251217-004",
-    material: "Lead Plate A",
-    status: "OK",
-  },
-];
-
-// 차트 색상 배열
-const COLORS = ["#0088FE", "#FF9F0A", "#938bff", "#34C759", "#AF52DE"];
-
-export default function Test({ onClose }) {
-  // 탭 상태 관리 (생산로그 / 자재이력)
-  const [activeTab, setActiveTab] = useState("chart");
+  const materialLot = {
+    code: "ML-260206-0008-INIT",
+    date: "2024-02-07",
+  };
 
   return (
-    <Container>
-      {/* 헤더 영역: 닫기 버튼 및 타이틀 */}
-      <Header>
-        <TitleGroup>
-          <h2>2025-12-17 생산 상세 리포트</h2>
-          <Badge>12V 중형 배터리</Badge>
-        </TitleGroup>
-        <CloseBtn onClick={onClose}>
-          <FiX size={24} />
-        </CloseBtn>
-      </Header>
+    <Wrapper>
+      <Title>QR Code Component Test</Title>
 
-      {/* 요약 카드 영역: 해당 일자의 핵심 지표 재요약 */}
-      <SummaryRow>
-        <Card>
-          <IconBox color="#e0f2fe">
-            <FiActivity color="#0284c7" />
-          </IconBox>
-          <div className="text-box">
-            <span>가동률</span>
-            <strong>92.5%</strong>
+      <TestContainer>
+        {/* 테스트 1: 제품 QR 코드 */}
+        <TestCard>
+          <h3>1. 제품 LOT (Product)</h3>
+          <p>예상 URL: .../product-lot-qr/{productLot.code}</p>
+          <div className="qr-box">
+            <QRCodeCreate
+              value={productLot.code}
+              date={productLot.date}
+              type="PRODUCT" // 생략해도 기본값이지만 명시
+              size="m"
+              showText={true}
+              showDate={true}
+              showDownload={true}
+            />
           </div>
-        </Card>
-        <Card>
-          <IconBox color="#fee2e2">
-            <FiAlertCircle color="#dc2626" />
-          </IconBox>
-          <div className="text-box">
-            <span>주요 불량</span>
-            <strong>COS 용접</strong>
+        </TestCard>
+
+        {/* 테스트 2: 자재 QR 코드 */}
+        <TestCard>
+          <h3>2. 자재 LOT (Material)</h3>
+          <p>예상 URL: .../material-lot-qr/{materialLot.code}</p>
+          <div className="qr-box">
+            <QRCodeCreate
+              value={materialLot.code}
+              date={materialLot.date}
+              type="MATERIAL" // ★ 핵심: 자재 URL로 생성되는지 확인
+              size="m"
+              showText={true}
+              showDate={true}
+              showDownload={true}
+            />
           </div>
-        </Card>
-        <Card>
-          <IconBox color="#dcfce7">
-            <FiLayers color="#16a34a" />
-          </IconBox>
-          <div className="text-box">
-            <span>투입 Lot</span>
-            <strong>42개</strong>
-          </div>
-        </Card>
-      </SummaryRow>
-
-      {/* 메인 콘텐츠 영역: 차트 및 분석 */}
-      <ContentArea>
-        {/* 왼쪽: 시간대별 생산 추이 (Bar Chart) */}
-        <ChartSection>
-          <h3>시간대별 생산 추이 (UPH)</h3>
-          <ChartWrapper>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={HOURLY_DATA}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="time" tick={{ fontSize: 12 }} />
-                <YAxis />
-                <Tooltip
-                  cursor={{ fill: "transparent" }}
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "none",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  }}
-                />
-                <Legend iconType="circle" />
-                <Bar
-                  dataKey="plan"
-                  name="계획"
-                  fill="#e2e8f0"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar
-                  dataKey="prod"
-                  name="실적"
-                  fill="#3b82f6"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartWrapper>
-        </ChartSection>
-
-        {/* 오른쪽: 불량 원인 분석 (Pie Chart) */}
-        <ChartSection>
-          <h3>불량 원인 분석</h3>
-          <ChartWrapper>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={DEFECT_DATA}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {DEFECT_DATA.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartWrapper>
-        </ChartSection>
-      </ContentArea>
-
-      {/* 하단 리스트 영역: 상세 이력 테이블 */}
-      <BottomSection>
-        <h3>주요 자재 투입 이력</h3>
-        <Table>
-          <thead>
-            <tr>
-              <th>시간</th>
-              <th>LOT 번호</th>
-              <th>자재명</th>
-              <th>상태</th>
-            </tr>
-          </thead>
-          <tbody>
-            {LOT_LOGS.map((log) => (
-              <tr key={log.id}>
-                <td>{log.time}</td>
-                <td>{log.lotNo}</td>
-                <td>{log.material}</td>
-                <td>
-                  <StatusTag status={log.status}>{log.status}</StatusTag>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </BottomSection>
-    </Container>
+        </TestCard>
+      </TestContainer>
+    </Wrapper>
   );
-}
+};
 
-// --- 스타일 컴포넌트 ---
+export default Test;
 
-const Container = styled.div`
+const Wrapper = styled.div`
+  padding: 40px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px;
-  background: #f8fafc;
-  height: 100%;
-  overflow-y: auto;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
 `;
 
-const TitleGroup = styled.div`
+const Title = styled.h1`
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 30px;
+  color: #333;
+`;
+
+const TestContainer = styled.div`
   display: flex;
-  align-items: center;
-  gap: 12px;
-
-  h2 {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1e293b;
-    margin: 0;
-  }
-`;
-
-const Badge = styled.span`
-  background-color: #dbeafe;
-  color: #2563eb;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-`;
-
-const CloseBtn = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #64748b;
-  &:hover {
-    color: #1e293b;
-  }
-`;
-
-const SummaryRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-`;
-
-const Card = styled.div`
-  background: white;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-
-  .text-box {
-    display: flex;
-    flex-direction: column;
-    span {
-      font-size: 13px;
-      color: #64748b;
-    }
-    strong {
-      font-size: 18px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-  }
-`;
-
-const IconBox = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
+  gap: 40px;
   justify-content: center;
-  background-color: ${(props) => props.color};
-  font-size: 20px;
+  flex-wrap: wrap;
 `;
 
-const ContentArea = styled.div`
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  min-height: 300px;
-`;
-
-const ChartSection = styled.div`
+const TestCard = styled.div`
   background: white;
-  padding: 20px;
+  padding: 30px;
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  align-items: center;
+  width: 300px;
 
   h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: #334155;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  p {
+    font-size: 12px;
+    color: #666;
     margin-bottom: 20px;
-  }
-`;
-
-const ChartWrapper = styled.div`
-  flex: 1;
-  min-height: 250px;
-`;
-
-const BottomSection = styled.div`
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-  h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: #334155;
-    margin-bottom: 16px;
-  }
-`;
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-
-  th {
-    text-align: left;
-    padding: 12px;
-    color: #64748b;
-    font-weight: 500;
-    border-bottom: 1px solid #e2e8f0;
+    background: #eee;
+    padding: 8px;
+    border-radius: 4px;
+    word-break: break-all;
+    text-align: center;
   }
 
-  td {
-    padding: 12px;
-    color: #334155;
-    border-bottom: 1px solid #f1f5f9;
+  .qr-box {
+    border: 1px dashed #ccc;
+    padding: 10px;
+    border-radius: 8px;
   }
-`;
-
-const StatusTag = styled.span`
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  background-color: ${(props) =>
-    props.status === "OK" ? "#dcfce7" : "#fee2e2"};
-  color: ${(props) => (props.status === "OK" ? "#16a34a" : "#dc2626")};
 `;
