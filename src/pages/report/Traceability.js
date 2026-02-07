@@ -244,6 +244,12 @@ export default function Traceability() {
 
       <SummaryGrid>
         <SummaryCard
+          icon={<FiLayers />}
+          label="LOT 수"
+          value={summary.countLot}
+          color="var(--main)"
+        />
+        <SummaryCard
           icon={<FiClipboard />}
           label="총 수량 합계"
           value={summary.allQty}
@@ -260,12 +266,6 @@ export default function Traceability() {
           label="NG"
           value={summary.allBadQty}
           color="var(--error)"
-        />
-        <SummaryCard
-          icon={<FiLayers />}
-          label="LOT 수"
-          value={summary.countLot}
-          color="var(--main)"
         />
       </SummaryGrid>
 
