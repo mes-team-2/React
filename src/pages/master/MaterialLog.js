@@ -18,7 +18,6 @@ import { FiArchive } from "react-icons/fi";
 import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
 export default function MaterialLog() {
-  // 데이터 관리
   const [rows, setRows] = useState([]);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -31,11 +30,10 @@ export default function MaterialLog() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [typeFilter, setTypeFilter] = useState("ALL");
 
-  // [수정 1] 화면 표시용 날짜 포맷터 (yyyy-MM-dd HH:mm)
   const formatDateTime = (d) => {
     if (!d) return "-";
     const date = new Date(d);
-    if (isNaN(date.getTime())) return d; // 유효하지 않은 날짜 처리
+    if (isNaN(date.getTime())) return d;
 
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -46,8 +44,6 @@ export default function MaterialLog() {
     return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   };
 
-  // [수정 2] API 전송용 날짜 포맷터 (yyyy-MM-dd)
-  // 검색 파라미터는 보통 시간 없이 날짜만 보내는 경우가 많으므로 분리함
   const formatDateParam = (d) => {
     if (!d) return null;
     const date = new Date(d);
@@ -57,14 +53,12 @@ export default function MaterialLog() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // 타입 변환 함수
   const convertTypeForServer = (type) => {
     if (type === "IN") return "INBOUND";
     if (type === "USE") return "CONSUME";
     return null;
   };
 
-  // 데이터 가져오기
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -74,7 +68,6 @@ export default function MaterialLog() {
           page,
           keyword,
           type: convertTypeForServer(typeFilter),
-          // API에는 yyyy-MM-dd 형식으로 전달
           ...(dateRange.start && {
             startDate: formatDateParam(dateRange.start),
           }),
@@ -85,16 +78,15 @@ export default function MaterialLog() {
         setRows(
           data.content.map((item) => ({
             id: item.id,
-            occurredAt: item.txTime, // 원본 데이터 유지 (render에서 변환)
+            occurredAt: item.txTime,
             type:
               item.txType?.trim().toUpperCase() === "INBOUND" ? "IN" : "USE",
             materialName: item.materialName,
-            lotNo: item.materialNo,
+            materialLotNo: item.materialNo, // 자재 LOT
+            productLotNo: item.productLotNo, // [New] 제품 LOT
             qty: Number(item.qty),
             unit: item.unit,
             materialCode: "-",
-            fromLocation: "-",
-            toLocation: "-",
             operator: "-",
           })),
         );
@@ -111,7 +103,6 @@ export default function MaterialLog() {
     fetchData();
   }, [page, keyword, typeFilter, dateRange]);
 
-  // 요약 정보 가져오기
   const [totalSummary, setTotalSummary] = useState({
     inQty: 0,
     outUseQty: 0,
@@ -126,7 +117,6 @@ export default function MaterialLog() {
           keyword: keyword || "",
         };
 
-        // API에는 yyyy-MM-dd 형식으로 전달
         if (dateRange.start)
           params.startDate = formatDateParam(dateRange.start);
         if (dateRange.end) params.endDate = formatDateParam(dateRange.end);
@@ -149,7 +139,6 @@ export default function MaterialLog() {
     { value: "USE", label: "생산투입" },
   ];
 
-  // 정렬 로직
   const sortedRows = useMemo(() => {
     let sortableItems = [...rows];
     if (sortConfig.key !== null) {
@@ -188,7 +177,6 @@ export default function MaterialLog() {
     setDrawerOpen(true);
   };
 
-  // [수정 3] 컬럼 render에 formatDateTime 적용
   const columns = [
     {
       key: "occurredAt",
@@ -199,14 +187,21 @@ export default function MaterialLog() {
     {
       key: "type",
       label: "구분",
-      width: 150,
+      width: 100,
       render: (value) => {
         const statusKey = value === "IN" ? "MATIN" : "MATOUT";
         return <Status status={statusKey} type="basic" />;
       },
     },
     { key: "materialName", label: "자재명", width: 130 },
-    { key: "lotNo", label: "LOT 번호", width: 150 },
+    // [New] 제품 LOT (자재 LOT 왼쪽)
+    {
+      key: "productLotNo",
+      label: "제품 LOT",
+      width: 150,
+      render: (val, row) => (row.type === "IN" ? "-" : val || "-"),
+    },
+    { key: "materialLotNo", label: "자재 LOT 번호", width: 150 },
     {
       key: "qty",
       label: "이동수량",
@@ -298,7 +293,6 @@ export default function MaterialLog() {
   );
 }
 
-// 스타일
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;

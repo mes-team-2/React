@@ -1,9 +1,7 @@
 import styled from "styled-components";
 import Button from "../../components/Button";
-import Barcode from "react-barcode";
 import Status from "../../components/Status";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
 export default function MaterialLogDetail({ id, onClose }) {
@@ -12,16 +10,10 @@ export default function MaterialLogDetail({ id, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  /* [Helper] 날짜 포맷터 함수 
-     전달된 날짜 데이터를 yyyy-mm-dd hh:min 형식으로 변환함
-  */
   const toDateOnly = (d) => {
     if (!d) return "-";
-
     const date = new Date(d);
-    // 날짜 객체가 유효하지 않을 경우 대비
     if (isNaN(date.getTime())) return d;
-
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, "0");
     const dd = String(date.getDate()).padStart(2, "0");
@@ -43,7 +35,6 @@ export default function MaterialLogDetail({ id, onClose }) {
 
         setDetail({
           id: item.id,
-          /* [수정] 원본 데이터를 저장하고 출력 시 포맷터를 거치도록 함 */
           occurredAt: item.txTime,
           type: item.txType?.trim().toUpperCase() === "INBOUND" ? "IN" : "OUT",
           qty: Number(item.qty),
@@ -51,6 +42,8 @@ export default function MaterialLogDetail({ id, onClose }) {
           remainQty: Number(item.remainQty ?? 0),
           materialCode: item.materialCode ?? "-",
           materialName: item.materialName ?? "-",
+          // [New] 제품 LOT 번호 매핑
+          productLotNo: item.productLotNo,
           fromLocation: "자재 창고 1",
           toLocation: "전극 공정 라인 1",
           manager: "Kim Harin",
@@ -96,7 +89,6 @@ export default function MaterialLogDetail({ id, onClose }) {
             <Item>
               <label>일시</label>
               <Field>
-                {/* [적용] 날짜 포맷터 함수 사용 */}
                 <strong>{toDateOnly(detail.occurredAt)}</strong>
               </Field>
             </Item>
@@ -104,6 +96,15 @@ export default function MaterialLogDetail({ id, onClose }) {
               <label>이동 수량</label>
               <Field>
                 <strong>{detail.qty.toLocaleString()}</strong>
+              </Field>
+            </Item>
+            {/* [New] 제품 LOT 번호 표시 */}
+            <Item>
+              <label>제품 LOT 번호</label>
+              <Field>
+                <strong>
+                  {detail.type === "IN" ? "-" : detail.productLotNo || "-"}
+                </strong>
               </Field>
             </Item>
             <Item>
@@ -170,7 +171,6 @@ export default function MaterialLogDetail({ id, onClose }) {
   );
 }
 
-/* --- 스타일 정의 (기존과 동일) --- */
 const Wrap = styled.div`
   padding: 20px;
   display: flex;
