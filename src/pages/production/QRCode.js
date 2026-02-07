@@ -104,6 +104,18 @@ export default function QRCodePage() {
     setFilteredItems(result);
   }, [items, productNameFilter, keyword, dateRange]);
 
+  // 자재용 필터
+  useEffect(() => {
+    let result = [...items2];
+
+    if (keyword.trim()) {
+      const k = keyword.toLowerCase();
+      result = result.filter((item) => item.code.toLowerCase().includes(k));
+    }
+
+    setFilteredItems2(result);
+  }, [items2, keyword, dateRange]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Enter") {
@@ -191,8 +203,8 @@ export default function QRCodePage() {
 
         <Section>
           <SectionTitle>
-            자재 LOT (
-            {filteredItems.filter((i) => i.type === "MATERIAL").length})
+            자재 LOT
+            {filteredItems2.length}
           </SectionTitle>
           <FilterBar>
             <SelectBar
@@ -212,30 +224,28 @@ export default function QRCodePage() {
           </FilterBar>
 
           <ProductGrid>
-            {filteredItems
-              .filter((item2) => item2.type === "MATERIAL")
-              .map((item2) => (
-                <ProductCard key={item2.id} $type={item2.type}>
-                  <CardHeader>
-                    <ProductName>{item2.name}</ProductName>
-                    <CategoryBadge $type={item2.type}>
-                      {item2.category}
-                    </CategoryBadge>
-                  </CardHeader>
+            {filteredItems2.map((item2) => (
+              <ProductCard key={item2.id} $type={item2.type}>
+                <CardHeader>
+                  <ProductName>{item2.name}</ProductName>
+                  <CategoryBadge $type={item2.type}>
+                    {item2.category}
+                  </CategoryBadge>
+                </CardHeader>
 
-                  <QRWrapper>
-                    <QRCodeCreate
-                      value={item2.code}
-                      size={"m"}
-                      type="MATERIAL"
-                      showText={true}
-                      showDate={true}
-                      showDownload={true}
-                      date={item2.date}
-                    />
-                  </QRWrapper>
-                </ProductCard>
-              ))}
+                <QRWrapper>
+                  <QRCodeCreate
+                    value={item2.code}
+                    size={"m"}
+                    type="MATERIAL"
+                    showText={true}
+                    showDate={true}
+                    showDownload={true}
+                    date={item2.date}
+                  />
+                </QRWrapper>
+              </ProductCard>
+            ))}
           </ProductGrid>
         </Section>
       </Content>
