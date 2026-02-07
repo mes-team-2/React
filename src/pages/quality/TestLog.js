@@ -440,7 +440,7 @@ export default function TestLog() {
           width="l"
           value={keyword}
           onChange={handleKeywordChange}
-          placeholder="LOT / 작업지시 / 제품 / 설비 / 검사자 검색"
+          placeholder="LOT / 작업지시 / 제품 / 공정 / 설비 / 검사자 검색"
         />
       </FilterBar>
 
