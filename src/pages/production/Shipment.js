@@ -279,12 +279,6 @@ const Shipment = () => {
           value={`${summary.totalOut.toLocaleString()}`}
           color="var(--error)"
         />
-        <SummaryCard
-          icon={<IoArrowForwardCircleOutline />}
-          label="폐기"
-          value={`${summary.adjustmentQty.toLocaleString()}`}
-          color="var(--waiting)"
-        />
       </SummaryGrid>
       <FilterBar>
         <SearchDate
@@ -375,7 +369,7 @@ const Header = styled.div`
 
 const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 `;
 
