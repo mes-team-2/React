@@ -97,9 +97,6 @@ const BarcodePage = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [inputBuffer]);
 
-  /* =========================
-     Scan Logic
-  ========================= */
   const handleScan = (code) => {
     const found = products.find(
       (p) => p.barcode.toLowerCase() === code.toLowerCase(),
@@ -112,9 +109,6 @@ const BarcodePage = () => {
     }
   };
 
-  /* =========================
-     Manual Test
-  ========================= */
   const handleManualSubmit = (e) => {
     e.preventDefault();
     if (manualInput.trim()) {

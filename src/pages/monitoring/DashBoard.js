@@ -40,7 +40,7 @@ const CHART_COLORS = {
   bg: "var(--background2)",
 };
 
-const PIE_COLORS = ["#FF5B5B", "#FF9F0A", "#938bff", "#34C759", "#AF52DE"];
+const PIE_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
 const getNowTime = () =>
   new Date().toLocaleTimeString("ko-KR", {
@@ -272,11 +272,11 @@ export default function Dashboard() {
                   data={defectAnalysis}
                   dataKey="value"
                   nameKey="name"
-                  cx="50%"
+                  cx="40%"
                   cy="50%"
-                  innerRadius={40}
+                  innerRadius={45}
                   outerRadius={70}
-                  paddingAngle={2}
+                  paddingAngle={5}
                 >
                   {defectAnalysis.map((_, i) => (
                     <Cell
@@ -292,7 +292,10 @@ export default function Dashboard() {
                   layout="vertical"
                   verticalAlign="middle"
                   align="right"
-                  wrapperStyle={{ fontSize: "11px" }}
+                  wrapperStyle={{
+                    fontSize: "10px",
+                    lineHeight: "20px",
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>

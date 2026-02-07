@@ -71,7 +71,7 @@ const LOT_LOGS = [
 ];
 
 // 차트 색상 배열
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+const COLORS = ["#0088FE", "#FF9F0A", "#938bff", "#34C759", "#AF52DE"];
 
 export default function Test({ onClose }) {
   // 탭 상태 관리 (생산로그 / 자재이력)
