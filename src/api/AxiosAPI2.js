@@ -101,5 +101,15 @@ export const LogAPI2 = {
   getTestSummaryLogs: async (params) => {
     return await AxiosAPI2.get("/api/log/testlog/dashboard", { params });
   },
+
+  // 추적용 목록 조회
+  getTraceLogs: async (params) => {
+    return await AxiosAPI2.get("/api/log/trace", { params });
+  },
+
+  // 추적용 합계조회
+  getTraceSummaryLogs: async (params) => {
+    return await AxiosAPI2.get("/api/log/trace/summary", { params });
+  },
 };
 export default AxiosAPI2;
