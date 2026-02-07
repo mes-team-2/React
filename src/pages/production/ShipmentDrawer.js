@@ -111,7 +111,6 @@ export default function ShipmentDrawer({
               <Item>
                 <label>출하 수량</label>
                 <Input
-                  type="number"
                   min={1}
                   max={baseItem.qty}
                   value={form.qty}
