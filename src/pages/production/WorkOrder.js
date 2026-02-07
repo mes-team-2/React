@@ -14,7 +14,6 @@ import Pagination from "../../components/Pagination";
 import SummaryCard from "../../components/SummaryCard";
 import Button from "../../components/Button";
 
-import WorkOrderDetail from "./WorkOrderDetail";
 import WorkOrderCreate from "./WorkOrderCreate";
 import { WorkOrderAPI } from "../../api/AxiosAPI";
 
@@ -289,10 +288,6 @@ export default function WorkOrder() {
           onPageChange={setCurrentPage}
         />
       </TableWrap>
-
-      <SideDrawer open={detailOpen} onClose={() => setDetailOpen(false)}>
-        <WorkOrderDetail workOrder={selected} onStatusChange={loadData} />
-      </SideDrawer>
 
       <SideDrawer open={createOpen} onClose={() => setCreateOpen(false)}>
         <WorkOrderCreate

@@ -18,7 +18,6 @@ import WorkOrders from "./pages/production/WorkOrder";
 import ProductLot from "./pages/production/ProductLot";
 import MaterialLot from "./pages/production/MaterialLot";
 import Shipment from "./pages/production/Shipment";
-import Barcode from "./pages/production/Barcode";
 
 import Bom from "./pages/master/BOM";
 import Machine from "./pages/master/Machine";
@@ -38,10 +37,10 @@ import Traceability from "./pages/report/Traceability";
 import ProductionReport from "./pages/report/ProductionReport";
 
 import ProcessLog from "./pages/production/ProcessLog";
-import Test from "./pages/Test";
 import QRCode from "./pages/production/QRCode";
 
 import ProductLotQrDetail from "./pages/production/ProductLotQrDetail";
+import MaterialLotQrDetail from "./pages/production/MaterialLotQrDetail";
 
 import { AuthProvider } from "./context/AuthContext";
 
@@ -62,6 +61,10 @@ function App() {
             path="/product-lot-qr/:lotId"
             element={<ProductLotQrDetail />}
           />
+          <Route
+            path="/material-lot-qr/:lotId"
+            element={<MaterialLotQrDetail />}
+          />
 
           {/* ================= 인증 보호 영역 ================= */}
           <Route element={<AuthGuard />}>
@@ -70,8 +73,6 @@ function App() {
               path="/"
               element={<Navigate to="/mes/dashboard" replace />}
             />
-
-            <Route path="/test-work-start" element={<Test />} />
 
             {/* ================= MES 레이아웃 ================= */}
             <Route path="/mes" element={<SideBar />}>
@@ -121,9 +122,6 @@ function App() {
 
               {/* ================= 공정 로그 ================= */}
               <Route path="process-log" element={<ProcessLog />} />
-
-              {/* 테스트 */}
-              <Route path="test" element={<Test />} />
             </Route>
           </Route>
 

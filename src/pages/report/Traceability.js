@@ -290,7 +290,7 @@ export default function Traceability() {
         </SearchWrap>
 
         <SelectBar
-          width="l"
+          width="m"
           options={machineOptions}
           value={machineFilter}
           onChange={(e) => {
@@ -300,7 +300,7 @@ export default function Traceability() {
           placeholder="설비 선택"
         />
         <SelectBar
-          width="ls"
+          width="m"
           options={materialOptions}
           value={materialFilter}
           onChange={(e) => {
@@ -310,7 +310,7 @@ export default function Traceability() {
           placeholder="설비 선택"
         />
         <SelectBar
-          width="l"
+          width="m"
           options={processOptions}
           value={processFilter}
           onChange={(e) => {
