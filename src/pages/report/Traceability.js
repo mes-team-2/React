@@ -346,10 +346,6 @@ export default function Traceability() {
   );
 }
 
-/* =========================
-   styles
-========================= */
-
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -358,8 +354,9 @@ const Wrapper = styled.div`
 
 const Header = styled.div`
   h2 {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: var(--fontXl);
+    font-weight: var(--bold);
+    color: var(--font);
   }
 `;
 
