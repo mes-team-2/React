@@ -66,7 +66,8 @@ export default function WorkOrder() {
       // 데이터 가공
       const formattedData = res.data.map((item) => ({
         ...item,
-        startDate: safeFormatDate(item.startDate),
+        startDate:
+          item.status === "WAIT" ? "-" : safeFormatDate(item.startDate),
         endDate: safeFormatDate(item.endDate),
         dueDate: safeFormatDate(item.dueDate),
         // [수정] 백엔드 데이터를 그대로 사용 (fallback 제거)
