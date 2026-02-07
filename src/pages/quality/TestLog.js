@@ -222,6 +222,7 @@ export default function TestLog() {
           (row.productName && row.productName.toLowerCase().includes(k)) ||
           (row.machine && row.machine.toLowerCase().includes(k)) ||
           (row.inspector && row.inspector.toLowerCase().includes(k)) ||
+          (row.processStep && row.processStep.toLowerCase().includes(k)) ||
           // 검색어로 한글 불량명을 입력했을 때도 검색되게 추가
           (row.defectCode && getDefectName(row.defectCode).includes(k)),
       );
