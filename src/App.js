@@ -39,6 +39,7 @@ import ProductionReport from "./pages/report/ProductionReport";
 
 import ProcessLog from "./pages/production/ProcessLog";
 import Test from "./pages/Test";
+import QRCode from "./pages/production/QRCode";
 
 import ProductLotQrDetail from "./pages/production/ProductLotQrDetail";
 
@@ -95,7 +96,7 @@ function App() {
               {/* ================= 생산 관리 ================= */}
               <Route path="workorders" element={<WorkOrders />} />
               <Route path="product-lot" element={<ProductLot />} />
-              <Route path="barcode" element={<Barcode />} />
+              <Route path="qrcode" element={<QRCode />} />
 
               {/* ================= 품질 관리 ================= */}
               <Route path="quality">

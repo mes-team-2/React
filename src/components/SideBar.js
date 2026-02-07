@@ -195,14 +195,14 @@ const MENU = [
     ],
   },
   {
+    key: "qrcode",
+    title: "QR코드 조회",
+    items: [{ to: "qrcode", label: "QR코드 조회" }],
+  },
+  {
     key: "test",
     title: "test",
     items: [{ to: "/mes/test", label: "test" }],
-  },
-  {
-    key: "barcode",
-    title: "바코드",
-    items: [{ to: "barcode", label: "바코드" }],
   },
 ];
 
@@ -1015,9 +1015,6 @@ const Tab = styled.div`
     opacity 0.15s ease,
     box-shadow 0.15s ease;
 
-  /* =========================
-     ✅ 기존 활성 탭 스타일 (복구)
-  ========================= */
   &::after {
     content: "";
     position: absolute;

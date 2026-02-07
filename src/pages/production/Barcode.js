@@ -4,9 +4,6 @@ import styled from "styled-components";
 import Barcode from "react-barcode";
 import { FaBarcode, FaBoxOpen, FaTimes, FaPrint } from "react-icons/fa";
 
-/* =========================
-   MOCK PRODUCTS (네가 준 데이터)
-========================= */
 const PRODUCTS = [
   {
     id: 1,

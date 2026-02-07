@@ -13,8 +13,10 @@ const sizeMap = {
 
 const QRCodeCreate = ({
   value,
+  date,
   size = "m",
   showText = false,
+  showDate = false,
   showDownload = false,
 }) => {
   const qrRef = useRef(null);
@@ -26,6 +28,7 @@ const QRCodeCreate = ({
   const HOST_URL = "http://192.168.0.103:3000";
 
   const qrUrl = `${HOST_URL}/product-lot-qr/${value}`;
+  const MatQrUrl = `${HOST_URL}/material-lot-qr/${value}`;
 
   const downloadQRCode = () => {
     const canvas = qrRef.current.querySelector("canvas");
@@ -53,8 +56,10 @@ const QRCodeCreate = ({
         />
       </QRWrapper>
 
-      {showText && <InfoText>{value || "데이터 없음"}</InfoText>}
-
+      <TextGroup>
+        {showText && <InfoText>{value || "데이터 없음"}</InfoText>}
+        {showDate && <DateText>{date || "데이터 없음"}</DateText>}
+      </TextGroup>
       {value && showDownload && (
         <Button variant="ok" size="xs" onClick={downloadQRCode}>
           QR 다운로드
@@ -84,9 +89,24 @@ const QRWrapper = styled.div`
   align-items: center;
 `;
 
+const TextGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+`;
+
 const InfoText = styled.span`
   font-size: var(--fontXxs);
   font-weight: var(--normal);
   color: var(--font2);
   text-align: center;
+`;
+
+const DateText = styled.span`
+  font-size: 10px;
+  font-weight: var(--normal);
+  color: var(--font2);
+  text-align: center;
+  margin-top: -2px;
 `;

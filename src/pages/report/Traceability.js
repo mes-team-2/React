@@ -15,6 +15,7 @@ import {
   FiCheckCircle,
   FiXCircle,
   FiLayers,
+  FiClipboard,
 } from "react-icons/fi";
 import SelectBar from "../../components/SelectBar";
 
@@ -241,21 +242,28 @@ export default function Traceability() {
 
       <SummaryGrid>
         <SummaryCard
-          icon={<FiSearch />}
+          icon={<FiClipboard />}
           label="조회 결과"
           value={summary.total}
+          color="var(--stop)"
         />
-        <SummaryCard icon={<FiCheckCircle />} label="OK" value={summary.ok} />
-        <SummaryCard icon={<FiXCircle />} label="NG" value={summary.ng} />
+        <SummaryCard
+          icon={<FiCheckCircle />}
+          label="OK"
+          value={summary.ok}
+          color="var(--run)"
+        />
+        <SummaryCard
+          icon={<FiXCircle />}
+          label="NG"
+          value={summary.ng}
+          color="var(--error)"
+        />
         <SummaryCard
           icon={<FiLayers />}
           label="LOT 수"
           value={summary.lotCnt}
-        />
-        <SummaryCard
-          icon={<FiLink />}
-          label="자재 LOT 링크"
-          value={summary.linkCnt}
+          color="var(--main)"
         />
       </SummaryGrid>
 
@@ -290,7 +298,7 @@ export default function Traceability() {
           placeholder="설비 선택"
         />
         <SelectBar
-          width="l"
+          width="ls"
           options={materialOptions}
           value={materialFilter}
           onChange={(e) => {
@@ -355,8 +363,8 @@ const Header = styled.div`
 
 const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 `;
 
 const FilterBar = styled.div`
@@ -380,8 +388,7 @@ const Select = styled.select`
 `;
 
 const TableWrap = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
