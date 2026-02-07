@@ -6,10 +6,13 @@ import SelectBar from "../../components/SelectBar";
 import SearchDate from "../../components/SearchDate";
 import QRCodeCreate from "../../components/QRCodeCreate";
 import { ProductLotAPI, InventoryAPI } from "../../api/AxiosAPI";
+import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
 export default function QRCodePage() {
   const [items, setItems] = useState([]); // 전체 통합 데이터
+  const [items2, setItems2] = useState([]); // 전체 통합 데이터
   const [filteredItems, setFilteredItems] = useState([]); // 필터링된 데이터
+  const [filteredItems2, setFilteredItems2] = useState([]); // 자재
 
   const [inputBuffer, setInputBuffer] = useState("");
 
@@ -25,16 +28,16 @@ export default function QRCodePage() {
         ProductLotAPI.search
           ? ProductLotAPI.search({})
           : Promise.resolve({ data: [] }),
-        InventoryAPI?.getMaterialList
-          ? InventoryAPI.getMaterialList({})
+        InventoryAPI2?.getMaterialLotList
+          ? InventoryAPI2.getMaterialLotList({})
           : Promise.resolve({ data: [] }),
       ]);
 
       if (prodRes.data && prodRes.data.length > 0) {
         console.log("🔥 [제품 데이터 확인]", prodRes.data[0]);
       }
-      if (matRes.data && matRes.data.length > 0) {
-        console.log("🔥 [자재 데이터 확인]", matRes.data[0]);
+      if (matRes.data?.content && matRes.data.content.length > 0) {
+        console.log("🔥 [자재 데이터 확인]", matRes.data.content[0]);
       }
 
       // 데이터 표준화
@@ -50,7 +53,7 @@ export default function QRCodePage() {
         rawData: p,
       }));
 
-      const materials = (matRes.data || []).map((m) => ({
+      const materials = (matRes.data?.content || []).map((m) => ({
         id: `MAT-${m.lotNo}`,
         type: "MATERIAL",
         name: m.materialName,
@@ -58,15 +61,17 @@ export default function QRCodePage() {
         category: "자재 LOT",
         qty: m.currentQty,
         desc: `자재코드: ${m.materialCode}`,
-        date: m.createdAt || "-",
+        date: m.inboundDate || "-",
         rawData: m,
       }));
 
       // 합치기
-      setItems([...products, ...materials]);
+      setItems(products);
+      setItems2(materials);
     } catch (err) {
       console.error("QR 데이터 로드 실패:", err);
       setItems([]);
+      setItems2([]);
     }
   };
 
@@ -98,6 +103,18 @@ export default function QRCodePage() {
 
     setFilteredItems(result);
   }, [items, productNameFilter, keyword, dateRange]);
+
+  // 자재용 필터
+  useEffect(() => {
+    let result = [...items2];
+
+    if (keyword.trim()) {
+      const k = keyword.toLowerCase();
+      result = result.filter((item) => item.code.toLowerCase().includes(k));
+    }
+
+    setFilteredItems2(result);
+  }, [items2, keyword, dateRange]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -186,8 +203,8 @@ export default function QRCodePage() {
 
         <Section>
           <SectionTitle>
-            자재 LOT (
-            {filteredItems.filter((i) => i.type === "MATERIAL").length})
+            자재 LOT
+            {filteredItems2.length}
           </SectionTitle>
           <FilterBar>
             <SelectBar
@@ -207,29 +224,28 @@ export default function QRCodePage() {
           </FilterBar>
 
           <ProductGrid>
-            {filteredItems
-              .filter((item) => item.type === "MATERIAL")
-              .map((item) => (
-                <ProductCard key={item.id} $type={item.type}>
-                  <CardHeader>
-                    <ProductName>{item.name}</ProductName>
-                    <CategoryBadge $type={item.type}>
-                      {item.category}
-                    </CategoryBadge>
-                  </CardHeader>
+            {filteredItems2.map((item2) => (
+              <ProductCard key={item2.id} $type={item2.type}>
+                <CardHeader>
+                  <ProductName>{item2.name}</ProductName>
+                  <CategoryBadge $type={item2.type}>
+                    {item2.category}
+                  </CategoryBadge>
+                </CardHeader>
 
-                  <QRWrapper>
-                    <QRCodeCreate
-                      value={item.code}
-                      size={"m"}
-                      showText={true}
-                      showDate={true}
-                      showDownload={true}
-                      date={item.date}
-                    />
-                  </QRWrapper>
-                </ProductCard>
-              ))}
+                <QRWrapper>
+                  <QRCodeCreate
+                    value={item2.code}
+                    size={"m"}
+                    type="MATERIAL"
+                    showText={true}
+                    showDate={true}
+                    showDownload={true}
+                    date={item2.date}
+                  />
+                </QRWrapper>
+              </ProductCard>
+            ))}
           </ProductGrid>
         </Section>
       </Content>

@@ -27,6 +27,7 @@ const processOptions = [
   { value: "PROC-030", label: "활성화공정(Formation)" },
   { value: "PROC-040", label: "팩공정(Pack)" },
   { value: "PROC-050", label: "검사공정(Inspection)" },
+  { value: "PROC-060", label: "포장공정(Packaging)" },
 ];
 
 const machineOptions = [
@@ -57,6 +58,7 @@ const materialOptions = [
   { value: "커버", label: "커버" },
   { value: "단자", label: "단자" },
   { value: "라벨", label: "라벨" },
+  { value: "포장지", label: "포장지" },
 ];
 
 const formatDateOnly = (dateTime) => {
