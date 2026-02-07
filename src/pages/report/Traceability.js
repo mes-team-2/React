@@ -245,26 +245,26 @@ export default function Traceability() {
       <SummaryGrid>
         <SummaryCard
           icon={<FiClipboard />}
-          label="조회 결과"
-          value={summary.total}
+          label="총 수량 합계"
+          value={summary.allQty}
           color="var(--stop)"
         />
         <SummaryCard
           icon={<FiCheckCircle />}
           label="OK"
-          value={summary.ok}
+          value={summary.allGoodQty}
           color="var(--run)"
         />
         <SummaryCard
           icon={<FiXCircle />}
           label="NG"
-          value={summary.ng}
+          value={summary.allBadQty}
           color="var(--error)"
         />
         <SummaryCard
           icon={<FiLayers />}
           label="LOT 수"
-          value={summary.lotCnt}
+          value={summary.countLot}
           color="var(--main)"
         />
       </SummaryGrid>
@@ -285,7 +285,7 @@ export default function Traceability() {
               setKeyword(v);
               setPage(1);
             }}
-            placeholder="LOT / 작업지시 / 자재 LOT / 불량코드"
+            placeholder="LOT / 작업지시 / 자재 LOT / 제품명 검색"
           />
         </SearchWrap>
 
@@ -326,7 +326,7 @@ export default function Traceability() {
           columns={columns}
           data={rows}
           selectable={false}
-          onRowClick={onRowClick}
+          // onRowClick={onRowClick}
           onSort={handleSort}
           sortKey={sortKey}
           sortOrder={sortOrder}
