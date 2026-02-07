@@ -44,7 +44,10 @@ export default function TraceabilityDetail({ row }) {
       </Grid>
 
       <Section>
-        <h4>공정 타임라인</h4>
+        <h4>
+          공정 정보(거친 공정명만 기록하고 클릭시 해당 로트 필터리된
+          공정이력으로)
+        </h4>
         <Timeline>
           {steps.map((s) => (
             <Step key={s.process} $done={s.status === "DONE"}>
@@ -62,7 +65,22 @@ export default function TraceabilityDetail({ row }) {
       </Section>
 
       <Section>
-        <h4>연결 자재 LOT</h4>
+        <h4>
+          자재 목록(투입 자재별 총 소모 수량만 기록하고 클릭시 해당 로트로
+          투입된 자재 입출고 이력으로 이동)
+        </h4>
+        <ChipRow>
+          {row.materialLots?.map((m) => (
+            <Chip key={m}>{m}</Chip>
+          ))}
+        </ChipRow>
+      </Section>
+
+      <Section>
+        <h4>
+          검사 정보(각 공정별 검사 결과만 집계하고, 클릭시 해당 로트로 필터링된
+          검사 이력 페이지로 이동)
+        </h4>
         <ChipRow>
           {row.materialLots?.map((m) => (
             <Chip key={m}>{m}</Chip>

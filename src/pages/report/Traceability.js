@@ -1,11 +1,13 @@
 import styled from "styled-components";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import SummaryCard from "../../components/SummaryCard";
 import SearchBar from "../../components/SearchBar";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import TraceabilityDetail from "./TraceabilityDetail";
 import Pagination from "../../components/Pagination";
+import SearchDate from "../../components/SearchDate";
+import { LogAPI2 } from "../../api/AxiosAPI2";
 
 import {
   FiSearch,
@@ -14,147 +16,191 @@ import {
   FiXCircle,
   FiLayers,
 } from "react-icons/fi";
+import SelectBar from "../../components/SelectBar";
 
-const PROCESS = ["극판 적층", "COS 용접", "전해액 주입/화성", "최종 성능 검사"];
+const processOptions = [
+  { value: "ALL", label: "전체 공정" },
 
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+  { value: "PROC-010", label: "전극공정(Electrode)" },
+  { value: "PROC-020", label: "조립공정(Assembly)" },
+  { value: "PROC-030", label: "활성화공정(Formation)" },
+  { value: "PROC-040", label: "팩공정(Pack)" },
+  { value: "PROC-050", label: "검사공정(Inspection)" },
+];
 
-function makeTraceRows() {
-  const rows = [];
-  let id = 1;
+const machineOptions = [
+  { value: "ALL", label: "전체 설비" },
 
-  for (let i = 0; i < 80; i++) {
-    const lotNo = `LOT-202601-${String(rand(1, 90)).padStart(3, "0")}`;
-    const woNo = `WO-202601-00${rand(1, 8)}`;
-    const serial = `SN-${Date.now().toString().slice(-6)}-${String(i).padStart(3, "0")}`;
+  { value: "MAC-A-01", label: "Electrode M/C #1" },
+  { value: "MAC-A-02", label: "Assembly Line #1" },
+  { value: "MAC-A-03", label: "Formation Sys #1" },
+  { value: "MAC-A-04", label: "Pack Line #1" },
+  { value: "MAC-A-05", label: "Inspector #1" },
 
-    const ok = Math.random() > 0.08;
-    const defect = ok ? "" : ["LOW_OCV", "LEAK", "PRESS_FAIL"][rand(0, 2)];
+  { value: "MAC-B-01", label: "Electrode M/C #2" },
+  { value: "MAC-B-02", label: "Assembly Line #2" },
+  { value: "MAC-B-03", label: "Formation Sys #2" },
+  { value: "MAC-B-04", label: "Pack Line #2" },
+  { value: "MAC-B-05", label: "Inspector #2" },
+];
 
-    rows.push({
-      id: id++,
-      lotNo,
-      workOrderNo: woNo,
-      serialNo: serial,
-      productCode: "BAT-12V-60Ah",
-      productName: "자동차 납축전지 12V",
-      lastProcess: PROCESS[rand(0, PROCESS.length - 1)],
-      testResult: ok ? "OK" : "NG",
-      defectCode: defect,
-      producedAt: `2026-01-${String(rand(10, 22)).padStart(2, "0")} ${String(
-        rand(8, 18),
-      ).padStart(2, "0")}:${String(rand(0, 59)).padStart(2, "0")}`,
-      materialLots: [
-        `MATLOT-AL-${String(rand(1, 30)).padStart(3, "0")}`,
-        `MATLOT-PB-${String(rand(1, 30)).padStart(3, "0")}`,
-        `MATLOT-EL-${String(rand(1, 30)).padStart(3, "0")}`,
-      ],
-    });
+const materialOptions = [
+  { value: "ALL", label: "전체 자재" },
+
+  { value: "납(Pb)", label: "납(Pb)" },
+  { value: "양극판", label: "양극판" },
+  { value: "음극판", label: "음극판" },
+  { value: "분리판", label: "분리판" },
+  { value: "전해액", label: "전해액" },
+  { value: "케이스", label: "케이스" },
+  { value: "커버", label: "커버" },
+  { value: "단자", label: "단자" },
+  { value: "라벨", label: "라벨" },
+];
+
+const formatDateOnly = (dateTime) => {
+  if (!dateTime) return "";
+
+  const d = new Date(dateTime);
+
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const toLocalDateTime = (date, isEnd = false) => {
+  if (!date) return null;
+
+  const d = new Date(date);
+
+  if (isEnd) {
+    d.setHours(23, 59, 59, 999);
+  } else {
+    d.setHours(0, 0, 0, 0);
   }
-  return rows;
-}
+
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`;
+};
 
 export default function Traceability() {
-  const [rows] = useState(() => makeTraceRows());
+  // const [rows] = useState(() => makeTraceRows());
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   const [keyword, setKeyword] = useState("");
-  const [resultFilter, setResultFilter] = useState("ALL");
+  const [materialFilter, setMaterialFilter] = useState("ALL");
+  const [processFilter, setProcessFilter] = useState("ALL");
+  const [machineFilter, setMachineFilter] = useState("ALL");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState(null);
 
   // 🔹 pagination
   const [page, setPage] = useState(1);
-  const itemsPerPage = 20;
+  const [totalPages, setTotalPages] = useState(0);
 
   // 🔹 sorting (핵심)
-  const [sortKey, setSortKey] = useState("producedAt");
+  const [sortKey, setSortKey] = useState("testedAt");
   const [sortOrder, setSortOrder] = useState("desc"); // asc | desc
 
-  /* =========================
-     FILTER
-  ========================= */
-  const filtered = useMemo(() => {
-    let data = rows;
+  const [summary, setSummary] = useState({
+    total: 0,
+    ok: 0,
+    ng: 0,
+    lotCnt: 0,
+    linkCnt: 0,
+  });
 
-    if (resultFilter !== "ALL") {
-      data = data.filter((r) => r.testResult === resultFilter);
-    }
+  const buildParams = () => {
+    const params = {
+      page: page - 1, // 백엔드 0부터면
+      sort: `${sortKey},${sortOrder}`,
+    };
 
-    if (keyword.trim()) {
-      const k = keyword.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.lotNo.toLowerCase().includes(k) ||
-          r.workOrderNo.toLowerCase().includes(k) ||
-          r.serialNo.toLowerCase().includes(k) ||
-          r.productCode.toLowerCase().includes(k) ||
-          r.defectCode.toLowerCase().includes(k) ||
-          r.materialLots.some((m) => m.toLowerCase().includes(k)),
-      );
-    }
+    if (keyword.trim()) params.keyword = keyword.trim();
+    if (materialFilter !== "ALL") params.material = materialFilter;
+    if (processFilter !== "ALL") params.process = processFilter;
+    if (machineFilter !== "ALL") params.machine = machineFilter;
+    if (startDate) params.start = toLocalDateTime(startDate);
+    if (endDate) params.end = toLocalDateTime(endDate, true);
 
-    return data;
-  }, [rows, keyword, resultFilter]);
+    return params;
+  };
 
-  /* =========================
-     SORT (⭐ 핵심)
-  ========================= */
-  const sorted = useMemo(() => {
-    if (!sortKey) return filtered;
+  // 목록용 호출
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
-    return [...filtered].sort((a, b) => {
-      const av = a[sortKey];
-      const bv = b[sortKey];
+        const params = buildParams();
 
-      if (av == null) return 1;
-      if (bv == null) return -1;
+        const res = await LogAPI2.getTraceLogs(params);
+        console.log("🔥 trace useEffect 실행");
+        // 백엔드 Page 응답 기준
+        setRows(res.data.content);
+        setTotalPages(res.data.totalPages);
 
-      // 날짜
-      if (sortKey === "producedAt") {
-        return sortOrder === "asc"
-          ? new Date(av) - new Date(bv)
-          : new Date(bv) - new Date(av);
+        // totalPages를 서버에서 내려주면 여기서 setTotalPages
+        // setTotalPages(res.data.totalPages);
+      } catch (err) {
+        console.error("traceability 조회 실패", err);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // 문자열
-      if (typeof av === "string") {
-        return sortOrder === "asc"
-          ? av.localeCompare(bv)
-          : bv.localeCompare(av);
+    fetchData();
+  }, [
+    keyword,
+    materialFilter,
+    processFilter,
+    machineFilter,
+    page,
+    sortKey,
+    sortOrder,
+    startDate,
+    endDate,
+  ]);
+
+  // 합계용 호출
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const params = buildParams();
+
+        // ❗ summary는 page/sort 제거
+        delete params.page;
+        delete params.sort;
+
+        const res = await LogAPI2.getTraceSummaryLogs(params);
+
+        setSummary(res.data);
+      } catch (err) {
+        console.error("summary 조회 실패", err);
       }
+    };
 
-      // 숫자
-      return sortOrder === "asc" ? av - bv : bv - av;
-    });
-  }, [filtered, sortKey, sortOrder]);
-
-  /* =========================
-     PAGINATION
-  ========================= */
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * itemsPerPage;
-    return sorted.slice(start, start + itemsPerPage);
-  }, [sorted, page]);
-
-  const totalPages = Math.ceil(sorted.length / itemsPerPage);
-
-  /* =========================
-     SUMMARY
-  ========================= */
-  const summary = useMemo(() => {
-    const total = filtered.length;
-    const ok = filtered.filter((r) => r.testResult === "OK").length;
-    const ng = total - ok;
-    const linkCnt = filtered.reduce(
-      (a, b) => a + (b.materialLots?.length || 0),
-      0,
-    );
-    const lotCnt = new Set(filtered.map((r) => r.lotNo)).size;
-    return { total, ok, ng, linkCnt, lotCnt };
-  }, [filtered]);
+    fetchSummary();
+  }, [
+    keyword,
+    materialFilter,
+    processFilter,
+    machineFilter,
+    startDate,
+    endDate,
+  ]);
 
   /* =========================
      HANDLERS
@@ -173,22 +219,18 @@ export default function Traceability() {
   };
 
   const columns = [
-    { key: "producedAt", label: "생산일시", width: 170 },
-    { key: "lotNo", label: "제품 LOT", width: 160 },
-    { key: "serialNo", label: "시리얼", width: 180 },
-    { key: "workOrderNo", label: "작업지시", width: 140 },
-    { key: "lastProcess", label: "최종 공정", width: 150 },
-    { key: "testResult", label: "검사", width: 80 },
-    { key: "defectCode", label: "불량코드", width: 120 },
+    { key: "lot", label: "LOT", width: 150 },
+    { key: "productName", label: "제품", width: 120 },
     {
-      key: "materialLots",
-      label: "연결 자재 LOT",
-      width: 200,
-      render: (v) =>
-        Array.isArray(v)
-          ? v.slice(0, 2).join(", ") + (v.length > 2 ? "…" : "")
-          : "-",
+      key: "testedAt",
+      label: "생산일",
+      width: 150,
+      render: (v) => formatDateOnly(v),
     },
+    { key: "totalQty", label: "총수량", width: 100 },
+    { key: "goodQty", label: "양품", width: 90 },
+    { key: "badQty", label: "불량", width: 90 },
+    { key: "yieldRate", label: "수율(%)", width: 90 },
   ];
 
   return (
@@ -218,6 +260,14 @@ export default function Traceability() {
       </SummaryGrid>
 
       <FilterBar>
+        <SearchDate
+          onChange={(start, end) => {
+            setStartDate(start);
+            setEndDate(end);
+            setPage(1);
+          }}
+          placeholder="날짜 선택"
+        />
         <SearchWrap>
           <SearchBar
             value={keyword}
@@ -225,27 +275,46 @@ export default function Traceability() {
               setKeyword(v);
               setPage(1);
             }}
-            placeholder="LOT / 시리얼 / 작업지시 / 자재 LOT / 불량코드"
+            placeholder="LOT / 작업지시 / 자재 LOT / 불량코드"
           />
         </SearchWrap>
 
-        <Select
-          value={resultFilter}
+        <SelectBar
+          width="l"
+          options={machineOptions}
+          value={machineFilter}
           onChange={(e) => {
-            setResultFilter(e.target.value);
+            setMachineFilter(e.target.value);
             setPage(1);
           }}
-        >
-          <option value="ALL">전체</option>
-          <option value="OK">OK</option>
-          <option value="NG">NG</option>
-        </Select>
+          placeholder="설비 선택"
+        />
+        <SelectBar
+          width="l"
+          options={materialOptions}
+          value={materialFilter}
+          onChange={(e) => {
+            setMaterialFilter(e.target.value);
+            setPage(1);
+          }}
+          placeholder="설비 선택"
+        />
+        <SelectBar
+          width="l"
+          options={processOptions}
+          value={processFilter}
+          onChange={(e) => {
+            setProcessFilter(e.target.value);
+            setPage(1);
+          }}
+          placeholder="설비 선택"
+        />
       </FilterBar>
 
       <TableWrap>
         <Table
           columns={columns}
-          data={paginatedData}
+          data={rows}
           selectable={false}
           onRowClick={onRowClick}
           onSort={handleSort}
