@@ -335,9 +335,9 @@ export default function MaterialList() {
             onSearch={() => {}}
           />
         </InputGroup>
-        <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
+        {/* <Button variant="ok" size="m" onClick={() => setCreateOpen(true)}>
           + 신규 자재 등록
-        </Button>
+        </Button> */}
       </FilterBar>
 
       <TableContainer>
