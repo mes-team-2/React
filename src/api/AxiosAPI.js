@@ -113,6 +113,9 @@ export const AuthAPI = {
   login: async (workerCode, password) => {
     return await AxiosAPI.post("/auth/login", { workerCode, password });
   },
+  changePassword: async (data) => {
+    return await AxiosAPI.post("/auth/change-password", data);
+  },
 };
 
 export const WorkOrderAPI = {

@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { FaClock, FaTemperatureHigh, FaTint } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
+import { AuthAPI } from "../api/AxiosAPI";
 import styled from "styled-components";
 import logo from "../images/logo.png";
 import { useContext } from "react";
@@ -1308,24 +1309,104 @@ const Input = styled.input`
   }
 `;
 
+const ErrorMsg = styled.div`
+  font-size: 11px;
+  color: var(--error);
+  margin-top: -8px;
+  margin-bottom: 10px;
+  padding-left: 4px;
+`;
+
 function PasswordForm({ onCancel }) {
+  // 입력 상태
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
 
-  const handleSubmit = () => {
-    if (newPw !== confirmPw) {
-      alert("새 비밀번호가 일치하지 않습니다.");
+  // 에러 메시지 상태 (비어있으면 에러 없음)
+  const [errors, setErrors] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
+
+  // 정규표현식: 8~20자, 영문+숫자+특수문자 포함
+  const pwRegex =
+    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,20}$/;
+
+  // 유효성 검사 함수
+  const validate = (field, value, value2 = "") => {
+    let msg = "";
+    if (field === "new") {
+      if (!value)
+        msg = ""; // 입력 전엔 메시지 숨김 (또는 필수 입력 표시)
+      else if (!pwRegex.test(value)) {
+        msg = "8~20자 영문, 숫자, 특수문자를 포함해야 합니다.";
+      }
+    } else if (field === "confirm") {
+      if (!value) msg = "";
+      else if (value !== value2) {
+        msg = "비밀번호가 일치하지 않습니다.";
+      }
+    }
+    setErrors((prev) => ({ ...prev, [field]: msg }));
+  };
+
+  // 핸들러
+  const onChangeNew = (e) => {
+    const val = e.target.value;
+    setNewPw(val);
+    validate("new", val);
+    // 비밀번호 확인란도 같이 재검사
+    if (confirmPw) validate("confirm", confirmPw, val);
+  };
+
+  const onChangeConfirm = (e) => {
+    const val = e.target.value;
+    setConfirmPw(val);
+    validate("confirm", val, newPw);
+  };
+
+  const handleSubmit = async () => {
+    // 1. 최종 검사
+    if (!currentPw) {
+      setErrors((prev) => ({
+        ...prev,
+        current: "현재 비밀번호를 입력해주세요.",
+      }));
       return;
     }
+    if (!newPw || errors.new) return;
+    if (!confirmPw || errors.confirm) return;
 
-    console.log("비밀번호 변경", {
-      currentPw,
-      newPw,
-    });
+    try {
+      const workerCode = localStorage.getItem("workerCode");
 
-    alert("비밀번호 변경 (프론트 테스트)");
-    onCancel();
+      // API 호출
+      await AuthAPI.changePassword({
+        workerCode: workerCode,
+        currentPassword: currentPw,
+        newPassword: newPw,
+      });
+
+      alert("비밀번호가 성공적으로 변경되었습니다.\n다시 로그인해주세요.");
+
+      // 로그아웃 처리 및 이동
+      localStorage.clear();
+      window.location.href = "/login";
+
+      onCancel();
+    } catch (err) {
+      console.error(err);
+      // 백엔드 에러 메시지를 현재 비밀번호 필드 하단에 표시하거나 alert
+      const msg = err.response?.data || "비밀번호 변경 실패";
+      if (msg.includes("현재")) {
+        // "현재 비밀번호가 일치하지..." 같은 메시지일 경우
+        setErrors((prev) => ({ ...prev, current: msg }));
+      } else {
+        alert(msg);
+      }
+    }
   };
 
   return (
@@ -1334,20 +1415,29 @@ function PasswordForm({ onCancel }) {
         type="password"
         placeholder="현재 비밀번호"
         value={currentPw}
-        onChange={(e) => setCurrentPw(e.target.value)}
+        onChange={(e) => {
+          setCurrentPw(e.target.value);
+          setErrors((p) => ({ ...p, current: "" })); // 타이핑 시 에러 초기화
+        }}
+        $hasError={!!errors.current} // 스타일링용 props (Input 스타일에 border color 처리 가능)
       />
+      {errors.current && <ErrorMsg>{errors.current}</ErrorMsg>}
+
       <Input
         type="password"
-        placeholder="새 비밀번호"
+        placeholder="새 비밀번호 (8~20자, 특수문자 포함)"
         value={newPw}
-        onChange={(e) => setNewPw(e.target.value)}
+        onChange={onChangeNew}
       />
+      {errors.new && <ErrorMsg>{errors.new}</ErrorMsg>}
+
       <Input
         type="password"
         placeholder="새 비밀번호 확인"
         value={confirmPw}
-        onChange={(e) => setConfirmPw(e.target.value)}
+        onChange={onChangeConfirm}
       />
+      {errors.confirm && <ErrorMsg>{errors.confirm}</ErrorMsg>}
 
       <ProfileActions>
         <button onClick={handleSubmit}>저장</button>
