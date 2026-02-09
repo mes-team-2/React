@@ -224,4 +224,33 @@ export const ProductLotQrAPI = {
   },
 };
 
+export const DefectLogAPI = {
+  /**
+   * 불량 로그 테이블 조회
+   * @param {string} date yyyy-MM-dd
+   */
+  getList: async (date) => {
+    return await AxiosAPI.get("/api/defect-logs", {
+      params: { date },
+    });
+  },
+};
+
+export const ShipmentAPI = {
+  /**
+   * 출하 / 입고 이력 조회
+   * @param {Object} params { start, end }
+   */
+  getList: async (params) => {
+    return await AxiosAPI.get("/api/shipments", { params });
+  },
+
+  /**
+   * 출하 등록
+   */
+  create: async (data) => {
+    return await AxiosAPI.post("/api/shipments", data);
+  },
+};
+
 export default AxiosAPI;

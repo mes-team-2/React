@@ -4,7 +4,7 @@ import SideDrawer from "../../components/SideDrawer";
 import Button from "../../components/Button";
 import TableStyle from "../../components/TableStyle";
 
-import { ShipmentAPI } from "../../api/AxiosAPI3";
+import { ShipmentAPI } from "../../api/AxiosAPI";
 
 export default function ShipmentDrawer({
   open,
