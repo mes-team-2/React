@@ -9,9 +9,9 @@ export default function SideDrawer({
   if (!open) return null;
 
   return (
-    <Overlay onClick={onClose}>
-      <Drawer width={width} onClick={(e) => e.stopPropagation()}>
-        <Close onClick={onClose}>✕</Close>
+    <Overlay onMouseDown={onClose}>
+      <Drawer width={width} onMouseDown={(e) => e.stopPropagation()}>
+        <Close onMouseDown={onClose}>✕</Close>
         {children}
       </Drawer>
     </Overlay>
