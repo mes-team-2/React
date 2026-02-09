@@ -282,13 +282,13 @@ export default function Material() {
         />
       </TableContainer>
 
-      <SideDrawer open={open} onClose={() => setOpen(false)}>
+      {/* <SideDrawer open={open} onClose={() => setOpen(false)}>
         <MaterialDetail
           material={selectedMaterial}
           onClose={() => setOpen(false)}
           onRefresh={fetchMaterials}
         />
-      </SideDrawer>
+      </SideDrawer> */}
 
       <SideDrawer open={createOpen} onClose={() => setCreateOpen(false)}>
         <MaterialCreate
