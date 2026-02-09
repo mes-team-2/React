@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TableStyle from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
 import SideDrawer from "../../components/SideDrawer";
@@ -29,7 +29,6 @@ export default function MaterialLog() {
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [typeFilter, setTypeFilter] = useState("ALL");
-  const workerMapRef = useRef({});
 
   const WORKERS = [
     "우민규",
@@ -45,15 +44,17 @@ export default function MaterialLog() {
     "한소희",
   ];
 
-  const getWorkerByJob = (jobKey) => {
-    if (!jobKey) return "-";
+  const getWorkerByLot = (lotKey) => {
+    if (!lotKey) return "-";
 
-    if (!workerMapRef.current[jobKey]) {
-      const idx = Object.keys(workerMapRef.current).length % WORKERS.length;
-      workerMapRef.current[jobKey] = WORKERS[idx];
+    const str = String(lotKey);
+    let hash = 0;
+
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash + str.charCodeAt(i)) % WORKERS.length;
     }
 
-    return workerMapRef.current[jobKey];
+    return WORKERS[hash];
   };
 
   const formatDateTime = (d) => {
@@ -103,7 +104,7 @@ export default function MaterialLog() {
 
         setRows(
           data.content.map((item) => {
-            const jobKey = item.productLotNo || item.materialNo || item.id;
+            const lotKey = item.productLotNo || item.materialNo || item.id;
 
             return {
               id: item.id,
@@ -116,7 +117,7 @@ export default function MaterialLog() {
               qty: Number(item.qty),
               unit: item.unit,
               materialCode: "-",
-              operator: getWorkerByJob(jobKey),
+              operator: getWorkerByLot(lotKey), // ⭐ 변경
             };
           }),
         );

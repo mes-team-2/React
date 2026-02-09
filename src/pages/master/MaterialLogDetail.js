@@ -25,10 +25,17 @@ export default function MaterialLogDetail({ id, onClose }) {
     "한소희",
   ];
 
-  const getWorkerByJob = (jobKey) => {
-    if (!jobKey) return "-";
-    const idx = Math.abs(jobKey.toString().length) % WORKERS.length;
-    return WORKERS[idx];
+  const getWorkerByLot = (lotKey) => {
+    if (!lotKey) return "-";
+
+    const str = String(lotKey);
+    let hash = 0;
+
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash + str.charCodeAt(i)) % WORKERS.length;
+    }
+
+    return WORKERS[hash];
   };
 
   const toDateOnly = (d) => {
@@ -66,7 +73,8 @@ export default function MaterialLogDetail({ id, onClose }) {
           productLotNo: item.productLotNo,
           fromLocation: "자재 창고 1",
           toLocation: "전극 공정 라인 1",
-          manager: getWorkerByJob(item.productLotNo || item.materialLotNo),
+          manager: getWorkerByLot(item.productLotNo || item.materialLotNo),
+
           note: "",
         });
       } catch (e) {
