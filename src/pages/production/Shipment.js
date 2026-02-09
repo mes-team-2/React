@@ -15,7 +15,7 @@ import SelectBar from "../../components/SelectBar";
 import Button from "../../components/Button";
 import ShipmentDrawer from "./ShipmentDrawer";
 import { InventoryAPI2 } from "../../api/AxiosAPI2";
-import { ShipmentAPI } from "../../api/AxiosAPI3";
+import { ShipmentAPI } from "../../api/AxiosAPI";
 
 // 날짜 포맷 함수
 const formatDate = (dateStr) => {

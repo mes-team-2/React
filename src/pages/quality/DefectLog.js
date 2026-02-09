@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { DefectLogAPI } from "../../api/AxiosAPI";
 import Table from "../../components/TableStyle";
 import SideDrawer from "../../components/SideDrawer";
 import DefectLogDetail from "./DefectLogDetail";
@@ -156,13 +156,19 @@ export default function DefectLog() {
 
   useEffect(() => {
     const fetchLogs = async () => {
-      const today = new Date().toISOString().slice(0, 10);
-      const res = await axios.get("http://localhost:8088/api/defect-logs", {
-        params: { date: today },
-        withCredentials: true,
-      });
-      setRows(res.data);
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+
+        // [2] API 함수 호출로 변경
+        // (URL, withCredentials, params 설정 등은 AxiosAPI.js에서 처리됨)
+        const res = await DefectLogAPI.getList(today);
+
+        setRows(res.data);
+      } catch (error) {
+        console.error("불량 로그 조회 실패:", error);
+      }
     };
+
     fetchLogs();
   }, []);
 
