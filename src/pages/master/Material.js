@@ -187,7 +187,7 @@ export default function Material() {
   return (
     <Wrapper>
       <Header>
-        <h2>자재 / 재고관리</h2>
+        <h2>자재 관리</h2>
       </Header>
 
       {/* <ChartGrid>

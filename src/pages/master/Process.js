@@ -131,7 +131,7 @@ export default function Process() {
   return (
     <Wrapper>
       <Header>
-        <h2>공정 기준 관리</h2>
+        <h2>공정 관리</h2>
       </Header>
 
       <FilterBar>

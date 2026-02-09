@@ -145,7 +145,7 @@ export default function Product() {
   return (
     <Wrapper>
       <Header>
-        <h2>제품 기준 관리</h2>
+        <h2>제품 관리</h2>
       </Header>
 
       <FilterBar>

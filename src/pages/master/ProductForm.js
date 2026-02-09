@@ -30,7 +30,7 @@ export default function ProductForm({
   const [newRow, setNewRow] = useState({
     materialCode: "",
     qty: "",
-    process: "",
+    process: "전극공정",
   });
 
   // 수정 모드 초기값 세팅
@@ -76,7 +76,6 @@ export default function ProductForm({
     { value: "팩공정", label: "팩공정" },
     { value: "검사공정", label: "검사공정" },
   ];
-
   // 제품 정보 변경
   const handleProductChange = (e) => {
     const { name, value } = e.target;
@@ -105,11 +104,11 @@ export default function ProductForm({
       materialName: selectedMaterial?.materialName || "",
       unit: selectedMaterial?.unit || "EA",
       qty: Number(newRow.qty),
-      process: newRow.process || "전극공정", // 기본값
+      process: newRow.process,
     };
 
     setBomList([...bomList, newItem]);
-    setNewRow({ materialCode: "", qty: "", process: "" }); // 초기화
+    setNewRow({ materialCode: "", qty: "", process: "전극공정" });
   };
 
   // BOM 수정/삭제
@@ -303,12 +302,10 @@ export default function ProductForm({
                       placeholder="자재 선택"
                       options={materialOptions}
                       value={newRow.materialCode}
-                      onChange={(e) =>
-                        setNewRow((p) => ({
-                          ...p,
-                          materialCode: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => {
+                        const val = e.target ? e.target.value : e;
+                        setNewRow((p) => ({ ...p, materialCode: val }));
+                      }}
                     />
                   </div>
                   <div style={{ flex: 1.5 }}>
@@ -318,9 +315,10 @@ export default function ProductForm({
                       placeholder="공정 선택"
                       options={processOptions}
                       value={newRow.process}
-                      onChange={(e) =>
-                        setNewRow((p) => ({ ...p, process: e.target.value }))
-                      }
+                      onChange={(e) => {
+                        const val = e.target ? e.target.value : e;
+                        setNewRow((p) => ({ ...p, process: val }));
+                      }}
                     />
                   </div>
                   <div style={{ flex: 1 }}>
