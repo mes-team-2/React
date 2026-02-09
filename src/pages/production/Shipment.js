@@ -144,8 +144,8 @@ const Shipment = () => {
 
     //출고 합계 (shipmentData 기준)
     shipmentData.forEach((sh) => {
-      if (sh.qty < 0) {
-        totalOut += Math.abs(sh.qty);
+      if (sh.txType === "SHIPMENT_OUT") {
+        totalOut += Number(sh.qty);
       }
     });
 
@@ -236,7 +236,7 @@ const Shipment = () => {
             <QtyText $isPositive={!isShipment}>
               {isShipment
                 ? `-${Math.abs(qty).toLocaleString()}`
-                : qty.toLocaleString()}
+                : `+${qty.toLocaleString()}`}
             </QtyText>
           );
         },
@@ -272,7 +272,7 @@ const Shipment = () => {
       <SummaryGrid>
         <SummaryCard
           icon={<FiEdit />}
-          label="총 조회 건수"
+          label="총 출고 건수"
           value={`${summary.totalCount.toLocaleString()} 건`}
           color="var(--font)"
         />
