@@ -246,6 +246,9 @@ export default function SideBar() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+
   const currentPath = location.pathname;
   const currentLabel = PAGE_LABEL[currentPath];
   const isPinned = pinnedTabs.some((p) => p.path === currentPath);
@@ -585,7 +588,13 @@ export default function SideBar() {
               );
             })}
           </Nav>
-          <UserProfile>
+          <UserProfile
+            onClick={(e) => {
+              e.stopPropagation();
+              setProfileOpen(true);
+              setEditMode(false);
+            }}
+          >
             <UserAvatar>
               <IconUser />
             </UserAvatar>
@@ -733,6 +742,42 @@ export default function SideBar() {
           <Outlet />
         </Content>
       </Main>
+      {profileOpen && (
+        <ProfileOverlay onClick={() => setProfileOpen(false)}>
+          <ProfileModal onClick={(e) => e.stopPropagation()}>
+            {!editMode ? (
+              <>
+                <h3>회원 정보</h3>
+                <ProfileRow>
+                  <span>이름</span>
+                  <strong>{userInfo.name}</strong>
+                </ProfileRow>
+                <ProfileRow>
+                  <span>사번</span>
+                  <strong>{userInfo.code || "-"}</strong>
+                </ProfileRow>
+
+                <ProfileActions>
+                  <button onClick={() => setEditMode(true)}>
+                    회원정보 수정
+                  </button>
+                  <button
+                    className="close"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    닫기
+                  </button>
+                </ProfileActions>
+              </>
+            ) : (
+              <>
+                <h3>비밀번호 변경</h3>
+                <PasswordForm onCancel={() => setEditMode(false)} />
+              </>
+            )}
+          </ProfileModal>
+        </ProfileOverlay>
+      )}
     </Shell>
   );
 }
@@ -1194,3 +1239,122 @@ const PinnedStar = styled.button`
     stroke: none;
   }
 `;
+
+const ProfileOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ProfileModal = styled.div`
+  width: 360px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+
+  h3 {
+    margin-bottom: 20px;
+    font-size: var(--fontLg);
+  }
+`;
+
+const ProfileRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: var(--fontSm);
+`;
+
+const ProfileActions = styled.div`
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  button {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: var(--fontSm);
+  }
+
+  button.close {
+    background: var(--background2);
+  }
+
+  button:not(.close) {
+    background: var(--main);
+    color: white;
+  }
+`;
+
+const Input = styled.input`
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: var(--fontSm);
+
+  &:focus {
+    border-color: var(--main);
+  }
+`;
+
+function PasswordForm({ onCancel }) {
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+
+  const handleSubmit = () => {
+    if (newPw !== confirmPw) {
+      alert("새 비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    console.log("비밀번호 변경", {
+      currentPw,
+      newPw,
+    });
+
+    alert("비밀번호 변경 (프론트 테스트)");
+    onCancel();
+  };
+
+  return (
+    <>
+      <Input
+        type="password"
+        placeholder="현재 비밀번호"
+        value={currentPw}
+        onChange={(e) => setCurrentPw(e.target.value)}
+      />
+      <Input
+        type="password"
+        placeholder="새 비밀번호"
+        value={newPw}
+        onChange={(e) => setNewPw(e.target.value)}
+      />
+      <Input
+        type="password"
+        placeholder="새 비밀번호 확인"
+        value={confirmPw}
+        onChange={(e) => setConfirmPw(e.target.value)}
+      />
+
+      <ProfileActions>
+        <button onClick={handleSubmit}>저장</button>
+        <button className="close" onClick={onCancel}>
+          취소
+        </button>
+      </ProfileActions>
+    </>
+  );
+}
