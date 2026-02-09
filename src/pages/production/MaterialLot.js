@@ -14,7 +14,6 @@ import SelectBar from "../../components/SelectBar";
 import Progress from "../../components/Progress";
 import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
-// 백엔드 데이터 프론트에 맞게 수정
 const mapStatus = (s) => {
   if (s === "AVAILABLE") return "WAITING";
   if (s === "HOLD") return "RUNNING";
@@ -22,7 +21,6 @@ const mapStatus = (s) => {
   return s;
 };
 
-// 프론트 데이터 백엔드에 맞게 수정
 const toBackendStatus = (s) => {
   if (s === "WAITING") return "AVAILABLE";
   if (s === "RUNNING") return "HOLD";
@@ -188,7 +186,7 @@ export default function MaterialLot() {
     {
       key: "status",
       label: "LOT 상태",
-      width: 120,
+      width: 150,
       render: (v) => {
         let statusKey = "DEFAULT";
         if (v === "WAITING") statusKey = "LOT_WAIT";

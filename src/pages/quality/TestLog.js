@@ -518,7 +518,7 @@ const ChartBox = styled.div`
 
 const FilterBar = styled.div`
   display: flex;
-  gap: 12px;
+  gap: 20px;
   align-items: center;
   margin-top: 20px;
 `;
