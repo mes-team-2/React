@@ -116,7 +116,7 @@ export default function MaterialLog() {
               qty: Number(item.qty),
               unit: item.unit,
               materialCode: "-",
-              operator: getWorkerByJob(jobKey), // ⭐ 핵심
+              operator: getWorkerByJob(jobKey),
             };
           }),
         );
