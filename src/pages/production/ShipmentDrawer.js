@@ -54,7 +54,7 @@ export default function ShipmentDrawer({
 
       onSuccess({
         lotNo: baseItem.lotNo,
-        tx_time: new Date().toISOString(),
+        txTime: new Date().toISOString(),
         tx_type: "SHIPMENT_OUT",
         status_key: "out",
         productCode: baseItem.productCode,
@@ -84,24 +84,16 @@ export default function ShipmentDrawer({
             <SectionTitle>제품 정보</SectionTitle>
             <Grid>
               <Item>
-                <label>제품코드</label>
-                <Value>{baseItem.productCode}</Value>
-              </Item>
-              <Item>
                 <label>제품명</label>
                 <Value>{baseItem.productName}</Value>
               </Item>
               <Item>
                 <label>최초 입고 수량</label>
-                <Value>
-                  {baseItem.initialQty.toLocaleString()} {baseItem.unit}
-                </Value>
+                <Value>{baseItem.initialQty.toLocaleString()} EA</Value>
               </Item>
               <Item>
                 <label>현재 재고</label>
-                <Value>
-                  {baseItem.qty.toLocaleString()} {baseItem.unit}
-                </Value>
+                <Value>{baseItem.qty.toLocaleString()} EA</Value>
               </Item>
             </Grid>
           </Section>
@@ -146,13 +138,13 @@ export default function ShipmentDrawer({
             <TableStyle
               data={shipmentHistory.map((item, idx) => ({
                 id: item.shipmentNo ?? idx,
-                tx_time: formatDateTime(item.tx_time),
+                txTime: formatDateTime(item.txTime),
                 location: item.location,
                 qty: item.qty,
               }))}
               columns={[
                 {
-                  key: "tx_time",
+                  key: "txTime",
                   label: "일시",
                   width: 160,
                 },

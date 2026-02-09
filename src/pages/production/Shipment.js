@@ -31,7 +31,7 @@ const formatDate = (dateStr) => {
 
 const Shipment = () => {
   const [sortConfig, setSortConfig] = useState({
-    key: "tx_time",
+    key: "txTime",
     direction: "desc",
   });
   const [selectedRow, setSelectedRow] = useState(null);
@@ -97,11 +97,12 @@ const Shipment = () => {
         base: {
           ...inv,
           lotNo: inv.lotNo,
+          productCode: inv.productCode,
           productName: inv.productName,
           qty: inv.stockQty,
           rowType: "BASE",
           status_key: "in",
-          tx_time: inv.updatedAt ?? null,
+          txTime: inv.updatedAt ?? null,
           initialQty: inv.stockQty + (totalOutByProduct[inv.lotNo] ?? 0),
         },
         shipments: [],
@@ -175,7 +176,7 @@ const Shipment = () => {
   const columns = useMemo(
     () => [
       {
-        key: "tx_time",
+        key: "txTime",
         label: "일시",
         width: 150,
         render: (val) => formatDate(val),
@@ -186,7 +187,7 @@ const Shipment = () => {
         width: 150,
         render: (val) => <Status status={val} />,
       },
-      { key: "code", label: "제품코드", width: 130 },
+
       { key: "lotNo", label: "LOT 번호", width: 130 },
       {
         key: "productName",
@@ -229,15 +230,18 @@ const Shipment = () => {
         label: "수량",
         render: (val, row) => {
           const qty = Number(val ?? 0);
+          const isShipment = row.rowType === "SHIPMENT";
 
           return (
-            <QtyText $isPositive={qty > 0}>
-              {qty > 0 ? `+${qty.toLocaleString()}` : qty.toLocaleString()}
+            <QtyText $isPositive={!isShipment}>
+              {isShipment
+                ? `-${Math.abs(qty).toLocaleString()}`
+                : qty.toLocaleString()}
             </QtyText>
           );
         },
       },
-      { key: "unit", label: "단위", width: 60 },
+      { key: "unit", label: "단위", width: 60, render: () => "EA" },
     ],
     [expandedMap],
   );
@@ -250,7 +254,14 @@ const Shipment = () => {
 
     const res = await ShipmentAPI.getList(params);
     console.log("shipmentData example:", res.data[0]);
-    setShipmentData(res.data);
+    const normalized = res.data.map((sh) => ({
+      ...sh,
+      lotNo: sh.lotNo ?? sh.productLotNo, //
+      txType: sh.txType ?? sh.tx_type,
+      txTime: sh.txTime ?? sh.txTime,
+    }));
+
+    setShipmentData(normalized);
   };
 
   return (
@@ -315,7 +326,7 @@ const Shipment = () => {
           getRowKey={(row) =>
             row.rowType === "BASE"
               ? `BASE-${row.lotNo}`
-              : `SHIP-${row.id ?? row.tx_time}`
+              : `SHIP-${row.id ?? row.txTime}`
           }
           onRowClick={(row) => {
             if (row.rowType === "SHIPMENT") return;
