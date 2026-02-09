@@ -45,6 +45,7 @@ export default function ShipmentDrawer({
         qty: Math.abs(Number(form.qty)),
         unit: baseItem.unit,
         location: form.location,
+        lotNo: baseItem.lotNo,
         productCode: baseItem.productCode,
         productName: baseItem.productName,
       });
@@ -52,6 +53,7 @@ export default function ShipmentDrawer({
       alert("출하가 성공적으로 완료되었습니다.");
 
       onSuccess({
+        lotNo: baseItem.lotNo,
         tx_time: new Date().toISOString(),
         tx_type: "SHIPMENT_OUT",
         status_key: "out",

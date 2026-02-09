@@ -55,16 +55,17 @@ const Shipment = () => {
   // 🔥 제품별 누적 출고 수량 계산
   const totalOutByProduct = useMemo(() => {
     return shipmentData.reduce((acc, sh) => {
-      if (!acc[sh.productCode]) acc[sh.productCode] = 0;
-      if (sh.qty < 0) acc[sh.productCode] += Math.abs(sh.qty);
+      const lotNo = sh.lotNo ?? sh.lot;
+      if (!acc[lotNo]) acc[lotNo] = 0;
+      if (sh.qty < 0) acc[lotNo] += Math.abs(sh.qty);
       return acc;
     }, {});
   }, [shipmentData]);
 
-  const toggleExpand = (productCode) => {
+  const toggleExpand = (lotNo) => {
     setExpandedMap((prev) => ({
       ...prev,
-      [productCode]: !prev[productCode],
+      [lotNo]: !prev[lotNo],
     }));
   };
 
@@ -75,9 +76,12 @@ const Shipment = () => {
   ];
 
   const fetchInventory = async () => {
-    const res = await InventoryAPI2.getFgInventory();
+    const res = await InventoryAPI2.getFgLotInventory();
     setInventoryData(res.data);
   };
+  useEffect(() => {
+    console.log("inventory row example:", inventoryData[0]);
+  }, [inventoryData]);
 
   useEffect(() => {
     fetchInventory();
@@ -89,16 +93,16 @@ const Shipment = () => {
 
     // 1️⃣ 재고 기준행
     inventoryData.forEach((inv) => {
-      map[inv.productCode] = {
+      map[inv.lotNo] = {
         base: {
           ...inv,
-          productCode: inv.productCode,
+          lotNo: inv.lotNo,
           productName: inv.productName,
           qty: inv.stockQty,
           rowType: "BASE",
           status_key: "in",
           tx_time: inv.updatedAt ?? null,
-          initialQty: inv.stockQty + (totalOutByProduct[inv.productCode] ?? 0),
+          initialQty: inv.stockQty + (totalOutByProduct[inv.lotNo] ?? 0),
         },
         shipments: [],
       };
@@ -106,20 +110,12 @@ const Shipment = () => {
 
     // 2️⃣ 출고 이력 붙이기
     shipmentData.forEach((sh) => {
-      const code = sh.productCode;
-      const name = sh.productName;
+      const lotNo = sh.lotNo ?? sh.lot;
+      if (!lotNo) return;
 
-      if (!code) return; // 안전장치
-
-      if (map[code]) {
-        map[code].shipments.push({
+      if (map[lotNo]) {
+        map[lotNo].shipments.push({
           ...sh,
-
-          // 🔥 핵심: 기준행과 같은 필드명으로 맞춤
-          productCode: code,
-          productName: name,
-
-          qty: sh.qty, // 음수
           rowType: "SHIPMENT",
           status_key: "out",
         });
@@ -128,8 +124,8 @@ const Shipment = () => {
 
     // 3️⃣ 기준행 → 출고행 순서로 평탄화
     return Object.values(map).flatMap((g) => {
-      const code = g.base.productCode;
-      const expanded = expandedMap[code];
+      const lotNo = g.base.lotNo;
+      const expanded = expandedMap[lotNo];
 
       return expanded ? [g.base, ...g.shipments] : [g.base];
     });
@@ -190,13 +186,14 @@ const Shipment = () => {
         width: 150,
         render: (val) => <Status status={val} />,
       },
-      { key: "productCode", label: "제품코드", width: 130 },
+      { key: "code", label: "제품코드", width: 130 },
+      { key: "lotNo", label: "LOT 번호", width: 130 },
       {
         key: "productName",
         label: "제품명",
         render: (val, row) => {
           if (row.rowType === "BASE") {
-            const code = row.productCode;
+            const lotNo = row.lotNo;
 
             return (
               <span
@@ -211,10 +208,10 @@ const Shipment = () => {
                   style={{ cursor: "pointer" }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleExpand(code);
+                    toggleExpand(lotNo);
                   }}
                 >
-                  {expandedMap[code] ? "▼" : "▶"}
+                  {expandedMap[lotNo] ? "▼" : "▶"}
                 </span>
                 <span>{val}</span>
               </span>
@@ -252,6 +249,7 @@ const Shipment = () => {
     if (searchDateRange.end) params.end = searchDateRange.end.toISOString();
 
     const res = await ShipmentAPI.getList(params);
+    console.log("shipmentData example:", res.data[0]);
     setShipmentData(res.data);
   };
 
@@ -314,6 +312,11 @@ const Shipment = () => {
           sortConfig={sortConfig}
           onSort={handleSort}
           selectable={false}
+          getRowKey={(row) =>
+            row.rowType === "BASE"
+              ? `BASE-${row.lotNo}`
+              : `SHIP-${row.id ?? row.tx_time}`
+          }
           onRowClick={(row) => {
             if (row.rowType === "SHIPMENT") return;
             setSelectedRow(row);
@@ -338,9 +341,7 @@ const Shipment = () => {
         }}
         shipmentHistory={
           selectedRow
-            ? shipmentData.filter(
-                (sh) => sh.productCode === selectedRow.productCode,
-              )
+            ? shipmentData.filter((sh) => sh.lotNo === selectedRow.lotNo)
             : []
         }
       />

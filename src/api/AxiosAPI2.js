@@ -84,6 +84,10 @@ export const InventoryAPI2 = {
     });
   },
 
+  getFgLotInventory: async (params) => {
+    return await AxiosAPI2.get("/api/inventory/fginventory/lot", { params });
+  },
+
   // 완성품 재고 상세 조회
   getFgInventoryDetail: async (productCode) => {
     return await AxiosAPI2.get(`/api/inventory/fginventory/${productCode}`);
