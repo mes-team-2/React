@@ -743,8 +743,8 @@ export default function SideBar() {
         </Content>
       </Main>
       {profileOpen && (
-        <ProfileOverlay onClick={() => setProfileOpen(false)}>
-          <ProfileModal onClick={(e) => e.stopPropagation()}>
+        <ProfileOverlay onMouseDown={() => setProfileOpen(false)}>
+          <ProfileModal onMouseDown={(e) => e.stopPropagation()}>
             {!editMode ? (
               <>
                 <h3>회원 정보</h3>
