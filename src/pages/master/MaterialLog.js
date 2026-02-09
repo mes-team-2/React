@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import TableStyle from "../../components/TableStyle";
 import SearchBar from "../../components/SearchBar";
 import SideDrawer from "../../components/SideDrawer";
@@ -29,6 +29,32 @@ export default function MaterialLog() {
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [typeFilter, setTypeFilter] = useState("ALL");
+  const workerMapRef = useRef({});
+
+  const WORKERS = [
+    "우민규",
+    "테스터",
+    "이현수",
+    "양찬종",
+    "김하린",
+    "이준호",
+    "박서준",
+    "최지우",
+    "정유진",
+    "강동원",
+    "한소희",
+  ];
+
+  const getWorkerByJob = (jobKey) => {
+    if (!jobKey) return "-";
+
+    if (!workerMapRef.current[jobKey]) {
+      const idx = Object.keys(workerMapRef.current).length % WORKERS.length;
+      workerMapRef.current[jobKey] = WORKERS[idx];
+    }
+
+    return workerMapRef.current[jobKey];
+  };
 
   const formatDateTime = (d) => {
     if (!d) return "-";
@@ -76,19 +102,23 @@ export default function MaterialLog() {
         const data = res.data;
 
         setRows(
-          data.content.map((item) => ({
-            id: item.id,
-            occurredAt: item.txTime,
-            type:
-              item.txType?.trim().toUpperCase() === "INBOUND" ? "IN" : "USE",
-            materialName: item.materialName,
-            materialLotNo: item.materialNo, // 자재 LOT
-            productLotNo: item.productLotNo, // [New] 제품 LOT
-            qty: Number(item.qty),
-            unit: item.unit,
-            materialCode: "-",
-            operator: "-",
-          })),
+          data.content.map((item) => {
+            const jobKey = item.productLotNo || item.materialNo || item.id;
+
+            return {
+              id: item.id,
+              occurredAt: item.txTime,
+              type:
+                item.txType?.trim().toUpperCase() === "INBOUND" ? "IN" : "USE",
+              materialName: item.materialName,
+              materialLotNo: item.materialNo,
+              productLotNo: item.productLotNo,
+              qty: Number(item.qty),
+              unit: item.unit,
+              materialCode: "-",
+              operator: getWorkerByJob(jobKey), // ⭐ 핵심
+            };
+          }),
         );
 
         setTotalPages(data.totalPages);

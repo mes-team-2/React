@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import Button from "../../components/Button";
 import Status from "../../components/Status";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { InventoryAPI2 } from "../../api/AxiosAPI2";
 
 export default function MaterialLogDetail({ id, onClose }) {
@@ -9,6 +9,27 @@ export default function MaterialLogDetail({ id, onClose }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const workerMapRef = useRef({});
+
+  const WORKERS = [
+    "우민규",
+    "테스터",
+    "이현수",
+    "양찬종",
+    "김하린",
+    "이준호",
+    "박서준",
+    "최지우",
+    "정유진",
+    "강동원",
+    "한소희",
+  ];
+
+  const getWorkerByJob = (jobKey) => {
+    if (!jobKey) return "-";
+    const idx = Math.abs(jobKey.toString().length) % WORKERS.length;
+    return WORKERS[idx];
+  };
 
   const toDateOnly = (d) => {
     if (!d) return "-";
@@ -42,11 +63,10 @@ export default function MaterialLogDetail({ id, onClose }) {
           remainQty: Number(item.remainQty ?? 0),
           materialCode: item.materialCode ?? "-",
           materialName: item.materialName ?? "-",
-          // [New] 제품 LOT 번호 매핑
           productLotNo: item.productLotNo,
           fromLocation: "자재 창고 1",
           toLocation: "전극 공정 라인 1",
-          manager: "Kim Harin",
+          manager: getWorkerByJob(item.productLotNo || item.materialLotNo),
           note: "",
         });
       } catch (e) {
