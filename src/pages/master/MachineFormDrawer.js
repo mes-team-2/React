@@ -68,6 +68,7 @@ export default function MachineFormDrawer({
                   }
                   // 포커스가 벗어날 때(입력 완료 후) 중복 체크 실행
                   onBlur={handleCheckDuplicate}
+                  placeholder="설비 코드를 입력하세요"
                 />
               </FullItem>
 
@@ -78,6 +79,7 @@ export default function MachineFormDrawer({
                   onChange={(e) =>
                     setForm((p) => ({ ...p, machineName: e.target.value }))
                   }
+                  placeholder="설비명을 입력하세요"
                 />
               </FullItem>
 
@@ -120,6 +122,7 @@ export default function MachineFormDrawer({
                   onChange={(e) =>
                     setForm((p) => ({ ...p, processCode: e.target.value }))
                   }
+                  placeholder="공정코드를 입력하세요"
                 />
               </FullItem>
               <FullItem>
@@ -129,6 +132,7 @@ export default function MachineFormDrawer({
                   onChange={(e) =>
                     setForm((p) => ({ ...p, processName: e.target.value }))
                   }
+                  placeholder="공정명을 입력하세요"
                 />
               </FullItem>
             </DataGrid>

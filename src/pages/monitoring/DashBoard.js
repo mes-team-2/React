@@ -323,7 +323,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {machineStatus.map((m) => (
+                {machineStatus.slice(0, 5).map((m) => (
                   <tr key={m.machineCode}>
                     <td>
                       <div className="machine-info">
