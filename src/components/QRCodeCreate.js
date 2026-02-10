@@ -26,7 +26,7 @@ const QRCodeCreate = ({
   // ★ 시연할 사람 보세요 !!!!
   // 내부망이라서 cmd에 ipconfig 쳐서 IPv4 주소 확인해서 넣으면 됩니다
   // 일단 아래 주소는 제거(하린)에요
-  const HOST_URL = "http://172.30.1.10:3000";
+  const HOST_URL = "http://192.168.0.97:3000";
 
   const targetUrl =
     type === "MATERIAL"

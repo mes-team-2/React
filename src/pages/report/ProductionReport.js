@@ -165,7 +165,7 @@ export default function ProductionReport() {
     return currentData.map((row) => ({
       ...row,
       defectRate:
-        row.defectRate >= 3.0 ? (
+        row.defectRate >= 5.0 ? (
           <span style={{ color: "var(--error)", fontWeight: "bold" }}>
             {row.defectRate}%
           </span>
